@@ -1,0 +1,105 @@
+
+.navbar {
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,.08);
+}
+.navbar-brand {
+    font-weight: bold;
+    color: #0d6efd;
+}
+.nav-link {
+    color: #495057;
+}
+.nav-link.active {
+    font-weight: bold;
+    color: #0d6efd;
+}
+.card {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0b5ed7;
+}
+.btn-custom-search {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #ffffff;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: background-color 0.3s, border-color 0.3s;
+    font-size: 0.7rem;
+    width: 7%;
+}
+
+.btn-custom-search:hover {
+    background-color: #0b5ed7;
+    border-color: #0b5ed7;
+    color: #ffffff;
+}
+body {
+    background-color: #f0f2f5;
+}
+
+#card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+}
+
+#card-header {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+    border-radius: 5px;
+}
+
+.section-title {
+    background-color: #e9ecef;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    border-left: 5px solid #007bff;
+}
+
+#row {
+    margin-bottom: 1rem;
+}
+
+#col-left, #col-right {
+    padding: 10px;
+}
+
+#info-row {
+    border-bottom: 1px solid #dee2e6;
+    padding: 8px 0;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+#signature-row {
+    margin-top: 30px;
+}
+
+#patient-sign, #doctor-sign {
+    padding: 20px;
+    text-align: center;
+}
+
+@media print {
+    body {
+        background-color: white;
+    }
+
+    #card {
+        box-shadow: none;
+    }
+}

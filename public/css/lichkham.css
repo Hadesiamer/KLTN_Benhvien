@@ -1,0 +1,88 @@
+
+.patient-item {
+    border-radius: 10px;
+    cursor: pointer;
+}
+.col-8{
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+.list-group {
+max-height: 695px; 
+overflow-y: auto; 
+border: 1px solid #ccc; 
+padding: 10px;
+border-radius: 8px; 
+
+}
+.patient-item{
+    margin-left:10px;
+}
+div.button {
+    display: flex;
+    justify-content: center;
+    gap: 10px; 
+}
+
+div.button .btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+div.button .btn-change {
+background-color: #28a745;
+color: white;
+}
+
+div.button .btn-change:hover {
+    background-color: #218838; 
+    transform: scale(1.05); 
+}
+
+div.button .btn-cancel {
+    background-color: #dc3545;
+    color: white;
+}
+
+div.button .btn-cancel:hover {
+    background-color: #c82333; 
+    transform: scale(1.05); 
+}
+.alert-danger {
+background-color: #f8d7da; 
+color: #721c24;           
+border-color: #f5c6cb;   
+}
+
+.alert-success {
+    background-color: #d4edda; 
+    color: #155724;           
+    border-color: #c3e6cb;    
+}
+.modal-content {
+border-radius: 8px;
+box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    background-color: #28a745;
+    color: white;
+    border-bottom: 1px solid #d4edda;
+}
+
+.modal-footer .btn-change {
+    background-color: #28a745;
+    color: white;
+}
+
+.modal-footer .btn-change:hover {
+    background-color: #218838;
+}
+

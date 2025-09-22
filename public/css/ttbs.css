@@ -1,0 +1,106 @@
+ /* Reset and base styles */
+ 
+ * {
+     margin: 0;
+     padding: 0;
+     box-sizing: border-box;
+ }
+ 
+ body {
+     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+     background-color: #f0f2f5;
+     color: #333;
+     line-height: 1.6;
+ }
+ /* Profile container */
+ 
+ .profile-container {
+     max-width: 600px;
+     margin: 2rem auto;
+     background-color: #fff;
+     border-radius: 8px;
+     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+     overflow: hidden;
+ }
+ /* Profile header */
+ 
+ .profile-header {
+     display: flex;
+     align-items: center;
+     padding: 1.5rem;
+     background-color: #4a90e2;
+     color: #fff;
+ }
+ 
+ .profile-header img {
+     width: 60px;
+     height: 60px;
+     border-radius: 50%;
+     object-fit: cover;
+     margin-right: 1rem;
+     border: 2px solid #fff;
+ }
+ 
+ .profile-header h5 {
+     font-size: 1.2rem;
+     margin-bottom: 0.25rem;
+ }
+ 
+ .profile-header small {
+     font-size: 0.9rem;
+     opacity: 0.8;
+ }
+ /* Profile section */
+ 
+ .profile-section {
+     padding: 1.5rem;
+ }
+ 
+ .profile-section p {
+     font-size: 1.1rem;
+     font-weight: bold;
+     margin-bottom: 1rem;
+     color: #4a90e2;
+ }
+ 
+ .profile-section div {
+     display: flex;
+     justify-content: space-between;
+     padding: 0.75rem 0;
+     border-bottom: 1px solid #eee;
+ }
+ 
+ .profile-section div:last-child {
+     border-bottom: none;
+ }
+ 
+ .profile-section span:first-child {
+     font-weight: 500;
+     color: #666;
+ }
+ 
+ .profile-section span:last-child {
+     color: #333;
+ }
+ /* Responsive design */
+ 
+ @media (max-width: 640px) {
+     .profile-container {
+         margin: 1rem;
+         border-radius: 0;
+     }
+     .profile-header {
+         flex-direction: column;
+         text-align: center;
+     }
+     .profile-header img {
+         margin-right: 0;
+         margin-bottom: 1rem;
+     }
+     .profile-section div {
+         flex-direction: column;
+     }
+     .profile-section span:first-child {
+         margin-bottom: 0.25rem;
+     }
+ }

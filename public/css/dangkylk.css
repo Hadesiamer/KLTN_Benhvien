@@ -1,0 +1,34 @@
+.col-4 {
+    flex: 0 0 33.33%;
+    padding-right: 20px;
+}
+
+.col-8 {
+flex: 0 0 66.67%;
+}
+
+.specialties, .doctors {
+background: white;
+padding: 20px;
+border-radius: 8px;
+box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+margin-top: 0px;
+}
+.danh-sach-bac-si .row {
+border-bottom: 1px solid #ddd;
+padding-bottom: 10px;
+margin-bottom: 10px;
+}
+
+.danh-sach-bac-si img {
+border: 2px solid #007bff;
+}
+div.button .btn-primary {
+background-color: #28a745;
+color: white;
+}
+
+div.button .btn-change:hover {
+background-color: #218838; 
+transform: scale(1.05); 
+}

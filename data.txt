@@ -1,0 +1,1254 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Máy chủ: 127.0.0.1
+-- Thời gian đã tạo: Th12 11, 2024 lúc 04:20 PM
+-- Phiên bản máy phục vụ: 10.4.32-MariaDB
+-- Phiên bản PHP: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Cơ sở dữ liệu: `domdom`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `bacsi`
+--
+
+CREATE TABLE `bacsi` (
+  `MaNV` int(10) UNSIGNED NOT NULL,
+  `MaKhoa` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `bacsi`
+--
+
+INSERT INTO `bacsi` (`MaNV`, `MaKhoa`) VALUES
+(100, 1),
+(101, 1),
+(102, 1),
+(103, 1),
+(104, 1),
+(105, 1),
+(106, 1),
+(107, 1),
+(108, 1),
+(109, 1),
+(110, 2),
+(111, 2),
+(112, 2),
+(113, 2),
+(114, 2),
+(115, 2),
+(116, 2),
+(117, 2),
+(118, 2),
+(119, 2),
+(120, 3),
+(121, 3),
+(122, 3),
+(123, 3),
+(124, 3),
+(125, 3),
+(126, 3),
+(127, 3),
+(128, 3),
+(129, 3),
+(130, 4),
+(131, 4),
+(132, 4),
+(133, 4),
+(134, 4),
+(135, 4),
+(136, 4),
+(137, 4),
+(138, 4),
+(139, 4),
+(140, 5),
+(141, 5),
+(142, 5),
+(143, 5),
+(144, 5),
+(145, 5),
+(146, 5),
+(147, 5),
+(148, 5),
+(149, 5),
+(150, 6),
+(151, 6),
+(152, 6),
+(153, 6),
+(154, 6),
+(155, 6),
+(156, 6),
+(157, 6),
+(158, 6),
+(159, 6),
+(160, 7),
+(161, 7),
+(162, 7),
+(163, 7),
+(164, 7),
+(165, 7),
+(166, 7),
+(167, 7),
+(168, 7),
+(169, 7),
+(170, 8),
+(171, 8),
+(172, 8),
+(173, 8),
+(174, 8),
+(175, 8),
+(176, 8),
+(177, 8),
+(178, 8),
+(179, 8),
+(180, 9),
+(181, 9),
+(182, 9),
+(183, 9),
+(184, 9),
+(185, 9),
+(186, 9),
+(187, 9),
+(188, 9),
+(189, 9),
+(190, 10),
+(191, 10),
+(192, 10),
+(193, 10),
+(194, 10),
+(195, 10),
+(196, 10),
+(197, 10),
+(198, 10),
+(199, 10);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `benhnhan`
+--
+
+CREATE TABLE `benhnhan` (
+  `MaBN` int(10) UNSIGNED NOT NULL,
+  `HovaTen` varchar(255) NOT NULL,
+  `GioiTinh` varchar(255) NOT NULL,
+  `NgaySinh` date NOT NULL,
+  `SoDT` varchar(255) NOT NULL,
+  `DiaChi` varchar(255) NOT NULL,
+  `Email` varchar(255) NOT NULL,
+  `BHYT` varchar(255) NOT NULL,
+  `MaPK` int(10) UNSIGNED NOT NULL,
+  `ID` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `benhnhan`
+--
+
+INSERT INTO `benhnhan` (`MaBN`, `HovaTen`, `GioiTinh`, `NgaySinh`, `SoDT`, `DiaChi`, `Email`, `BHYT`, `MaPK`, `ID`) VALUES
+(1, 'Nguyễn Đăng Hồng Phúc', 'Nữ', '2003-09-14', '0948520853', 'Nguyễn Văn Quá, Quận 12', 'phucngu@gmail.com', '2093215487', 1, 6),
+(2, 'Trần Minh Thùy', 'Nữ', '1995-03-22', '0903456789', 'Số 45 Lý Thường Kiệt, Hà Nội', 'thuy.tran@example.com', '2093215488', 2, 2),
+(3, 'Lê Anh Tuấn', 'Nam', '1990-07-10', '0976347821', 'Số 15 Nguyễn Thị Minh Khai, TP.HCM', 'tuan.le@example.com', '2093215489', 3, 3),
+(4, 'Phạm Thu Trang', 'Nữ', '1987-11-05', '0934567890', 'Số 78 Hoàng Mai, Hà Nội', 'trang.pham@example.com', '2093215490', 4, 1),
+(5, 'Nguyễn Quang Huy', 'Nam', '2000-02-14', '0912345678', 'Số 33 Đinh Tiên Hoàng, Bình Dương', 'huy.nguyen@example.com', '2093215491', 5, 2),
+(6, 'Vũ Thị Thu Hà', 'Nữ', '1993-12-15', '0978123456', 'Số 9 Trần Hưng Đạo, TP.HCM', 'ha.vu@example.com', '2093215492', 6, 3),
+(7, 'Đỗ Minh Tú', 'Nữ', '2001-02-28', '0945678901', 'Số 14 Cầu Giấy, Hà Nội', 'minhtu.do@example.com', '2093215493', 7, 2),
+(8, 'Mai Hoàng Nam', 'Nam', '1990-10-03', '0901122334', 'Số 12 Lê Duẩn, TP.HCM', 'nam.mai@example.com', '2093215494', 8, 3),
+(9, 'Hoàng Thanh Lan', 'Nữ', '1996-06-17', '0933445566', 'Số 5 Nguyễn Xiển, Thanh Xuân', 'lan.hoang@example.com', '2093215495', 9, 2),
+(10, 'Lý Hoàng Yến', 'Nữ', '1997-01-25', '0967654321', 'Số 6 Láng Hạ, Ba Đình, Hà Nội', 'yen.ly@example.com', '2093215496', 10, 1),
+(13, 'Anh Thu', 'Nữ', '2004-01-01', '0987654321', '12 Nguyễn Văn Bảo, phường 4, Gò Vấp, Tp.HCM', 'nguyenvana@gmail.com', '75345684265435967', 13, 7);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `chitietdonthuoc`
+--
+
+CREATE TABLE `chitietdonthuoc` (
+  `MaDT` int(10) UNSIGNED NOT NULL,
+  `MaThuoc` int(10) UNSIGNED NOT NULL,
+  `SoLuong` int(10) NOT NULL,
+  `LieuDung` varchar(255) NOT NULL,
+  `CachDung` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `chitietdonthuoc`
+--
+
+INSERT INTO `chitietdonthuoc` (`MaDT`, `MaThuoc`, `SoLuong`, `LieuDung`, `CachDung`) VALUES
+(1, 1, 2, '2 viên/ngày', 'Uống sau ăn'),
+(1, 2, 1, '1 viên/ngày', 'Uống trước ăn sáng'),
+(2, 14, 1, '1 viên/ngày', 'Uống sau ăn'),
+(2, 15, 2, '2 viên/ngày', 'Uống sau ăn'),
+(3, 11, 1, '1 viên/ngày', 'Uống sau ăn'),
+(3, 12, 2, '2 viên/ngày', 'Uống vào buổi sáng'),
+(4, 3, 1, '1 viên/ngày', 'Uống sau ăn'),
+(4, 18, 2, '2 viên/ngày', 'Uống sau ăn'),
+(5, 5, 1, '1 viên/ngày', 'Uống sau ăn'),
+(5, 13, 2, '2 viên/ngày', 'Uống trước ăn'),
+(6, 1, 1, '1 viên/ngày', 'Uống sau ăn'),
+(6, 2, 1, '1 viên/ngày', 'Uống vào buổi tối'),
+(7, 8, 2, '2 viên/ngày', 'Uống sau ăn'),
+(7, 10, 1, '1 viên/ngày', 'Uống trước khi ăn'),
+(8, 9, 1, '1 viên/ngày', 'Uống sau ăn'),
+(8, 16, 1, '1 viên/ngày', 'Uống sau ăn'),
+(9, 17, 2, '2 viên/ngày', 'Uống sau ăn'),
+(9, 4, 1, '1 viên/ngày', 'Uống vào buổi sáng'),
+(10, 20, 1, '1 viên/ngày', 'Uống vào buổi tối'),
+(10, 7, 1, '1 viên/ngày', 'Uống trước khi ngủ');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `chitiethoadon`
+--
+
+CREATE TABLE `chitiethoadon` (
+  `MaHD` int(10) UNSIGNED NOT NULL,
+  `DonGia` decimal(10,0) NOT NULL,
+  `GiamGia` decimal(10,0) NOT NULL,
+  `ThanhTien` decimal(10,0) NOT NULL,
+  `DichVu` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `chitiethoadon`
+--
+
+INSERT INTO `chitiethoadon` (`MaHD`, `DonGia`, `GiamGia`, `ThanhTien`, `DichVu`) VALUES
+(1, 400000, 50, 200000, 'Khám bệnh'),
+(2, 600000, 17, 500000, 'Xét nghiệm'),
+(3, 1000000, 25, 750000, 'Khám bệnh'),
+(4, 400000, 20, 320000, 'Xét nghiệm'),
+(5, 500000, 8, 460000, 'Khám bệnh'),
+(6, 200000, 25, 150000, 'Xét nghiệm'),
+(7, 980000, 0, 980000, 'Khám bệnh'),
+(8, 550000, 50, 275000, 'Xét nghiệm'),
+(9, 800000, 20, 640000, 'Khám bệnh'),
+(10, 830000, 0, 830000, 'Xét nghiệm');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `chuyenkhoa`
+--
+
+CREATE TABLE `chuyenkhoa` (
+  `MaKhoa` int(10) UNSIGNED NOT NULL,
+  `TenKhoa` varchar(255) NOT NULL,
+  `MoTa` text NOT NULL,
+  `img` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `chuyenkhoa`
+--
+
+INSERT INTO `chuyenkhoa` (`MaKhoa`, `TenKhoa`, `MoTa`, `img`) VALUES
+(1, 'Thần kinh', 'Khoa thần kinh', NULL),
+(2, 'Tim mạch', 'Khoa tim mạch', NULL),
+(3, 'Nội tiết', 'Khoa nội tiết', NULL),
+(4, 'Ngoại khoa', 'Khoa ngoại khoa', NULL),
+(5, 'Sản phụ khoa', 'Khoa sản phụ khoa', NULL),
+(6, 'Nhi khoa', 'Khoa nhi', NULL),
+(7, 'Mắt', 'Khoa mắt', NULL),
+(8, 'Răng hàm mặt', 'Khoa răng hàm mặt', NULL),
+(9, 'Tai mũi họng', 'Khoa tai mũi họng', NULL),
+(10, 'Da liễu', 'Khoa da liễu', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `donthuoc`
+--
+
+CREATE TABLE `donthuoc` (
+  `MaDT` int(10) UNSIGNED NOT NULL,
+  `NgayTao` varchar(255) NOT NULL,
+  `MoTa` text NOT NULL,
+  `MaBS` int(10) UNSIGNED NOT NULL,
+  `MaBN` int(10) UNSIGNED NOT NULL,
+  `TrangThai` varchar(255) NOT NULL DEFAULT 'Pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `donthuoc`
+--
+
+INSERT INTO `donthuoc` (`MaDT`, `NgayTao`, `MoTa`, `MaBS`, `MaBN`, `TrangThai`) VALUES
+(1, '2024-11-12 10:46:54', 'Thuốc điều trị cảm cúm', 1, 1, 'Pending'),
+(2, '2024-11-12 10:46:54', 'Thuốc giảm đau', 5, 2, 'Pending'),
+(3, '2024-11-12 10:46:54', 'Thuốc bổ sung vitamin', 5, 3, 'Pending'),
+(4, '2024-11-12 10:46:54', 'Thuốc kháng sinh', 10, 4, 'Pending'),
+(5, '2024-11-12 10:46:54', 'Thuốc chống dị ứng', 1, 5, 'Completed'),
+(6, '2024-11-12 10:46:54', 'Thuốc hạ sốt', 1, 6, 'Cancelled'),
+(7, '2024-11-12 10:46:54', 'Thuốc trị viêm họng', 5, 7, 'Pending'),
+(8, '2024-11-12 10:46:54', 'Thuốc hỗ trợ tiêu hóa', 10, 8, 'Pending'),
+(9, '2024-11-12 10:46:54', 'Thuốc chống viêm', 10, 9, 'Cancelled'),
+(10, '2024-11-12 10:46:54', 'Thuốc an thần', 1, 10, 'Cancelled'),
+(11, '2222', 'fff', 1, 1, 'Pending');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `hoadon`
+--
+
+CREATE TABLE `hoadon` (
+  `MaHD` int(10) UNSIGNED NOT NULL,
+  `MaBN` int(10) UNSIGNED NOT NULL,
+  `NgayLapHoaDon` datetime NOT NULL,
+  `TongTien` decimal(10,0) NOT NULL,
+  `MaPTTT` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `TrangThai` varchar(255) NOT NULL DEFAULT 'Pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `hoadon`
+--
+
+INSERT INTO `hoadon` (`MaHD`, `MaBN`, `NgayLapHoaDon`, `TongTien`, `MaPTTT`, `TrangThai`) VALUES
+(1, 1, '2024-11-12 09:55:35', 200000, 1, 'Completed'),
+(2, 2, '2024-11-12 10:00:44', 500000, 3, 'Completed'),
+(3, 3, '2024-11-12 10:00:44', 750000, 0, 'Cancelled'),
+(4, 4, '2024-11-12 10:00:44', 320000, 3, 'Completed'),
+(5, 5, '2024-11-12 10:00:44', 460000, 4, 'Cancelled'),
+(6, 6, '2024-11-12 10:00:44', 150000, 3, 'Cancelled'),
+(7, 7, '2024-11-12 10:00:44', 980000, 3, 'Completed'),
+(8, 8, '2024-11-12 10:00:44', 275000, 3, 'Cancelled'),
+(9, 9, '2024-11-12 10:00:44', 640000, 1, 'Completed'),
+(10, 10, '2024-11-12 10:00:44', 830000, 2, 'Completed'),
+(11, 1, '2024-12-11 00:00:00', 200000, 0, 'Pending'),
+(12, 1, '2024-12-11 15:34:28', 200000, 0, 'Pending');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `lichkham`
+--
+
+CREATE TABLE `lichkham` (
+  `MaLK` int(10) UNSIGNED NOT NULL,
+  `NgayKham` date NOT NULL,
+  `GioKham` time NOT NULL,
+  `MaBS` int(10) UNSIGNED NOT NULL,
+  `TrangThaiThanhToan` enum('Chua thanh toan','Da thanh toan','Dang xu ly','') DEFAULT 'Chua thanh toan',
+  `MaBN` int(10) UNSIGNED NOT NULL,
+  `STT` int(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `lichkham`
+--
+
+INSERT INTO `lichkham` (`MaLK`, `NgayKham`, `GioKham`, `MaBS`, `TrangThaiThanhToan`, `MaBN`, `STT`) VALUES
+(1, '2024-12-02', '08:00:00', 111, 'Da thanh toan', 1, 1),
+(2, '2024-08-12', '09:00:00', 105, 'Chua thanh toan', 1, 2),
+(3, '2024-09-12', '10:00:00', 110, 'Da thanh toan', 1, 3),
+(4, '2024-05-12', '11:00:00', 111, 'Chua thanh toan', 1, 4),
+(5, '2024-12-05', '13:50:00', 125, 'Da thanh toan', 1, 6),
+(6, '2024-12-06', '14:00:00', 130, 'Chua thanh toan', 1, 6),
+(7, '2024-12-07', '17:00:00', 118, 'Dang xu ly', 1, 5),
+(8, '2024-12-08', '18:45:00', 128, 'Chua thanh toan', 1, 7),
+(9, '2024-12-09', '17:00:00', 119, 'Dang xu ly', 1, 6),
+(10, '2024-12-10', '18:00:00', 121, 'Chua thanh toan', 1, 9),
+(11, '2024-10-11', '08:30:00', 111, 'Chua thanh toan', 2, 1),
+(12, '2024-12-15', '09:30:00', 105, 'Chua thanh toan', 2, 2),
+(13, '2024-12-03', '10:30:00', 110, 'Dang xu ly', 2, 3),
+(14, '2024-12-14', '11:30:00', 111, 'Chua thanh toan', 2, 6),
+(15, '2024-12-15', '15:30:00', 119, 'Chua thanh toan', 2, 5),
+(16, '2024-11-06', '14:30:00', 126, 'Chua thanh toan', 2, 6),
+(17, '2024-12-17', '15:40:00', 127, 'Chua thanh toan', 2, 7),
+(18, '2024-12-18', '16:30:00', 118, 'Chua thanh toan', 2, 9),
+(19, '2024-12-19', '17:30:00', 119, 'Dang xu ly', 2, 10),
+(20, '2024-12-20', '18:30:00', 120, 'Chua thanh toan', 2, 11),
+(21, '2024-12-21', '08:50:00', 121, 'Chua thanh toan', 3, 3),
+(22, '2024-12-22', '09:50:00', 122, 'Chua thanh toan', 3, 4),
+(23, '2024-12-23', '10:50:00', 123, 'Chua thanh toan', 3, 4),
+(24, '2024-12-24', '11:50:00', 124, 'Chua thanh toan', 3, 5),
+(25, '2024-12-25', '13:50:00', 125, 'Chua thanh toan', 3, 6),
+(26, '2024-12-26', '14:50:00', 126, 'Chua thanh toan', 3, 8),
+(27, '2024-12-27', '15:50:00', 127, 'Da thanh toan', 3, 9),
+(28, '2024-12-28', '16:50:00', 128, 'Chua thanh toan', 3, 10),
+(29, '2024-12-29', '17:50:00', 129, 'Chua thanh toan', 3, 10),
+(30, '2024-12-30', '18:50:00', 130, 'Chua thanh toan', 3, 11),
+(31, '2024-12-12', '10:50:00', 101, 'Chua thanh toan', 4, 7),
+(32, '2024-12-12', '11:10:00', 110, 'Chua thanh toan', 4, 8),
+(33, '2024-12-12', '11:30:00', 105, 'Chua thanh toan', 4, 9),
+(34, '2024-12-12', '10:20:00', 111, 'Chua thanh toan', 4, 6),
+(35, '2024-12-05', '13:30:00', 105, 'Chua thanh toan', 4, 5),
+(36, '2024-12-06', '14:30:00', 105, 'Chua thanh toan', 4, 6),
+(37, '2024-12-07', '08:10:00', 111, 'Chua thanh toan', 4, 1),
+(38, '2024-12-08', '16:10:00', 118, 'Chua thanh toan', 4, 5),
+(39, '2024-11-29', '17:10:00', 119, 'Chua thanh toan', 4, 9),
+(40, '2024-12-01', '18:10:00', 110, 'Chua thanh toan', 4, 1),
+(41, '2024-12-02', '08:20:00', 118, 'Chua thanh toan', 5, 2),
+(42, '2024-12-01', '09:10:00', 119, 'Chua thanh toan', 5, 2),
+(43, '2024-12-13', '10:30:00', 118, 'Chua thanh toan', 5, 4),
+(44, '2024-12-14', '10:10:00', 120, 'Chua thanh toan', 5, 4),
+(45, '2024-12-15', '14:10:00', 119, 'Chua thanh toan', 5, 4),
+(46, '2024-11-16', '14:00:00', 126, 'Chua thanh toan', 5, 6),
+(47, '2024-12-07', '10:00:00', 127, 'Chua thanh toan', 5, 2),
+(48, '2024-11-08', '16:00:00', 128, 'Chua thanh toan', 5, 8),
+(49, '2024-12-09', '17:00:00', 129, 'Chua thanh toan', 5, 8),
+(50, '2024-10-20', '18:00:00', 120, 'Chua thanh toan', 5, 10),
+(51, '2024-12-21', '08:30:00', 121, 'Chua thanh toan', 6, 2),
+(52, '2024-12-22', '09:00:00', 122, 'Chua thanh toan', 6, 2),
+(53, '2024-12-23', '10:00:00', 123, 'Chua thanh toan', 6, 1),
+(54, '2024-10-24', '11:10:00', 124, 'Chua thanh toan', 6, 4),
+(55, '2024-10-25', '13:30:00', 125, 'Chua thanh toan', 6, 5),
+(56, '2024-12-26', '14:30:00', 126, 'Chua thanh toan', 6, 7),
+(57, '2024-12-27', '15:00:00', 127, 'Chua thanh toan', 6, 7),
+(58, '2024-12-28', '16:00:00', 128, 'Chua thanh toan', 6, 8),
+(59, '2024-12-29', '17:00:00', 129, 'Chua thanh toan', 6, 9),
+(60, '2024-12-30', '18:30:00', 130, 'Chua thanh toan', 6, 10),
+(61, '2024-12-12', '08:00:00', 110, 'Chua thanh toan', 7, 1),
+(62, '2024-12-12', '09:00:00', 111, 'Chua thanh toan', 7, 2),
+(63, '2024-12-12', '11:50:00', 105, 'Chua thanh toan', 7, 10),
+(64, '2024-12-12', '09:40:00', 110, 'Chua thanh toan', 7, 4),
+(65, '2024-12-05', '13:00:00', 105, 'Chua thanh toan', 7, 4),
+(66, '2024-12-06', '14:50:00', 101, 'Chua thanh toan', 7, 6),
+(67, '2024-12-07', '11:50:00', 110, 'Chua thanh toan', 7, 3),
+(68, '2024-12-08', '16:35:00', 118, 'Chua thanh toan', 7, 8),
+(69, '2024-12-09', '17:55:00', 129, 'Chua thanh toan', 7, 9),
+(70, '2024-12-10', '18:50:00', 110, 'Chua thanh toan', 7, 10),
+(71, '2024-12-11', '08:00:00', 111, 'Chua thanh toan', 8, 1),
+(72, '2024-12-12', '09:20:00', 122, 'Chua thanh toan', 8, 3),
+(73, '2024-12-13', '10:10:00', 123, 'Chua thanh toan', 8, 3),
+(74, '2024-12-14', '11:00:00', 119, 'Chua thanh toan', 8, 5),
+(75, '2024-12-15', '13:30:00', 125, 'Chua thanh toan', 8, 3),
+(76, '2024-12-16', '14:00:00', 127, 'Chua thanh toan', 8, 6),
+(77, '2024-12-17', '15:20:00', 118, 'Chua thanh toan', 8, 3),
+(78, '2024-12-18', '16:10:00', 129, 'Chua thanh toan', 8, 8),
+(79, '2024-12-19', '17:00:00', 128, 'Chua thanh toan', 8, 9),
+(80, '2024-12-20', '18:00:00', 120, 'Chua thanh toan', 8, 10),
+(81, '2024-12-21', '08:10:00', 121, 'Chua thanh toan', 9, 1),
+(82, '2024-12-22', '09:20:00', 122, 'Chua thanh toan', 9, 3),
+(83, '2024-12-23', '10:20:00', 123, 'Chua thanh toan', 9, 3),
+(84, '2024-12-24', '11:00:00', 124, 'Chua thanh toan', 9, 4),
+(85, '2024-12-25', '13:10:00', 125, 'Chua thanh toan', 9, 5),
+(86, '2024-12-26', '14:00:00', 126, 'Chua thanh toan', 9, 6),
+(87, '2024-12-27', '15:20:00', 127, 'Chua thanh toan', 9, 8),
+(88, '2024-12-28', '16:30:00', 128, 'Chua thanh toan', 9, 9),
+(89, '2024-12-12', '17:00:00', 129, 'Chua thanh toan', 9, 9),
+(90, '2024-11-03', '18:00:00', 130, 'Chua thanh toan', 9, 10),
+(91, '2024-12-12', '10:00:00', 110, 'Chua thanh toan', 10, 5),
+(92, '2024-11-02', '09:00:00', 105, 'Chua thanh toan', 10, 2),
+(93, '2024-12-05', '10:00:00', 101, 'Chua thanh toan', 10, 3),
+(94, '2024-03-06', '11:00:00', 111, 'Chua thanh toan', 10, 1),
+(95, '2024-12-07', '13:00:00', 125, 'Chua thanh toan', 10, 4),
+(96, '2024-04-08', '14:00:00', 126, 'Chua thanh toan', 10, 2),
+(97, '2024-12-09', '15:00:00', 127, 'Chua thanh toan', 10, 7),
+(98, '2024-12-10', '16:00:00', 128, 'Chua thanh toan', 10, 8),
+(99, '2024-03-11', '17:00:00', 129, 'Chua thanh toan', 10, 1),
+(100, '2024-02-12', '18:10:00', 120, 'Chua thanh toan', 10, 1),
+(101, '2024-12-12', '08:20:00', 110, 'Chua thanh toan', 1, 8),
+(102, '2024-12-12', '13:40:00', 119, 'Chua thanh toan', 1, 7),
+(104, '2024-12-12', '11:40:00', 120, 'Chua thanh toan', 13, 5),
+(105, '2024-12-15', '09:00:00', 127, 'Chua thanh toan', 13, 4),
+(106, '2024-12-12', '09:40:00', 123, 'Chua thanh toan', 13, 3),
+(107, '2024-12-31', '17:14:00', 125, 'Chua thanh toan', 13, 2),
+(108, '2024-12-14', '09:40:00', 126, 'Chua thanh toan', 13, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `lichlamviec`
+--
+
+CREATE TABLE `lichlamviec` (
+  `MaLLV` int(10) UNSIGNED NOT NULL,
+  `NgayLamViec` date NOT NULL,
+  `TrangThai` varchar(255) NOT NULL,
+  `CaLamViec` varchar(255) NOT NULL,
+  `MaNV` int(10) UNSIGNED DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `lichlamviec`
+--
+
+INSERT INTO `lichlamviec` (`MaLLV`, `NgayLamViec`, `TrangThai`, `CaLamViec`, `MaNV`) VALUES
+(1, '2024-12-10', 'chưa duyệt', 'sáng', 0),
+(2, '2024-12-10', 'chưa duyệt', 'chiều', 0),
+(3, '2024-12-09', 'Đang làm', 'Sáng', 5),
+(4, '2024-12-10', 'Nghỉ', 'Sáng', 1),
+(5, '2024-12-10', 'Nghỉ', 'Sáng', 1),
+(6, '2024-12-12', 'Nghỉ', 'Chiều', 1),
+(7, '2024-12-12', 'Nghỉ', 'Chiều', 1),
+(8, '2024-12-12', 'Nghỉ', 'Sáng', 1),
+(9, '2024-12-12', 'Nghỉ', 'Sáng', 1),
+(10, '2024-12-12', 'Nghỉ', 'Sáng', 1),
+(11, '2024-12-12', 'Nghỉ', 'Sáng', 1),
+(12, '2024-12-12', 'Nghỉ', 'Sáng', 1),
+(13, '2024-12-13', 'Nghỉ', 'Sáng', 102),
+(14, '2024-12-13', 'Đang làm', 'Sáng', 102);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `nhanvien`
+--
+
+CREATE TABLE `nhanvien` (
+  `MaNV` int(10) UNSIGNED NOT NULL,
+  `HovaTen` varchar(255) NOT NULL,
+  `NgaySinh` date NOT NULL,
+  `SoDT` varchar(255) NOT NULL,
+  `ChucVu` varchar(255) NOT NULL,
+  `GioiTinh` varchar(255) NOT NULL,
+  `TrangThaiLamViec` varchar(255) NOT NULL,
+  `EmailNV` varchar(255) NOT NULL,
+  `ID` int(10) UNSIGNED DEFAULT NULL,
+  `HinhAnh` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `nhanvien`
+--
+
+INSERT INTO `nhanvien` (`MaNV`, `HovaTen`, `NgaySinh`, `SoDT`, `ChucVu`, `GioiTinh`, `TrangThaiLamViec`, `EmailNV`, `ID`, `HinhAnh`) VALUES
+(1, 'Đoàn Duy Khương', '1995-03-15', '0123456781', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'khuong1@gmail.com', 0, NULL),
+(2, 'Nguyễn Văn A', '1990-05-12', '0123456782', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vana@gmail.com', 0, NULL),
+(3, 'Trần Thị B', '1985-09-22', '0123456783', 'Nhân viên y tế', 'Nữ', 'Đang làm việc', 'thib@gmail.com', 0, NULL),
+(4, 'Phạm Văn C', '1992-08-08', '0123456784', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vanc@gmail.com', 0, NULL),
+(5, 'Lê Thị D', '1998-02-14', '0123456785', 'Nhân viên y tế', 'Nữ', 'Đang làm việc', 'thid@gmail.com', 0, NULL),
+(6, 'Hoàng Văn E', '1993-07-19', '0123456786', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vane@gmail.com', 0, NULL),
+(7, 'Ngô Thị F', '1994-04-10', '0123456787', 'Nhân viên y tế', 'Nữ', 'Đang làm việc', 'thif@gmail.com', 0, NULL),
+(8, 'Vũ Văn G', '1988-12-01', '0123456788', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vang@gmail.com', 0, NULL),
+(9, 'Bùi Thị H', '1996-11-30', '0123456789', 'Nhân viên y tế', 'Nữ', 'Đang làm việc', 'thih@gmail.com', 0, NULL),
+(10, 'Trương Văn I', '1991-06-25', '0123456790', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vani@gmail.com', 0, NULL),
+(11, 'Đặng Thị J', '1997-09-18', '0123456791', 'Nhân viên y tế', 'Nữ', 'Đang làm việc', 'thij@gmail.com', 0, NULL),
+(12, 'Nguyễn Văn K', '1993-05-27', '0123456792', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vank@gmail.com', 0, NULL),
+(13, 'Phan Thị L', '1994-02-16', '0123456793', 'Nhân viên y tế', 'Nữ', 'Đang làm việc', 'thil@gmail.com', 0, NULL),
+(14, 'Lê Văn M', '1992-03-23', '0123456794', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vanm@gmail.com', 0, NULL),
+(15, 'Võ Thị N', '1998-07-12', '0123456795', 'Nhân viên y tế', 'Nữ', 'Đang làm việc', 'thin@gmail.com', 0, NULL),
+(16, 'Trần Văn O', '1991-10-05', '0123456796', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vano@gmail.com', 0, NULL),
+(17, 'Nguyễn Thị P', '1987-01-08', '0123456797', 'Nhân viên y tế', 'Nữ', 'Đang làm việc', 'thip@gmail.com', 0, NULL),
+(18, 'Hoàng Văn Q', '1995-08-19', '0123456798', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vanq@gmail.com', 0, NULL),
+(19, 'Phạm Thị R', '1990-04-14', '0123456799', 'Nhân viên y tế', 'Nữ', 'Đang làm việc', 'thir@gmail.com', 0, NULL),
+(20, 'Vũ Văn S', '1989-12-22', '0123456700', 'Nhân viên y tế', 'Nam', 'Đang làm việc', 'vans@gmail.com', 0, NULL),
+(21, 'Đoàn Duy Khánh', '1990-03-01', '0123456711', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'khanh1@gmail.com', 0, NULL),
+(22, 'Nguyễn Thị Hồng', '1995-07-15', '0123456712', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'hong2@gmail.com', 0, NULL),
+(23, 'Trần Văn Hải', '1987-11-22', '0123456713', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'hai3@gmail.com', 0, NULL),
+(24, 'Phạm Thị Lan', '1992-01-30', '0123456714', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'lan4@gmail.com', 0, NULL),
+(25, 'Lê Văn Hùng', '1998-05-25', '0123456715', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'hung5@gmail.com', 0, NULL),
+(26, 'Hoàng Thị Ngọc', '1993-09-18', '0123456716', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'ngoc6@gmail.com', 0, NULL),
+(27, 'Vũ Văn Phong', '1985-12-12', '0123456717', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'phong7@gmail.com', 0, NULL),
+(28, 'Bùi Thị Thu', '1990-04-08', '0123456718', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'thu8@gmail.com', 0, NULL),
+(29, 'Trương Văn Tâm', '1994-06-21', '0123456719', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'tam9@gmail.com', 0, NULL),
+(30, 'Ngô Thị Trang', '1988-08-14', '0123456720', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'trang10@gmail.com', 0, NULL),
+(31, 'Đặng Văn Khoa', '1991-02-11', '0123456721', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'khoa11@gmail.com', 0, NULL),
+(32, 'Phan Thị Phương', '1993-05-27', '0123456722', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'phuong12@gmail.com', 0, NULL),
+(33, 'Lê Thị Minh', '1989-10-03', '0123456723', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'minh13@gmail.com', 0, NULL),
+(34, 'Võ Văn Quang', '1997-03-19', '0123456724', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'quang14@gmail.com', 0, NULL),
+(35, 'Nguyễn Thị Mai', '1996-12-07', '0123456725', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'mai15@gmail.com', 0, NULL),
+(36, 'Hoàng Văn Vũ', '1988-09-28', '0123456726', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'vu16@gmail.com', 0, NULL),
+(37, 'Phạm Thị Hà', '1994-01-15', '0123456727', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'ha17@gmail.com', 0, NULL),
+(38, 'Trần Văn Sơn', '1986-07-11', '0123456728', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'son18@gmail.com', 0, NULL),
+(39, 'Lê Thị Thanh', '1995-03-22', '0123456729', 'Nhân viên nhà thuốc', 'Nữ', 'Đang làm việc', 'thanh19@gmail.com', 0, NULL),
+(40, 'Nguyễn Văn An', '1990-06-10', '0123456730', 'Nhân viên nhà thuốc', 'Nam', 'Đang làm việc', 'an20@gmail.com', 0, NULL),
+(100, 'Le Bao Hoa', '1985-05-28', '0948048147', 'Bác sĩ', 'Nam', 'Đang làm việc', 'le.bao.hoa.100@example.com', 0, 'bacsinam.png'),
+(101, 'Pham Cong Mai', '1989-07-28', '0989942152', 'Bác sĩ', 'Nam', 'Đang làm việc', 'pham.cong.mai.101@example.com', 0, 'bacsinam.png'),
+(102, 'Vu Duc Khanh', '1992-08-26', '0920039788', 'Bác sĩ', 'Nu', 'Đang làm việc', 'vu.duc.khanh.102@example.com', 0, 'bacsinu.png'),
+(103, 'Do Xuan Huy', '1989-08-01', '0964386714', 'Bác sĩ', 'Nam', 'Đang làm việc', 'do.xuan.huy.103@example.com', 0, 'bacsinam.png'),
+(104, 'Tran Xuan Thao', '1970-09-03', '0957124120', 'Bác sĩ', 'Nam', 'Đang làm việc', 'tran.xuan.thao.104@example.com', 0, 'bacsinam.png'),
+(105, 'Bui Van Khanh', '1996-07-11', '0911210336', 'Bác sĩ', 'Nam', 'Đang làm việc', 'bui.van.khanh.105@example.com', 0, 'bacsinam.png'),
+(106, 'Dang Bao Khanh', '1999-09-04', '0948465885', 'Bác sĩ', 'Nam', 'Đang làm việc', 'dang.bao.khanh.106@example.com', 0, 'bacsinam.png'),
+(107, 'Nguyen Ngoc Nam', '1971-10-17', '0973266884', 'Bác sĩ', 'Nu', 'Đang làm việc', 'nguyen.ngoc.nam.107@example.com', 0, 'bacsinu.png'),
+(108, 'Nguyen Bao Tuan', '1981-04-26', '0968100049', 'Bác sĩ', 'Nu', 'Đang làm việc', 'nguyen.bao.tuan.108@example.com', 0, 'bacsinu.png'),
+(109, 'Hoang Anh Linh', '1991-10-12', '0986502010', 'Bác sĩ', 'Nu', 'Đang làm việc', 'hoang.anh.linh.109@example.com', 0, 'bacsinu.png'),
+(110, 'Huynh Bao Trang', '1978-10-07', '0939451215', 'Bác sĩ', 'Nu', 'Đang làm việc', 'huynh.bao.trang.110@example.com', 0, 'bacsinu.png'),
+(111, 'Le Quang Thao', '1982-06-04', '0938418947', 'Bác sĩ', 'Nam', 'Đang làm việc', 'le.quang.thao.111@example.com', 0, 'bacsinam.png'),
+(112, 'Huynh Duc Tam', '1975-06-14', '0935078054', 'Bác sĩ', 'Nam', 'Đang làm việc', 'huynh.duc.tam.112@example.com', 0, 'bacsinam.png'),
+(113, 'Tran Van Trang', '1976-09-05', '0919731937', 'Bác sĩ', 'Nam', 'Đang làm việc', 'tran.van.trang.113@example.com', 0, 'bacsinam.png'),
+(114, 'Huynh Quyen Thao', '2000-05-13', '0979081977', 'Bác sĩ', 'Nu', 'Đang làm việc', 'huynh.quyen.thao.114@example.com', 0, 'bacsinu.png'),
+(115, 'Hoang Ngoc Thao', '1975-09-16', '0968896959', 'Bác sĩ', 'Nam', 'Đang làm việc', 'hoang.ngoc.thao.115@example.com', 0, 'bacsinam.png'),
+(116, 'Huynh Minh Thao', '1997-02-28', '0972160998', 'Bác sĩ', 'Nam', 'Đang làm việc', 'huynh.minh.thao.116@example.com', 0, 'bacsinam.png'),
+(117, 'Ho Quyen Lan', '1971-02-19', '0910916747', 'Bác sĩ', 'Nu', 'Đang làm việc', 'ho.quyen.lan.117@example.com', 0, 'bacsinu.png'),
+(118, 'Dang Xuan Trang', '1986-05-12', '0948612985', 'Bác sĩ', 'Nu', 'Đang làm việc', 'dang.xuan.trang.118@example.com', 0, 'bacsinu.png'),
+(119, 'Vu Quyen Trang', '1993-11-04', '0977050203', 'Bác sĩ', 'Nam', 'Đang làm việc', 'vu.quyen.trang.119@example.com', 0, 'bacsinam.png'),
+(120, 'Vu Bao Hung', '1995-02-12', '0986275552', 'Bác sĩ', 'Nam', 'Đang làm việc', 'vu.bao.hung.120@example.com', 0, 'bacsinam.png'),
+(121, 'Dang Thi Mai', '1991-01-21', '0942041449', 'Bác sĩ', 'Nam', 'Đang làm việc', 'dang.thi.mai.121@example.com', 0, 'bacsinam.png'),
+(122, 'Bui Minh Lan', '1980-09-23', '0920507227', 'Bác sĩ', 'Nu', 'Đang làm việc', 'bui.minh.lan.122@example.com', 0, 'bacsinu.png'),
+(123, 'Tran Xuan Thao', '1978-11-17', '0980213742', 'Bác sĩ', 'Nu', 'Đang làm việc', 'tran.xuan.thao.123@example.com', 0, 'bacsinu.png'),
+(124, 'Do Bao Hung', '1981-06-09', '0948525884', 'Bác sĩ', 'Nu', 'Đang làm việc', 'do.bao.hung.124@example.com', 0, 'bacsinu.png'),
+(125, 'Bui Minh Tam', '1983-09-03', '0989271826', 'Bác sĩ', 'Nam', 'Đang làm việc', 'bui.minh.tam.125@example.com', 0, 'bacsinam.png'),
+(126, 'Dang Duc Trang', '1988-04-26', '0952872701', 'Bác sĩ', 'Nam', 'Đang làm việc', 'dang.duc.trang.126@example.com', 0, 'bacsinam.png'),
+(127, 'Tran Anh Trang', '1993-01-29', '0962524554', 'Bác sĩ', 'Nam', 'Đang làm việc', 'tran.anh.trang.127@example.com', 0, 'bacsinam.png'),
+(128, 'Ho Thi Tuan', '1980-09-14', '0999400415', 'Bác sĩ', 'Nam', 'Đang làm việc', 'ho.thi.tuan.128@example.com', 0, 'bacsinam.png'),
+(129, 'Phan Minh Trang', '1979-08-17', '0985935235', 'Bác sĩ', 'Nam', 'Đang làm việc', 'phan.minh.trang.129@example.com', 0, 'bacsinam.png'),
+(130, 'Tran Quang Thao', '1994-01-21', '0919708238', 'Bác sĩ', 'Nu', 'Đang làm việc', 'tran.quang.thao.130@example.com', 0, 'bacsinu.png'),
+(131, 'Pham Xuan Thao', '1971-01-11', '0916098065', 'Bác sĩ', 'Nu', 'Đang làm việc', 'pham.xuan.thao.131@example.com', 0, 'bacsinu.png'),
+(132, 'Vu Bao Lan', '1990-08-31', '0996553101', 'Bác sĩ', 'Nam', 'Đang làm việc', 'vu.bao.lan.132@example.com', 0, 'bacsinam.png'),
+(133, 'Huynh Bao Lan', '1995-12-27', '0948626275', 'Bác sĩ', 'Nam', 'Đang làm việc', 'huynh.bao.lan.133@example.com', 0, 'bacsinam.png'),
+(134, 'Vu Khanh Lan', '1987-10-04', '0962955730', 'Bác sĩ', 'Nu', 'Đang làm việc', 'vu.khanh.lan.134@example.com', 0, 'bacsinu.png'),
+(135, 'Bui Van Linh', '1997-01-25', '0930566803', 'Bác sĩ', 'Nu', 'Đang làm việc', 'bui.van.linh.135@example.com', 0, 'bacsinu.png'),
+(136, 'Hoang Bao Hung', '1979-06-23', '0950835131', 'Bác sĩ', 'Nam', 'Đang làm việc', 'hoang.bao.hung.136@example.com', 0, 'bacsinam.png'),
+(137, 'Huynh Cong Nam', '1985-10-22', '0957307355', 'Bác sĩ', 'Nam', 'Đang làm việc', 'huynh.cong.nam.137@example.com', 0, 'bacsinam.png'),
+(138, 'Le Quyen Trang', '1989-09-17', '0910759137', 'Bác sĩ', 'Nu', 'Đang làm việc', 'le.quyen.trang.138@example.com', 0, 'bacsinu.png'),
+(139, 'Bui Minh Hoa', '1998-12-03', '0938554673', 'Bác sĩ', 'Nu', 'Đang làm việc', 'bui.minh.hoa.139@example.com', 0, 'bacsinu.png'),
+(140, 'Huynh Van Hung', '1972-05-27', '0923647148', 'Bác sĩ', 'Nam', 'Đang làm việc', 'huynh.van.hung.140@example.com', 0, 'bacsinam.png'),
+(141, 'Nguyen Ngoc Lan', '1976-12-17', '0964425109', 'Bác sĩ', 'Nu', 'Đang làm việc', 'nguyen.ngoc.lan.141@example.com', 0, 'bacsinu.png'),
+(142, 'Do Quang Hung', '1995-02-03', '0966022192', 'Bác sĩ', 'Nam', 'Đang làm việc', 'do.quang.hung.142@example.com', 0, 'bacsinam.png'),
+(143, 'Hoang Xuan Huy', '1976-04-19', '0935922744', 'Bác sĩ', 'Nu', 'Đang làm việc', 'hoang.xuan.huy.143@example.com', 0, 'bacsinu.png'),
+(144, 'Phan Khanh Nam', '1995-07-30', '0981372696', 'Bác sĩ', 'Nu', 'Đang làm việc', 'phan.khanh.nam.144@example.com', 0, 'bacsinu.png'),
+(145, 'Phan Quang Lan', '1985-04-06', '0925446689', 'Bác sĩ', 'Nu', 'Đang làm việc', 'phan.quang.lan.145@example.com', 0, 'bacsinu.png'),
+(146, 'Huynh Xuan Hung', '1977-07-05', '0955650759', 'Bác sĩ', 'Nu', 'Đang làm việc', 'huynh.xuan.hung.146@example.com', 0, 'bacsinu.png'),
+(147, 'Hoang Duc Tam', '1983-05-07', '0973469743', 'Bác sĩ', 'Nu', 'Đang làm việc', 'hoang.duc.tam.147@example.com', 0, 'bacsinu.png'),
+(148, 'Ho Bao Tam', '1986-03-03', '0911605821', 'Bác sĩ', 'Nu', 'Đang làm việc', 'ho.bao.tam.148@example.com', 0, 'bacsinu.png'),
+(149, 'Le Ngoc Hung', '1971-04-28', '0923994478', 'Bác sĩ', 'Nu', 'Đang làm việc', 'le.ngoc.hung.149@example.com', 0, 'bacsinu.png'),
+(150, 'Phan Quyen Linh', '1975-02-11', '0914051703', 'Bác sĩ', 'Nam', 'Đang làm việc', 'phan.quyen.linh.150@example.com', 0, 'bacsinam.png'),
+(151, 'Bui Bao Tuan', '1984-10-21', '0920083157', 'Bác sĩ', 'Nu', 'Đang làm việc', 'bui.bao.tuan.151@example.com', 0, 'bacsinu.png'),
+(152, 'Tran Bao Lan', '1971-02-14', '0959129131', 'Bác sĩ', 'Nu', 'Đang làm việc', 'tran.bao.lan.152@example.com', 0, 'bacsinu.png'),
+(153, 'Pham Minh Nam', '2000-09-27', '0994097029', 'Bác sĩ', 'Nu', 'Đang làm việc', 'pham.minh.nam.153@example.com', 0, 'bacsinu.png'),
+(154, 'Hoang Xuan Hung', '1982-12-22', '0979458237', 'Bác sĩ', 'Nam', 'Đang làm việc', 'hoang.xuan.hung.154@example.com', 0, 'bacsinam.png'),
+(155, 'Nguyen Quyen Hung', '1982-02-19', '0963468745', 'Bác sĩ', 'Nu', 'Đang làm việc', 'nguyen.quyen.hung.155@example.com', 0, 'bacsinu.png'),
+(156, 'Hoang Quang Khanh', '1981-11-23', '0968125237', 'Bác sĩ', 'Nu', 'Đang làm việc', 'hoang.quang.khanh.156@example.com', 0, 'bacsinu.png'),
+(157, 'Phan Ngoc Tuan', '1979-06-18', '0930666074', 'Bác sĩ', 'Nu', 'Đang làm việc', 'phan.ngoc.tuan.157@example.com', 0, 'bacsinu.png'),
+(158, 'Phan Thi Hoa', '1978-09-29', '0971457395', 'Bác sĩ', 'Nu', 'Đang làm việc', 'phan.thi.hoa.158@example.com', 0, 'bacsinu.png'),
+(159, 'Vu Ngoc Tuan', '2000-04-15', '0998158467', 'Bác sĩ', 'Nu', 'Đang làm việc', 'vu.ngoc.tuan.159@example.com', 0, 'bacsinu.png'),
+(160, 'Nguyen Xuan Lan', '1991-07-12', '0933225499', 'Bác sĩ', 'Nu', 'Đang làm việc', 'nguyen.xuan.lan.160@example.com', 0, 'bacsinu.png'),
+(161, 'Hoang Xuan Thao', '1992-06-30', '0938796095', 'Bác sĩ', 'Nu', 'Đang làm việc', 'hoang.xuan.thao.161@example.com', 0, 'bacsinu.png'),
+(162, 'Pham Quyen Thao', '1991-03-01', '0946162800', 'Bác sĩ', 'Nam', 'Đang làm việc', 'pham.quyen.thao.162@example.com', 0, 'bacsinam.png'),
+(163, 'Nguyen Cong Khanh', '1984-12-23', '0928652701', 'Bác sĩ', 'Nu', 'Đang làm việc', 'nguyen.cong.khanh.163@example.com', 0, 'bacsinu.png'),
+(164, 'Tran Anh Trang', '2000-05-26', '0996729895', 'Bác sĩ', 'Nam', 'Đang làm việc', 'tran.anh.trang.164@example.com', 0, 'bacsinam.png'),
+(165, 'Huynh Khanh Lan', '1994-06-28', '0969432776', 'Bác sĩ', 'Nu', 'Đang làm việc', 'huynh.khanh.lan.165@example.com', 0, 'bacsinu.png'),
+(166, 'Nguyen Quang Khanh', '1975-04-09', '0975362300', 'Bác sĩ', 'Nam', 'Đang làm việc', 'nguyen.quang.khanh.166@example.com', 0, 'bacsinam.png'),
+(167, 'Vu Thi Hung', '2000-06-28', '0916947677', 'Bác sĩ', 'Nu', 'Đang làm việc', 'vu.thi.hung.167@example.com', 0, 'bacsinu.png'),
+(168, 'Vu Ngoc Nam', '1979-03-18', '0977812275', 'Bác sĩ', 'Nu', 'Đang làm việc', 'vu.ngoc.nam.168@example.com', 0, 'bacsinu.png'),
+(169, 'Huynh Van Thao', '1984-12-16', '0953048748', 'Bác sĩ', 'Nam', 'Đang làm việc', 'huynh.van.thao.169@example.com', 0, 'bacsinam.png'),
+(170, 'Pham Van Hoa', '1992-10-17', '0955313690', 'Bác sĩ', 'Nu', 'Đang làm việc', 'pham.van.hoa.170@example.com', 0, 'bacsinu.png'),
+(171, 'Hoang Van Thao', '1989-01-09', '0932067217', 'Bác sĩ', 'Nam', 'Đang làm việc', 'hoang.van.thao.171@example.com', 0, 'bacsinam.png'),
+(172, 'Dang Bao Thao', '1975-01-19', '0945953607', 'Bác sĩ', 'Nu', 'Đang làm việc', 'dang.bao.thao.172@example.com', 0, 'bacsinu.png'),
+(173, 'Hoang Quyen Hung', '1998-01-19', '0931779960', 'Bác sĩ', 'Nu', 'Đang làm việc', 'hoang.quyen.hung.173@example.com', 0, 'bacsinu.png'),
+(174, 'Pham Xuan Mai', '1988-05-17', '0917200482', 'Bác sĩ', 'Nu', 'Đang làm việc', 'pham.xuan.mai.174@example.com', 0, 'bacsinu.png'),
+(175, 'Nguyen Xuan Thao', '1974-12-09', '0984696721', 'Bác sĩ', 'Nu', 'Đang làm việc', 'nguyen.xuan.thao.175@example.com', 0, 'bacsinu.png'),
+(176, 'Bui Quang Tuan', '1981-03-10', '0939729999', 'Bác sĩ', 'Nam', 'Đang làm việc', 'bui.quang.tuan.176@example.com', 0, 'bacsinam.png'),
+(177, 'Huynh Minh Linh', '1977-07-01', '0910460333', 'Bác sĩ', 'Nam', 'Đang làm việc', 'huynh.minh.linh.177@example.com', 0, 'bacsinam.png'),
+(178, 'Dang Cong Nam', '1985-11-18', '0954012250', 'Bác sĩ', 'Nam', 'Đang làm việc', 'dang.cong.nam.178@example.com', 0, 'bacsinam.png'),
+(179, 'Le Anh Tuan', '1981-06-14', '0910416731', 'Bác sĩ', 'Nam', 'Đang làm việc', 'le.anh.tuan.179@example.com', 0, 'bacsinam.png'),
+(180, 'Pham Anh Linh', '1983-04-17', '0943262265', 'Bác sĩ', 'Nu', 'Đang làm việc', 'pham.anh.linh.180@example.com', 0, 'bacsinu.png'),
+(181, 'Nguyen Van Khanh', '1992-09-13', '0999911979', 'Bác sĩ', 'Nam', 'Đang làm việc', 'nguyen.van.khanh.181@example.com', 0, 'bacsinam.png'),
+(182, 'Bui Xuan Tuan', '1985-12-05', '0933891430', 'Bác sĩ', 'Nu', 'Đang làm việc', 'bui.xuan.tuan.182@example.com', 0, 'bacsinu.png'),
+(183, 'Pham Anh Tuan', '1997-04-19', '0918981026', 'Bác sĩ', 'Nam', 'Đang làm việc', 'pham.anh.tuan.183@example.com', 0, 'bacsinam.png'),
+(184, 'Bui Khanh Trang', '1996-04-03', '0967293384', 'Bác sĩ', 'Nam', 'Đang làm việc', 'bui.khanh.trang.184@example.com', 0, 'bacsinam.png'),
+(185, 'Pham Bao Lan', '1977-10-28', '0911366283', 'Bác sĩ', 'Nam', 'Đang làm việc', 'pham.bao.lan.185@example.com', 0, 'bacsinam.png'),
+(186, 'Vu Khanh Hoa', '1979-10-16', '0961847142', 'Bác sĩ', 'Nu', 'Đang làm việc', 'vu.khanh.hoa.186@example.com', 0, 'bacsinu.png'),
+(187, 'Nguyen Ngoc Khanh', '1972-05-26', '0972202058', 'Bác sĩ', 'Nam', 'Đang làm việc', 'nguyen.ngoc.khanh.187@example.com', 0, 'bacsinam.png'),
+(188, 'Pham Cong Lan', '1986-11-16', '0952696406', 'Bác sĩ', 'Nu', 'Đang làm việc', 'pham.cong.lan.188@example.com', 0, 'bacsinu.png'),
+(189, 'Le Minh Thao', '1997-04-24', '0920061416', 'Bác sĩ', 'Nam', 'Đang làm việc', 'le.minh.thao.189@example.com', 0, 'bacsinam.png'),
+(190, 'Bui Anh Hung', '1973-11-11', '0989531292', 'Bác sĩ', 'Nu', 'Đang làm việc', 'bui.anh.hung.190@example.com', 0, 'bacsinu.png'),
+(191, 'Do Quang Nam', '1989-10-15', '0977737533', 'Bác sĩ', 'Nu', 'Đang làm việc', 'do.quang.nam.191@example.com', 0, 'bacsinu.png'),
+(192, 'Tran Minh Nam', '1976-10-18', '0984655935', 'Bác sĩ', 'Nu', 'Đang làm việc', 'tran.minh.nam.192@example.com', 0, 'bacsinu.png'),
+(193, 'Pham Bao Nam', '1988-05-04', '0934738659', 'Bác sĩ', 'Nu', 'Đang làm việc', 'pham.bao.nam.193@example.com', 0, 'bacsinu.png'),
+(194, 'Nguyen Duc Lan', '1982-08-10', '0947123371', 'Bác sĩ', 'Nam', 'Đang làm việc', 'nguyen.duc.lan.194@example.com', 0, 'bacsinam.png'),
+(195, 'Phan Cong Mai', '1972-12-20', '0993947204', 'Bác sĩ', 'Nam', 'Đang làm việc', 'phan.cong.mai.195@example.com', 0, 'bacsinam.png'),
+(196, 'Pham Minh Linh', '1986-06-26', '0929839009', 'Bác sĩ', 'Nu', 'Đang làm việc', 'pham.minh.linh.196@example.com', 0, 'bacsinu.png'),
+(197, 'Phan Anh Huy', '1977-01-01', '0971233227', 'Bác sĩ', 'Nam', 'Đang làm việc', 'phan.anh.huy.197@example.com', 0, 'bacsinam.png'),
+(198, 'Do Cong Hoa', '1982-09-09', '0948197255', 'Bác sĩ', 'Nu', 'Đang làm việc', 'do.cong.hoa.198@example.com', 0, 'bacsinu.png'),
+(199, 'Dang Quyen Tam', '2000-09-20', '0911622899', 'Bác sĩ', 'Nam', 'Đang làm việc', 'dang.quyen.tam.199@example.com', 0, 'bacsinam.png');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `nhanviennhathuoc`
+--
+
+CREATE TABLE `nhanviennhathuoc` (
+  `MaNV` int(10) UNSIGNED NOT NULL,
+  `MaDT` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `nhanviennhathuoc`
+--
+
+INSERT INTO `nhanviennhathuoc` (`MaNV`, `MaDT`) VALUES
+(6, 1),
+(6, 3),
+(6, 5),
+(8, 2),
+(8, 4),
+(8, 6),
+(6, 7),
+(6, 9),
+(8, 8),
+(8, 10),
+(21, 0),
+(22, 0),
+(23, 0),
+(24, 0),
+(25, 0),
+(26, 0),
+(27, 0),
+(28, 0),
+(29, 0),
+(30, 0),
+(31, 0),
+(32, 0),
+(33, 0),
+(34, 0),
+(35, 0),
+(36, 0),
+(37, 0),
+(38, 0),
+(39, 0),
+(40, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `nhanvienyte`
+--
+
+CREATE TABLE `nhanvienyte` (
+  `MaNV` int(10) UNSIGNED NOT NULL,
+  `MaHD` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `nhanvienyte`
+--
+
+INSERT INTO `nhanvienyte` (`MaNV`, `MaHD`) VALUES
+(2, 1),
+(2, 3),
+(3, 2),
+(3, 5),
+(4, 4),
+(4, 6),
+(7, 7),
+(7, 8),
+(9, 9),
+(9, 10),
+(1, 0),
+(2, 0),
+(3, 0),
+(4, 0),
+(5, 0),
+(6, 0),
+(7, 0),
+(8, 0),
+(9, 0),
+(10, 0),
+(11, 0),
+(12, 0),
+(13, 0),
+(14, 0),
+(15, 0),
+(16, 0),
+(17, 0),
+(18, 0),
+(19, 0),
+(20, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `phanquyen`
+--
+
+CREATE TABLE `phanquyen` (
+  `MaPQ` int(10) UNSIGNED NOT NULL,
+  `TenPQ` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `phanquyen`
+--
+
+INSERT INTO `phanquyen` (`MaPQ`, `TenPQ`) VALUES
+(1, 'Quản lý'),
+(2, 'Bác sĩ'),
+(3, 'Nhân Viên Y Tế'),
+(4, 'Nhân Viên Nhà Thuốc'),
+(5, 'Bệnh nhân');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `phieukham`
+--
+
+CREATE TABLE `phieukham` (
+  `MaPK` int(10) UNSIGNED NOT NULL,
+  `NgayTao` datetime NOT NULL,
+  `TrieuChung` varchar(255) DEFAULT NULL,
+  `KetQua` varchar(255) DEFAULT NULL,
+  `ChuanDoan` varchar(255) NOT NULL,
+  `LoiDan` varchar(255) NOT NULL,
+  `NgayTaikham` datetime DEFAULT NULL,
+  `MaXN` int(10) UNSIGNED DEFAULT NULL,
+  `MaLK` int(10) UNSIGNED DEFAULT NULL,
+  `MaHD` int(10) UNSIGNED DEFAULT NULL,
+  `MaDT` int(10) UNSIGNED DEFAULT NULL,
+  `MaBN` int(10) UNSIGNED NOT NULL,
+  `MaBS` int(10) UNSIGNED DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `phieukham`
+--
+
+INSERT INTO `phieukham` (`MaPK`, `NgayTao`, `TrieuChung`, `KetQua`, `ChuanDoan`, `LoiDan`, `NgayTaikham`, `MaXN`, `MaLK`, `MaHD`, `MaDT`, `MaBN`, `MaBS`) VALUES
+(21, '2024-10-07 08:30:00', 'Sốt cao', 'Xét nghiệm máu bình thường', 'Viêm họng', 'Uống thuốc kháng sinh và giữ ấm', '2024-12-14 00:00:00', NULL, 32, NULL, NULL, 1, 10),
+(22, '2024-10-07 10:00:00', 'Đau bụng', 'Siêu âm không phát hiện bất thường', 'Rối loạn tiêu hóa', 'Tránh thức ăn dầu mỡ và uống thuốc đủ liều', NULL, NULL, 33, NULL, NULL, 2, 10),
+(23, '2024-10-08 10:45:00', 'Ho khan', 'Nghe phổi bình thường', 'Viêm phổi nhẹ', 'Dùng kháng sinh đúng liều và theo dõi tái khám', '2024-12-22 00:00:00', NULL, 34, NULL, NULL, 1, 1),
+(24, '2024-10-09 11:30:00', 'Chóng mặt', 'Huyết áp thấp', 'Thiếu máu nhẹ', 'Bổ sung sắt và ăn uống đủ chất', '2025-01-10 00:00:00', NULL, 35, NULL, NULL, 2, 1),
+(25, '2024-10-10 14:00:00', 'Đau nhức khớp gối', 'Chụp X-quang không phát hiện bất thường', 'Thoái hóa khớp nhẹ', 'Điều trị vật lý trị liệu định kỳ', NULL, NULL, 36, NULL, NULL, 1, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `phongkham`
+--
+
+CREATE TABLE `phongkham` (
+  `MaPhongKham` int(10) UNSIGNED NOT NULL,
+  `TenPhongKham` varchar(255) NOT NULL,
+  `ViTri` varchar(255) NOT NULL,
+  `MaKhoa` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `phongkham`
+--
+
+INSERT INTO `phongkham` (`MaPhongKham`, `TenPhongKham`, `ViTri`, `MaKhoa`) VALUES
+(1, 'Phòng 001', 'Số 16 – 18 Phủ Doãn, Hoàn Kiếm, Hà Nội', 1),
+(2, 'Phòng 002', 'Số 20 – 22 Nguyễn Trãi, Hà Đông, Hà Nội', 2),
+(3, 'Phòng 003', 'Số 34 – 36 Trần Phú, Ba Đình, Hà Nội', 3),
+(4, 'Phòng 004', 'Số 10 – 12 Lê Duẩn, Đống Đa, Hà Nội', 4),
+(5, 'Phòng 005', 'Số 5 – 7 Hàng Bông, Hoàn Kiếm, Hà Nội', 5),
+(6, 'Phòng 006', 'Số 8 – 10 Lý Thường Kiệt, Hai Bà Trưng, Hà Nội', 6),
+(7, 'Phòng 007', 'Số 15 – 17 Nguyễn Xiển, Thanh Xuân, Hà Nội', 7),
+(8, 'Phòng 008', 'Số 4 – 6 Cầu Giấy, Cầu Giấy, Hà Nội', 8),
+(9, 'Phòng 009', 'Số 25 – 27 Phạm Ngọc Thạch, Đống Đa, Hà Nội', 9),
+(10, 'Phòng 010', 'Số 11 – 13 Nguyễn Văn Cừ, Long Biên, Hà Nội', 10);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `phuongthucthanhtoan`
+--
+
+CREATE TABLE `phuongthucthanhtoan` (
+  `MaPTTT` int(10) UNSIGNED NOT NULL,
+  `TenPTTT` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `phuongthucthanhtoan`
+--
+
+INSERT INTO `phuongthucthanhtoan` (`MaPTTT`, `TenPTTT`) VALUES
+(0, 'Chưa có'),
+(1, 'MoMo'),
+(2, 'ViSa'),
+(3, 'Ngân Hàng'),
+(4, 'Tiền mặt');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `quanly`
+--
+
+CREATE TABLE `quanly` (
+  `MaQL` int(10) UNSIGNED NOT NULL,
+  `HovaTen` varchar(255) NOT NULL,
+  `ChucVu` varchar(255) NOT NULL,
+  `SoDT` varchar(255) NOT NULL,
+  `DiaChi` varchar(255) NOT NULL,
+  `Email` varchar(255) NOT NULL,
+  `GhiChu` varchar(255) NOT NULL,
+  `ID` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `quanly`
+--
+
+INSERT INTO `quanly` (`MaQL`, `HovaTen`, `ChucVu`, `SoDT`, `DiaChi`, `Email`, `GhiChu`, `ID`) VALUES
+(1, 'Duy Khương', 'Quản lý', '0378488487', '', 'khuong@gmail.com', '', 7);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `taikhoan`
+--
+
+CREATE TABLE `taikhoan` (
+  `ID` int(10) UNSIGNED NOT NULL,
+  `username` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `MaPQ` int(10) UNSIGNED NOT NULL DEFAULT 5
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `taikhoan`
+--
+
+INSERT INTO `taikhoan` (`ID`, `username`, `password`, `MaPQ`) VALUES
+(1, '0948520853', '81dc9bdb52d04dc20036dbd8313ed055', 1),
+(2, 'bacsi', '81dc9bdb52d04dc20036dbd8313ed055', 2),
+(4, 'ngobao', 'e10adc3949ba59abbe56e057f20f883e', 3),
+(5, '0378488487', 'e10adc3949ba59abbe56e057f20f883e', 5),
+(6, '0941234567', 'e10adc3949ba59abbe56e057f20f883e', 5),
+(7, 'quanly', '81dc9bdb52d04dc20036dbd8313ed055', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `thuoc`
+--
+
+CREATE TABLE `thuoc` (
+  `MaThuoc` int(10) UNSIGNED NOT NULL,
+  `TenThuoc` varchar(255) NOT NULL,
+  `DonViTinh` int(10) NOT NULL,
+  `GiaTien` decimal(10,0) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `thuoc`
+--
+
+INSERT INTO `thuoc` (`MaThuoc`, `TenThuoc`, `DonViTinh`, `GiaTien`) VALUES
+(1, 'Paracetamol', 1, 5000),
+(2, 'Ibuprofen', 1, 8000),
+(3, 'Amoxicillin', 1, 12000),
+(4, 'Ciprofloxacin', 1, 15000),
+(5, 'Cetirizine', 1, 7000),
+(6, 'Azithromycin', 1, 18000),
+(7, 'Metronidazole', 1, 6000),
+(8, 'Omeprazole', 1, 9000),
+(9, 'Loperamide', 1, 4000),
+(10, 'Hydrocortisone', 1, 11000),
+(11, 'Vitamin C', 1, 3000),
+(12, 'Calcium Carbonate', 1, 5000),
+(13, 'Loratadine', 1, 7500),
+(14, 'Aspirin', 1, 6000),
+(15, 'Prednisolone', 1, 10000),
+(16, 'Diclofenac', 1, 8500),
+(17, 'Clarithromycin', 1, 17000),
+(18, 'Doxycycline', 1, 9500),
+(19, 'Fexofenadine', 1, 8000),
+(20, 'Acetylcysteine', 1, 6500);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `xetnghiem`
+--
+
+CREATE TABLE `xetnghiem` (
+  `MaXN` int(10) UNSIGNED NOT NULL,
+  `NgayXetNghiem` datetime NOT NULL,
+  `KetQua` varchar(255) DEFAULT NULL,
+  `LoaiXN` varchar(255) NOT NULL,
+  `MaBN` int(10) NOT NULL,
+  `TrangThai` varchar(255) NOT NULL DEFAULT 'Chưa xét nghiệm'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `xetnghiem`
+--
+
+INSERT INTO `xetnghiem` (`MaXN`, `NgayXetNghiem`, `KetQua`, `LoaiXN`, `MaBN`, `TrangThai`) VALUES
+(1, '2024-11-12 09:46:33', 'Dương tính', 'HIV', 1, 'Đã hủy'),
+(2, '2024-11-12 09:48:12', 'Dương tính', 'HIV', 0, 'Chưa xét nghiệm'),
+(3, '2024-11-15 08:00:00', NULL, 'HIV', 0, 'Chưa xét nghiệm'),
+(4, '2024-11-20 09:30:00', NULL, 'COVID-19', 0, 'Chưa xét nghiệm'),
+(5, '2024-11-10 11:00:00', 'Âm tính', 'HIV', 0, 'Chưa xét nghiệm'),
+(6, '2024-11-12 09:48:12', 'Dương tính', 'COVID-19', 0, 'Chưa xét nghiệm'),
+(7, '2024-12-01 10:00:00', NULL, 'HIV', 0, 'Chưa xét nghiệm'),
+(8, '2024-12-12 08:00:00', ' ', 'Xét nghiệm AMH', 11, 'Chưa xét nghiệm'),
+(9, '2024-11-12 09:46:33', 'Âm tính', 'Xét nghiệm AMH', 13, 'Chưa xét nghiệm'),
+(10, '2024-11-12 09:48:12', 'Dương tính', 'HIV', 0, 'Chưa xét nghiệm'),
+(11, '2024-11-15 08:00:00', 'Âm tính', 'COVID-19', 0, 'Chưa xét nghiệm'),
+(12, '2024-11-20 09:30:00', NULL, 'COVID-19', 0, 'Chưa xét nghiệm'),
+(13, '2024-11-10 11:00:00', 'Âm tính', 'COVID-19', 0, 'Chưa xét nghiệm'),
+(14, '2024-11-12 09:48:12', 'Dương tính', 'COVID-19', 0, 'Chưa xét nghiệm'),
+(15, '2024-12-01 10:00:00', NULL, 'HIV', 0, 'Chưa xét nghiệm'),
+(16, '2024-12-12 08:00:00', ' ', 'Xét nghiệm AMH', 11, 'Chưa xét nghiệm'),
+(17, '2024-12-12 08:00:00', ' Đau dạ dày', 'Nội soi', 13, 'Chưa xét nghiệm'),
+(18, '2024-12-26 14:00:00', NULL, 'Xét nghiệm Máu', 1, 'Chưa xét nghiệm');
+
+--
+-- Chỉ mục cho các bảng đã đổ
+--
+
+--
+-- Chỉ mục cho bảng `benhnhan`
+--
+ALTER TABLE `benhnhan`
+  ADD PRIMARY KEY (`MaBN`),
+  ADD UNIQUE KEY `MaBN` (`MaBN`),
+  ADD KEY `ID` (`ID`),
+  ADD KEY `MaPK` (`MaPK`);
+
+--
+-- Chỉ mục cho bảng `chitietdonthuoc`
+--
+ALTER TABLE `chitietdonthuoc`
+  ADD KEY `MaDT` (`MaDT`),
+  ADD KEY `MaThuoc` (`MaThuoc`);
+
+--
+-- Chỉ mục cho bảng `chitiethoadon`
+--
+ALTER TABLE `chitiethoadon`
+  ADD KEY `MaHD` (`MaHD`);
+
+--
+-- Chỉ mục cho bảng `chuyenkhoa`
+--
+ALTER TABLE `chuyenkhoa`
+  ADD PRIMARY KEY (`MaKhoa`);
+
+--
+-- Chỉ mục cho bảng `donthuoc`
+--
+ALTER TABLE `donthuoc`
+  ADD PRIMARY KEY (`MaDT`),
+  ADD KEY `MaBS` (`MaBS`),
+  ADD KEY `MaBN` (`MaBN`);
+
+--
+-- Chỉ mục cho bảng `hoadon`
+--
+ALTER TABLE `hoadon`
+  ADD PRIMARY KEY (`MaHD`),
+  ADD KEY `MaBN` (`MaBN`);
+
+--
+-- Chỉ mục cho bảng `lichkham`
+--
+ALTER TABLE `lichkham`
+  ADD PRIMARY KEY (`MaLK`);
+
+--
+-- Chỉ mục cho bảng `lichlamviec`
+--
+ALTER TABLE `lichlamviec`
+  ADD PRIMARY KEY (`MaLLV`);
+
+--
+-- Chỉ mục cho bảng `nhanvien`
+--
+ALTER TABLE `nhanvien`
+  ADD PRIMARY KEY (`MaNV`);
+
+--
+-- Chỉ mục cho bảng `nhanviennhathuoc`
+--
+ALTER TABLE `nhanviennhathuoc`
+  ADD KEY `MaNV` (`MaNV`),
+  ADD KEY `MaDT` (`MaDT`);
+
+--
+-- Chỉ mục cho bảng `nhanvienyte`
+--
+ALTER TABLE `nhanvienyte`
+  ADD KEY `MaNV` (`MaNV`),
+  ADD KEY `MaHD` (`MaHD`);
+
+--
+-- Chỉ mục cho bảng `phanquyen`
+--
+ALTER TABLE `phanquyen`
+  ADD PRIMARY KEY (`MaPQ`);
+
+--
+-- Chỉ mục cho bảng `phieukham`
+--
+ALTER TABLE `phieukham`
+  ADD PRIMARY KEY (`MaPK`),
+  ADD KEY `MaLK` (`MaLK`),
+  ADD KEY `MaHD` (`MaHD`),
+  ADD KEY `MaDT` (`MaDT`),
+  ADD KEY `MaBN` (`MaBN`),
+  ADD KEY `MaBS` (`MaBS`),
+  ADD KEY `MaXN` (`MaXN`);
+
+--
+-- Chỉ mục cho bảng `phongkham`
+--
+ALTER TABLE `phongkham`
+  ADD PRIMARY KEY (`MaPhongKham`),
+  ADD KEY `MaKhoa` (`MaKhoa`);
+
+--
+-- Chỉ mục cho bảng `phuongthucthanhtoan`
+--
+ALTER TABLE `phuongthucthanhtoan`
+  ADD PRIMARY KEY (`MaPTTT`);
+
+--
+-- Chỉ mục cho bảng `quanly`
+--
+ALTER TABLE `quanly`
+  ADD PRIMARY KEY (`MaQL`),
+  ADD UNIQUE KEY `ID` (`ID`),
+  ADD KEY `ID_2` (`ID`);
+
+--
+-- Chỉ mục cho bảng `taikhoan`
+--
+ALTER TABLE `taikhoan`
+  ADD PRIMARY KEY (`ID`),
+  ADD KEY `username` (`username`),
+  ADD KEY `nnnn` (`MaPQ`);
+
+--
+-- Chỉ mục cho bảng `thuoc`
+--
+ALTER TABLE `thuoc`
+  ADD PRIMARY KEY (`MaThuoc`);
+
+--
+-- Chỉ mục cho bảng `xetnghiem`
+--
+ALTER TABLE `xetnghiem`
+  ADD PRIMARY KEY (`MaXN`);
+
+--
+-- AUTO_INCREMENT cho các bảng đã đổ
+--
+
+--
+-- AUTO_INCREMENT cho bảng `benhnhan`
+--
+ALTER TABLE `benhnhan`
+  MODIFY `MaBN` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT cho bảng `chuyenkhoa`
+--
+ALTER TABLE `chuyenkhoa`
+  MODIFY `MaKhoa` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT cho bảng `donthuoc`
+--
+ALTER TABLE `donthuoc`
+  MODIFY `MaDT` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT cho bảng `hoadon`
+--
+ALTER TABLE `hoadon`
+  MODIFY `MaHD` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- AUTO_INCREMENT cho bảng `lichkham`
+--
+ALTER TABLE `lichkham`
+  MODIFY `MaLK` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=109;
+
+--
+-- AUTO_INCREMENT cho bảng `lichlamviec`
+--
+ALTER TABLE `lichlamviec`
+  MODIFY `MaLLV` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT cho bảng `nhanvien`
+--
+ALTER TABLE `nhanvien`
+  MODIFY `MaNV` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=200;
+
+--
+-- AUTO_INCREMENT cho bảng `phanquyen`
+--
+ALTER TABLE `phanquyen`
+  MODIFY `MaPQ` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT cho bảng `phieukham`
+--
+ALTER TABLE `phieukham`
+  MODIFY `MaPK` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+
+--
+-- AUTO_INCREMENT cho bảng `phongkham`
+--
+ALTER TABLE `phongkham`
+  MODIFY `MaPhongKham` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT cho bảng `quanly`
+--
+ALTER TABLE `quanly`
+  MODIFY `MaQL` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT cho bảng `taikhoan`
+--
+ALTER TABLE `taikhoan`
+  MODIFY `ID` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT cho bảng `thuoc`
+--
+ALTER TABLE `thuoc`
+  MODIFY `MaThuoc` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT cho bảng `xetnghiem`
+--
+ALTER TABLE `xetnghiem`
+  MODIFY `MaXN` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
+-- Các ràng buộc cho các bảng đã đổ
+--
+
+--
+-- Các ràng buộc cho bảng `chitietdonthuoc`
+--
+ALTER TABLE `chitietdonthuoc`
+  ADD CONSTRAINT `chitietdonthuoc_ibfk_1` FOREIGN KEY (`MaDT`) REFERENCES `donthuoc` (`MaDT`),
+  ADD CONSTRAINT `chitietdonthuoc_ibfk_2` FOREIGN KEY (`MaThuoc`) REFERENCES `thuoc` (`MaThuoc`);
+
+--
+-- Các ràng buộc cho bảng `chitiethoadon`
+--
+ALTER TABLE `chitiethoadon`
+  ADD CONSTRAINT `chitiethoadon_ibfk_1` FOREIGN KEY (`MaHD`) REFERENCES `hoadon` (`MaHD`);
+
+--
+-- Các ràng buộc cho bảng `phongkham`
+--
+ALTER TABLE `phongkham`
+  ADD CONSTRAINT `phongkham_ibfk_1` FOREIGN KEY (`MaKhoa`) REFERENCES `chuyenkhoa` (`MaKhoa`);
+
+--
+-- Các ràng buộc cho bảng `taikhoan`
+--
+ALTER TABLE `taikhoan`
+  ADD CONSTRAINT `nnnn` FOREIGN KEY (`MaPQ`) REFERENCES `phanquyen` (`MaPQ`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
