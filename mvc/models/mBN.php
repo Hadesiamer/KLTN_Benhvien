@@ -43,5 +43,35 @@ class mBN extends DB
         }
         return json_encode($result);
     }
+
+    public function changePass($mabn, $oldPass, $newPass) {
+       
+        // Kiểm tra mật khẩu cũ
+        $str = "SELECT password FROM benhnhan inner join taikhoan on benhnhan.ID=taikhoan.ID WHERE MaBN = '$mabn'";
+        $result = mysqli_query($this->con, $str);
+        if ($row = mysqli_fetch_assoc($result)) {
+            if (md5($oldPass) !== $row['password']) {
+                return json_encode(array(
+                    "success" => false,
+                    "message" => "Mật khẩu hiện tại không đúng!"
+                ));
+            }
+            
+        } else {
+            return json_encode(array(
+                "success" => false,
+                "message" => "Người dùng không tồn tại!"
+            ));
+        }
+    
+        // Cập nhật mật khẩu mới
+        $up = "UPDATE taikhoan SET password = md5('$newPass') WHERE ID=(SELECT ID FROM benhnhan WHERE MaBN = '$mabn')";
+        $updateResult = mysqli_query($this->con, $up);
+    
+        return json_encode(array(
+            "success" => $updateResult,
+            "message" => $updateResult ? "Đổi mật khẩu thành công!" : "Đổi mật khẩu thất bại!"
+        ));
+    }
 }
 ?>

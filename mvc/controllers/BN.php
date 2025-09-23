@@ -75,5 +75,40 @@ class BN extends Controller{
             ]);
         }
     }
+
+    public function changePass() {
+        
+        $bnModel = $this->model("mBN");
+        $mabn = $_SESSION['idbn'];
+        
+        if (isset($_POST["btnChangePass"])) {
+            $oldPass = $_POST["oldPass"];
+            $newPass = $_POST["newPass"];
+            $confirmPass = $_POST["confirmPass"];
+
+            if ($newPass !== $confirmPass) {
+                $this->view("layoutBN", [
+                    "Page" => "changePass",
+                    "CP" => json_encode(array( 
+                        "success" => false,
+                        "message" => "Mật khẩu mới và xác nhận mật khẩu không khớp."
+                    ))
+                ]);
+                return;
+            }
+            
+
+            $result = $bnModel->changePass($mabn, $oldPass, $newPass);
+            $this->view("layoutBN", [
+                "Pages" => "changePass",
+                "CP" => json_encode($result)
+            ]);
+        } else {
+            $this->view("layoutBN", [
+                "Page" => "changePass"
+
+            ]);
+}
+    }
 }
 ?>

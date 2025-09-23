@@ -4,8 +4,8 @@ class DB{
     //đừng thay đổi gì hết
     public $con;
     protected $servername = "localhost";
-    protected $username = "domdom";
-    protected $password = "1234";
+    protected $username = "root";
+    protected $password = "";
     protected $dbname = "domdom";
 
     function __construct(){
