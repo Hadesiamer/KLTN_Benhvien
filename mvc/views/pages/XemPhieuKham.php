@@ -44,7 +44,7 @@ $phieuKhamData = json_decode($data["PK"], true);
             <?php foreach ($chiTietData as $ct): ?>
                     
                     <div class="header-info">
-                    <h6 style="text-align: center;"><strong>BỆNH VIỆN ĐOM ĐÓM</strong></h6>
+                    <h6 style="text-align: center;"><strong>BỆNH VIỆN ĐỨC TÂM</strong></h6>
                         <p>Địa chỉ: F4/9C tổ 14 ấp 6C, xã Vĩnh Lộc A, huyện Bình Chánh, TP.HCM</p>
                     </div>
                     <h3>BỆNH ÁN</h3>

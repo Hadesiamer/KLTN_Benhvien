@@ -31,7 +31,7 @@
                     <div class="col-md-2 sidebar">
                         <ul>
                             <li><a href="/KLTN_Benhvien/LichKham">Lịch khám</a></li>
-                            <li><a href="/KLTN_Benhvien/LichXetNghiem">Lịch xét nghiệm</a></li>
+                            <!-- <li><a href="/KLTN_Benhvien/LichXetNghiem">Lịch xét nghiệm</a></li> -->
                             <li><a href="/KLTN_Benhvien/ThanhToan">Thanh toán</a></li>
                             <li><a href="/KLTN_Benhvien/BN/TTBN">Hồ sơ cá nhân</a></li>
                             <li ><a href="/KLTN_Benhvien/XemPhieuKham">Hồ sơ phiếu khám</a></li>

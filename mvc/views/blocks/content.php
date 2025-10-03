@@ -2,8 +2,8 @@
         <div class="search1">
             <div class="search">
                 <div class="text">
-                    <h1>Ứng dụng đặt khám</h1>
-                    <p>Đặt khám với hơn 600 bác sĩ, 25 bệnh viện, 100 phòng khám trên Đom Đóm để có số thứ tự và khung
+                    <h1>Hệ Thống Bệnh Viện Chăm Sóc Sức Khỏe</h1>
+                    <p>Đặt khám với hơn 600 bác sĩ, 25 bệnh viện, 100 phòng khám trên ĐỨC TÂM để có số thứ tự và khung
                         giờ khám trước.</p>
                 </div>
                 <div class="search_all">

@@ -95,7 +95,7 @@
     <div class="header">
         <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
             <div class="container-fluid">
-                <a class="navbar-brand" href="" >Đom Đóm</a>
+                <a class="navbar-brand" href="" >Bệnh Viện Đức Tâm</a>
                 
                 <?php
                     if (isset($_SESSION['role']) && $_SESSION['role'] == 5) { // Bệnh nhân
@@ -103,7 +103,7 @@
                             echo '<div class="navbar-nav ms-auto">
                                     <a class="nav-link" href="/KLTN_Benhvien">Trang chủ</a>
                                     <a class="nav-link" href="/KLTN_Benhvien/DangKyLK">Đặt lịch khám</a>
-                                    <a class="nav-link" href="/KLTN_Benhvien/BN/DKXN">Đặt lịch xét nghiệm</a>
+                                    <!-- <a class="nav-link" href="/KLTN_Benhvien/BN/DKXN">Đặt lịch xét nghiệm</a> -->
                                     <a class="nav-link" href="#">Tư vấn trực tiếp</a>
 
                                 </div>';

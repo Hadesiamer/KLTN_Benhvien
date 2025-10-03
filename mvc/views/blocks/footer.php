@@ -12,7 +12,7 @@
             <div class="contain1">
                         <div class="doc1">
                             <h4>
-                                BỆNH VIỆN ĐOM ĐÓM
+                                BỆNH VIỆN ĐỨC TÂM
                             </h4>
                             <p>
                                 Hệ thống bệnh viện uy tín, chất lượng, chuyên nghiệp với đội ngũ bác sĩ giỏi, nhiệt tình và chu đáo.
