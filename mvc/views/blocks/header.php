@@ -204,6 +204,26 @@
                                 </ul>
                             </nav>';
                         
+                    } else if (isset($_SESSION['role']) && $_SESSION['role'] == 6) { // Admin nè
+                        $tenql = $_SESSION['ten'];
+                        echo '<div class="navbar-nav ms-auto">
+                                <a class="nav-link" href="/KLTN_Benhvien/Admin">Dashboard Admin</a>
+                                <a class="nav-link" href="/KLTN_Benhvien/">Bệnh nhân</a>
+                                <a class="nav-link" href="/KLTN_Benhvien/Admin">Nhân viên</a>
+                                <a class="nav-link" href="/KLTN_Benhvien/Admin">Lịch làm việc</a>
+                                <a class="nav-link" href="/KLTN_Benhvien/Admin">Thống kê</a>
+                            </div>
+                            <nav>
+                                <ul class="menu">
+                                    <li>
+                                        <a class="nav-link" href="#">Admin</a>
+                                        <ul class="submenu">
+                                            <li><a href="/KLTN_Benhvien/Logout" onclick="return confirm(\'Bạn có muốn đăng xuất?\')">Đăng xuất</a></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </nav>';
+                        
                     }
                     else {
                         echo '
