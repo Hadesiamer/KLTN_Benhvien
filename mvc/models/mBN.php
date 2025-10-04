@@ -44,34 +44,56 @@ class mBN extends DB
         return json_encode($result);
     }
 
+
     public function changePass($mabn, $oldPass, $newPass) {
-       
-        // Kiểm tra mật khẩu cũ
-        $str = "SELECT password FROM benhnhan inner join taikhoan on benhnhan.ID=taikhoan.ID WHERE MaBN = '$mabn'";
+        // Lấy mật khẩu hiện tại
+        $str = "SELECT password FROM benhnhan 
+                INNER JOIN taikhoan ON benhnhan.ID = taikhoan.ID 
+                WHERE MaBN = '$mabn'";
         $result = mysqli_query($this->con, $str);
+    
         if ($row = mysqli_fetch_assoc($result)) {
+            // Sai mật khẩu cũ
             if (md5($oldPass) !== $row['password']) {
-                return json_encode(array(
+                return [
                     "success" => false,
                     "message" => "Mật khẩu hiện tại không đúng!"
-                ));
+                ];
             }
-            
+    
+            // Trùng mật khẩu
+            if (md5($newPass) === $row['password']) {
+                return [
+                    "success" => false,
+                    "message" => "Mật khẩu mới không được trùng với mật khẩu hiện tại!"
+                ];
+            }
+    
+            // Nếu hợp lệ → Cập nhật
+            $updateStr = "UPDATE taikhoan 
+                          SET password = '" . md5($newPass) . "' 
+                          WHERE ID = (SELECT ID FROM benhnhan WHERE MaBN = '$mabn')";
+            $updateResult = mysqli_query($this->con, $updateStr);
+    
+            if ($updateResult) {
+                return [
+                    "success" => true,
+                    "message" => "Đổi mật khẩu thành công!"
+                ];
+            } else {
+                return [
+                    "success" => false,
+                    "message" => "Đổi mật khẩu thất bại!"
+                ];
+            }
+    
         } else {
-            return json_encode(array(
+            return [
                 "success" => false,
                 "message" => "Người dùng không tồn tại!"
-            ));
+            ];
         }
-    
-        // Cập nhật mật khẩu mới
-        $up = "UPDATE taikhoan SET password = md5('$newPass') WHERE ID=(SELECT ID FROM benhnhan WHERE MaBN = '$mabn')";
-        $updateResult = mysqli_query($this->con, $up);
-    
-        return json_encode(array(
-            "success" => $updateResult,
-            "message" => $updateResult ? "Đổi mật khẩu thành công!" : "Đổi mật khẩu thất bại!"
-        ));
     }
-}
+} 
+    
 ?>

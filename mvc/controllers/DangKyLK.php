@@ -49,7 +49,7 @@ class DangKyLK extends Controller {
         }
       
 
-        $bacsiList = ($MaKhoa != "") ? $dangky->GetBS($MaKhoa) : [];    
+        $bacsiList = ($MaKhoa != "") ? $dangky->GetBS($MaKhoa) : [];   
         $page = ($MaBS != "") ? 'ThongTinLK' : 'DangKyLK';
     
         $this->view("layoutDKLK", [
@@ -58,6 +58,7 @@ class DangKyLK extends Controller {
             "BS" => $bacsiList,
             "Message" => $message,
             "MessageType" => $messageType,
+            
         ]);
     }
 }

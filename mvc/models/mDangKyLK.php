@@ -68,7 +68,16 @@
             }
             return json_encode($chuyenKhoaList);
         }
-
+        public function GetAllDV()
+        {
+            $str = "SELECT * FROM loaidichvu";
+            $tblDV = mysqli_query($this->con, $str);
+            $result = [];
+            while ($row = mysqli_fetch_assoc($tblDV)) {
+                $result[] = $row;
+            }
+            return json_encode($result);
+       }
     }
     
      

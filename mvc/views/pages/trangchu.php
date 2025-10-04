@@ -5,7 +5,10 @@
 
 
 <div class="listbs">
-    
+        <div class="formdangky">
+            <?php include "./mvc/views/pages/formDK_KhamBenh.php" ?>
+        </div>
+
         <div class="booking">
                 <h1>Đặt khám bác sĩ</h1>
                 <p>Phiếu khám kèm số thứ tự và thời gian của bạn được xác nhận.</p>
@@ -118,3 +121,32 @@
             </article>
         </div>
         </div>
+</div>
+<style>
+    .listbs{
+        display: block;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 50px;
+    }
+    .formdangky{
+        width: 33%;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        font-family: Arial, sans-serif;
+        float: left;
+        margin: 20px;
+    }
+    .booking{
+        width: 60%;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 8px;     
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        font-family: Arial, sans-serif;
+        float: right;
+        margin: 20px;
+    }
+</style>      

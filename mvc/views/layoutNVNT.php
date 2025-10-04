@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="./public/css/main.css">
     <link rel="stylesheet" href="../public/css/nvyt.css">
     <link rel="stylesheet" href="../public/css/main.css">
+    <link rel="stylesheet" href="../public/css/main.css">
+    <link rel="stylesheet" href="./public/css/bn.css">
     <title>Document</title>
 </head>
 

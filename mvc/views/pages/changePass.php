@@ -20,15 +20,13 @@
 
     </form>
 </div>
-<?php
-    if (isset($data["CP"])) {
-        $cp = json_decode($data["CP"], true);
-        if ($cp['success']) {
-            echo '<div class="alert alert-success" role="alert">' . $cp['message'] . '</div>';
-        } else {
-            echo '<div class="alert alert-danger" role="alert">' . $cp['message'] . '</div>';
-        }
-    }
-?>
+
+    <?php if (isset($data['CP'])): ?>
+        <div class="alert <?= $data['CP']['success'] ? 'alert-success' : 'alert-danger' ?> mt-3" role="alert">
+            <?= $data['CP']['message'] ?>
+        </div>
+    <?php endif; ?>
+    
+
 
 
