@@ -187,9 +187,11 @@ class mQuanLy extends DB {
         return $result;
     }    
     //đêm số nhân viên trong ca làm việc
-    public function CountEmployeeInShift($NgayLamViec, $CaLamViec) {
-        $str = "SELECT COUNT(*) AS Total FROM lichlamviec 
-        WHERE NgayLamViec = '$NgayLamViec' AND CaLamViec = '$CaLamViec' AND TrangThai = 'Đang làm'";
+    public function CountEmployeeInShift($NgayLamViec, $CaLamViec, $ChuyenKhoa) {
+        $str = "SELECT COUNT(*) AS Total FROM lichlamviec inner join nhanvien nv on lichlamviec.MaNV = nv.MaNV
+        inner join bacsi bs on nv.MaNV = bs.MaNV
+        inner join chuyenkhoa ck on bs.MaKhoa = ck.MaKhoa
+        WHERE NgayLamViec = '$NgayLamViec' AND CaLamViec = '$CaLamViec' AND TrangThai = 'Đang làm' AND ck.MaKhoa = '$ChuyenKhoa'";
         $result = mysqli_query($this->con, $str);
         $row = mysqli_fetch_assoc($result);
         return $row['Total'];

@@ -23,6 +23,10 @@ $ngaydautuan = date('Y-m-d', strtotime("-" . (0 + $week) . " days"));
 $ngaycuoituan = date('Y-m-d', strtotime("+" . (6 - $week) . " days"));
 // Lấy dữ liệu từ POST
 $selectedKhoa = isset($_POST['khoaSelect']) ? $_POST['khoaSelect'] : '';
+$last_selectedKhoa = isset($_GET['khoaSelect']) ? $_GET['khoaSelect'] : '';
+if ($selectedKhoa == '' && $last_selectedKhoa != '') {
+    $selectedKhoa = $last_selectedKhoa;
+}
 // Kiểm tra thay đổi tuần
 if (isset($_POST['changeWeek'])) {
     if ($_POST['changeWeek'] === 'prev') {
@@ -56,10 +60,11 @@ echo '<div class="row mb-4">';
     echo '<div class="col-md-3 d-flex align-items-center">';
         echo '<form method="POST" action="./LLV" class="w-100">';
             echo '<div class="d-flex align-items-center">';
-                echo '<select class="form-select" id="khoaSelect" name="khoaSelect" onchange="this.form.submit()">';
+                echo '<select class="form-select" id="khoaSelect" name="khoaSelect" onchange="this.form.submit()" type="hidden" name="form_type" value="outside_khoa">';
                     echo '<option value="">Danh sách khoa</option>';
                     foreach ($K as $k) {
-                    $selected = (isset($_POST["khoaSelect"]) && $_POST["khoaSelect"] == $k["MaKhoa"]) ? "selected" : "";
+                    $selected = (isset($selectedKhoa) && $selectedKhoa == $k["MaKhoa"]) ?  "selected" : "";
+                    
                     echo '<option value="' . $k["MaKhoa"] . '" ' . $selected . '>' . $k["TenKhoa"] . '</option>';
                     }
                 echo '</select>';
@@ -110,7 +115,7 @@ echo '</div>
                 echo '<td class="ca morning-shift shift">Ca Sáng</td>';
                 // Hiển thị lịch làm việc của bác sĩ theo từng ngày trong tuần và ca làm việc sáng
                 foreach ($daysOfWeek as $day) {
-                    echo '<td class="shift-cell morning">';
+                    echo '<td class="shift-cell morning editable-cell">';
                     foreach ($dt as $data) {
                         if ($data['NgayLamViec'] === $day && $data['CaLamViec'] === 'Sáng' && $data['TrangThai'] === 'Đang làm') {
                             echo $data['HovaTen'] . ' 
@@ -118,11 +123,12 @@ echo '</div>
                             <input type="hidden" name="MaNV" value="' . $data['MaNV'] . '">
                             <input type="hidden" name="NgayLamViec" value="' . $data['NgayLamViec'] . '">
                             <input type="hidden" name="CaLamViec" value="' . $data['CaLamViec'] . '">';
-                        if($homnay < $day){
+                        if(strtotime($day) > strtotime($homnay)){
                             echo'
                             <button type="submit" class="delete-btn" onclick="return confirm(\'Bạn có chắc chắn muốn xóa ca làm việc của bác sĩ này không?\')">
                             <i class="bi bi-person-dash"></i>
                             </button>
+
                             </form><hr><br>';
                         }
                         else{
@@ -130,15 +136,35 @@ echo '</div>
                         }
                         }
                     }
+                    if(strtotime($day) > strtotime($homnay . ' +2 days')){
+                        echo '
+                        <button 
+                            type="button" 
+                            class="add-btn" 
+                            
+                            data-bs-toggle="modal" 
+                            data-bs-target="#addDoctorModal"
+                            data-day="' . $day . '"
+                            data-shift="Sáng"
+                            
+                        >
+                            <i class="bi bi-person-plus"></i> Thêm
+                        </button>';
+                    
+                        echo '</td>';
+
+                        echo '</td>';
                     echo '</td>';
+                    }
                 }
+
                 echo '</tr>';
 
                 echo '<tr>';
                 echo '<td class="ca afternoon-shift shift">Ca Chiều</td>';
                 // Hiển thị lịch làm việc của bác sĩ theo từng ngày trong tuần và ca làm việc chiều
                 foreach ($daysOfWeek as $day) {
-                    echo '<td class="shift-cell afternoon">';
+                    echo '<td class="shift-cell afternoon editable-cell">';
                     $hasWork = false;
                     foreach ($dt as $data) {
                         if ($data['NgayLamViec'] === $day && $data['CaLamViec'] === 'Chiều' && $data['TrangThai'] === 'Đang làm') {
@@ -157,7 +183,28 @@ echo '</div>
                             else{
                                 echo'</form><hr><br>';
                             }
+                            
                     }
+                    }
+                    if(strtotime($day) > strtotime($homnay . ' +2 days')){
+                        echo '
+                        <button 
+                            type="button" 
+                            class="add-btn" 
+                            
+                            data-bs-toggle="modal" 
+                            data-bs-target="#addDoctorModal"
+                            data-day="' . $day . '"
+                            data-shift="Chiều"
+                            
+                        >
+                            <i class="bi bi-person-plus"></i> Thêm
+                        </button>';
+                    
+                        echo '</td>';
+
+                        echo '</td>';
+                    echo '</td>';
                     }
                     echo '</td>';
                 }
@@ -166,10 +213,13 @@ echo '</div>
         echo '  </tbody>
             </table>
         </div>';
+
+
+
         
         // modal thêm lịch làm việc
         echo '
-        <div class="modal fade" id="addDoctorModal" tabindex="-1">
+        <div class="modal fade" id="addDoctorModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                 <div class="modal-header">
@@ -177,9 +227,44 @@ echo '</div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="" method="POST">
+                    <form action="./LLV" method="POST">
                     <!-- Hidden input để lưu mã khoa đã chọn -->
-                    <input type="hidden" name="khoaSelect" value="' . $selectedKhoa . '">
+                    <input type="hidden" name="form_type" value="add_schedule">
+                    <input type="hidden" name="khoaSelect" value="' . $selectedKhoa . '">';
+                    if($selectedKhoa == '') {
+                        echo '<div class="alert alert-warning" role="alert">
+                                Vui lòng chọn khoa trước khi thêm lịch làm việc!
+                              </div>';
+                        // chon khoa
+                        echo '<div class="mb-3">
+                                <label for="khoaSelectModal" class="form-label">Chọn khoa</label>
+                                <select class="form-select" id="khoaSelectModal" name="khoaSelect" required type="hidden" name="form_type" value="modal_khoa">
+                                    <option value="">-- Chọn khoa --</option>';
+                                    foreach ($K as $k) {
+                                        $selected = (isset($_POST["khoaSelect"]) && $_POST["khoaSelect"] == $k["MaKhoa"]) ? "selected" : "";
+                                        if (isset($_POST['ajax']) && $_POST['ajax'] == '1') {
+                                            foreach($BS as $data):
+                                                if($data["MaKhoa"] == $_POST["khoaSelect"]):
+                                                    echo '
+                                                    <tr style="text-align:center;">
+                                                        <td><input type="radio" class="doctor-checkbox" value="' . $data["MaNV"] . '" name="MaNVien"></td>
+                                                        <td>' . $data["HovaTen"] . '</td>
+                                                        <td>' . $data["TenKhoa"] . '</td>
+                                                    </tr>';
+                                                endif;
+                                            endforeach;
+                                            exit; // Dừng ở đây để không render toàn bộ trang
+                                        }
+                                        echo '<option value="' . $k["MaKhoa"] . '" ' . $selected . '>' . $k["TenKhoa"] . '</option>';
+                                    }
+                        echo    '</select>
+                              </div>';
+                     
+                    }
+
+                    
+                       
+        echo'
                     <table class="table mb-3">
                         <thead>
                             <tr>
@@ -207,10 +292,10 @@ echo '</div>
                     <!-- Chọn lịch -->
                     <div class="mb-3">
                         <label for="scheduleDate" class="form-label">Chọn lịch</label>
-                        <input type="date" class="form-control" id="NgayLamViec" name="NgayLamViec" required min="'.$homnay.'" max="'.$maxDate.'">
+                        <input type="date" class="form-control" id="NgayLamViec" name="NgayLamViec" required min="'.strtotime($homnay . ' +2 days').'" max="'.$maxDate.'">
                     </div>
                     <div class="mb-3">
-                        <label for="scheduleShift" class="form-label">Chọn ca</label>
+                        <label for="scheduleShift" class="form-label" >Chọn ca</label>
                         <select class="form-select" id="scheduleShift" name="cl" required>
                             <option value="">-- Chọn ca --</option>
                             <option value="Sáng">Ca sáng</option>
@@ -227,68 +312,187 @@ echo '</div>
                 </div>
             </div>
         </div>';
+        if (
+            isset($_POST['khoaSelect']) 
+            && $_POST['khoaSelect'] != '' 
+            && isset($_POST['form_type']) 
+            && $_POST['form_type'] === 'modal_khoa'
+        ) {
+            echo "
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                var modal = new bootstrap.Modal(document.getElementById('addDoctorModal'));
+                modal.show();
+              });
+            </script>
+            ";
+        }
+       
+        
+        
 ?>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const buttons = document.querySelectorAll("button[name='changeWeek']");
-        buttons.forEach(button => {
-            button.addEventListener("click", function(e) {
-                e.preventDefault();
+document.addEventListener("DOMContentLoaded", function () {
 
-                // Get the week change value
-                const weekChange = button.value;
+    // === Xử lý chuyển tuần ===
+    const weekButtons = document.querySelectorAll("button[name='changeWeek']");
+    weekButtons.forEach(btn => {
+        btn.addEventListener("click", function(e) {
+            e.preventDefault();
+            const weekChange = btn.value;
+            let currentWeekStart = new Date(document.querySelector("input[name='currentWeekStart']").value);
 
-                // Get the current week start date
-                let currentWeekStart = document.querySelector("input[name='currentWeekStart']").value;
-                currentWeekStart = new Date(currentWeekStart);
+            if (weekChange === 'prev') {
+                currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            } else if (weekChange === 'next') {
+                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            } else if (weekChange === 'current') {
+                const today = new Date();
+                currentWeekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+            }
 
-                // Calculate the new week start date based on the button clicked
-                if (weekChange === 'prev') {
-                    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-                    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
-                } else if (weekChange === 'next') {
-                    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-                    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
-                } else if (weekChange === 'current') {
-                    // Set to the current week's Sunday
-                    const today = new Date();
-                    currentWeekStart = new Date(today.setDate(today.getDate() - today.getDay()));
-                    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay()+1);
-                }
+            document.querySelector("input[name='currentWeekStart']").value = currentWeekStart.toISOString().split('T')[0];
 
-                // Ensure the week always starts on Sunday
-                
+            const selectedKhoa = document.querySelector("select[name='khoaSelect']")?.value || "";
 
-                // Update the hidden input value for the server
-                document.querySelector("input[name='currentWeekStart']").value = currentWeekStart.toISOString().split('T')[0];
-
-                // Get the selected department code
-                const khoaSelect = document.querySelector("select[name='khoaSelect']") ? document.querySelector("select[name='khoaSelect']").value : "";
-
-                // Send request to update the work schedule
-                updateSchedule({ changeWeek: weekChange, currentWeekStart: currentWeekStart.toISOString().split('T')[0], khoaSelect: khoaSelect });
+            updateSchedule({ 
+                changeWeek: weekChange, 
+                currentWeekStart: currentWeekStart.toISOString().split('T')[0], 
+                khoaSelect: selectedKhoa 
             });
         });
-
-        function updateSchedule(data) {
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", window.location.href, true);
-            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                    const parser = new DOMParser();
-                    const responseDoc = parser.parseFromString(xhr.responseText, "text/html");
-                    const newSchedule = responseDoc.querySelector("#schedule-container");
-                    const container = document.querySelector("#schedule-container");
-                    if (newSchedule && container) {
-                        container.innerHTML = newSchedule.innerHTML;
-                    }
-                }
-            };
-
-            // Create parameter string for the request
-            const params = Object.keys(data).map(key => `${key}=${encodeURIComponent(data[key])}`).join("&");
-            xhr.send(params);
-        }
     });
+
+    function updateSchedule(params) {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", window.location.href, true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(xhr.responseText, "text/html");
+                const newSchedule = doc.querySelector("#schedule-container");
+                if (newSchedule) document.querySelector("#schedule-container").innerHTML = newSchedule.innerHTML;
+            }
+        };
+        const paramString = Object.keys(params).map(k => `${k}=${encodeURIComponent(params[k])}`).join("&");
+        xhr.send(paramString);
+    }
+
+    // === Xử lý thêm lịch trực tiếp trong bảng và hiển thị ngay ===
+    const editableCells = document.querySelectorAll(".editable-cell");
+    editableCells.forEach(cell => {
+        cell.addEventListener("click", function () {
+            const day = this.dataset.day;
+            const shift = this.dataset.shift;
+            if (this.innerText.trim() !== "") return;
+
+            this.innerHTML = `
+                <form class="inline-add-schedule" style="font-size:13px">
+                    <select name="MaNV" class="form-select form-select-sm">
+                        <option value="">-- Bác sĩ --</option>
+                        <?php foreach ($BS as $data): ?>
+                            <option value="<?php echo $data["MaNV"]; ?>"><?php echo $data["HovaTen"]; ?> (<?php echo $data["TenKhoa"]; ?>)</option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="hidden" name="NgayLamViec" value="${day}">
+                    <input type="hidden" name="CaLamViec" value="${shift}">
+                    <button type="submit" class="btn btn-sm btn-success mt-1">Thêm</button>
+                </form>
+            `;
+
+            const form = this.querySelector(".inline-add-schedule");
+            form.addEventListener("submit", function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+
+                fetch("./LLV", { method: "POST", body: formData })
+                    .then(res => res.json()) // giả sử server trả về JSON với tên bác sĩ vừa thêm
+                    .then(data => {
+                        if (data.success) {
+                            // Hiển thị tên bác sĩ vừa thêm trong ô
+                            cell.innerHTML = `
+                                ${data.HovaTen}
+                                <form method="POST" style="display:inline;">
+                                    <input type="hidden" name="MaNV" value="${data.MaNV}">
+                                    <input type="hidden" name="NgayLamViec" value="${day}">
+                                    <input type="hidden" name="CaLamViec" value="${shift}">
+                                    <button type="submit" class="delete-btn" onclick="return confirm('Bạn có chắc chắn muốn xóa ca làm việc của bác sĩ này không?')">
+                                        <i class="bi bi-person-dash"></i>
+                                    </button>
+                                </form>
+                            `;
+                        } else {
+                            alert("Thêm bác sĩ thất bại!");
+                        }
+                    })
+                    .catch(err => console.error("Lỗi thêm lịch:", err));
+            });
+        });
+    });
+
+    // === Xử lý chọn khoa trong modal ===
+    const khoaSelectModal = document.getElementById("khoaSelectModal");
+    const doctorTableBody = document.getElementById("doctorTableBody");
+    if (khoaSelectModal) {
+        khoaSelectModal.addEventListener("change", function () {
+            const selectedKhoa = this.value;
+            if (!selectedKhoa) return;
+
+            fetch("./LLV", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `ajax=1&khoaSelect=${encodeURIComponent(selectedKhoa)}`
+            })
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+                const newTable = doc.querySelector("#doctorTableBody");
+                if (newTable) doctorTableBody.innerHTML = newTable.innerHTML;
+            })
+            .catch(err => console.error("Lỗi tải danh sách bác sĩ:", err));
+        });
+    }
+
+    // === Modal thêm bác sĩ hiển thị đúng ngày ca ===
+    const addDoctorModal = document.getElementById("addDoctorModal");
+    if (addDoctorModal) {
+        addDoctorModal.addEventListener("show.bs.modal", function (event) {
+            const button = event.relatedTarget;
+            if (!button) return;
+
+            const ngay = button.getAttribute("data-day");
+            const ca = button.getAttribute("data-shift");
+
+            const dateInput = addDoctorModal.querySelector("input[name='NgayLamViec']");
+            const shiftSelect = addDoctorModal.querySelector("select[name='cl']");
+
+            if (dateInput) dateInput.value = ngay;
+            if (shiftSelect) shiftSelect.value = ca;
+        });
+    }
+
+});
 </script>
+
+
+<style>
+    .add-btn, .delete-btn, .edit-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    margin: 0 3px;
+}
+
+.add-btn i { color: green; }
+.edit-btn i { color: #007bff; }
+.delete-btn i { color: red; }
+
+.add-btn:hover i,
+.edit-btn:hover i,
+.delete-btn:hover i {
+    opacity: 0.8;
+}
+
+</style>

@@ -68,6 +68,7 @@ class QuanLy extends Controller {
             $MaNV = $_POST['MaNVien'];
             $NgayLamViec = $_POST['NgayLamViec'];
             $CaLamViec = $_POST['cl'];
+            $chuyenKhoa = $_POST['khoaSelect'];
     
             if (empty($MaNV)) {
                 $_SESSION['message'] = "Bạn phải chọn 1 bác sĩ để thêm lịch làm việc!";
@@ -83,15 +84,18 @@ class QuanLy extends Controller {
             $_SESSION['message_type'] = "error";
         } else {
             // Kiểm tra số lượng nhân viên trong ca làm việc
-            $employeeCount = $ql->CountEmployeeInShift($NgayLamViec, $CaLamViec);
+            $employeeCount = $ql->CountEmployeeInShift($NgayLamViec, $CaLamViec, $chuyenKhoa);
 
-            if ($employeeCount < 5) {
-                // Nếu số lượng nhân viên trong ca chưa đủ 5, thực hiện thêm lịch làm việc
+            if ($employeeCount < 2) {
+                // Nếu số lượng nhân viên trong ca chưa đủ 2, thực hiện thêm lịch làm việc
                 $result = $ql->AddLLV($MaNV, $NgayLamViec, $CaLamViec);
 
                 if ($result) {
                     $_SESSION['message'] = "Thêm lịch làm việc thành công!";
                     $_SESSION['message_type'] = "success";
+                    header('Location: ./LLV');
+                    exit();
+                    
                 } else {
                     $_SESSION['message'] = "Thêm lịch làm việc thất bại!";
                     $_SESSION['message_type'] = "error";
@@ -102,9 +106,12 @@ class QuanLy extends Controller {
                 $_SESSION['message_type'] = "error";
             }
         }
+        
         header('Location: ' . $_SERVER['REQUEST_URI']);
         exit();
     }
+    
+    
     
         if(isset($_POST['MaNV'])) {
             $maNV = $_POST['MaNV'];
@@ -147,6 +154,12 @@ class QuanLy extends Controller {
             "SelectedKhoa" => $maKhoa,
             "BS" => $ql->GetDSBS()
         ]);
+
+        
+
+
+        
+        
     }
     
     function ThongKe() {
