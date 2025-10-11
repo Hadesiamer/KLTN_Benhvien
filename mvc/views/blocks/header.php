@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../../../public/css/main.css">
+    <!--<link rel="stylesheet" href="../../../public/css/main.css">-->
+    <link rel="stylesheet" href="/kltn_benhvien/public/css/main.css">
     <title>Document</title>
     <style>
         /* Styling for the login name */
@@ -230,8 +231,8 @@
                             <div class="navbar-nav ms-auto">
                                 <a class="nav-link" href="/KLTN_Benhvien">Trang chủ</a>
                                 <a class="nav-link" href="#">Tư vấn trực tiếp</a>
-                                <a class="nav-link" href="#">Tin y tế</a>
-                                <a class="nav-link" href="#">Về chúng tôi</a>
+                                <a class="nav-link" href="vechungtoi">Về chúng tôi</a>
+                                <a class="nav-link" href="huongdan">Hướng dẫn</a>
                             </div>
                         <div id="nutdn" class="navbar-nav"><a class="nav-link" href="Login">Đăng nhập</a></div>';
                     }
