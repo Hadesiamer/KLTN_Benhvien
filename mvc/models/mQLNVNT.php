@@ -44,7 +44,7 @@ class mQLNVNT extends DB {
     }
     public function AddNVNT($hovaten, $ngaysinh, $sodt, $email,$gioitinh)
     {
-        $str= "INSERT INTO `nhanvien` (`MaNV`, `HovaTen`, `NgaySinh`, `SoDT`, `ChucVu`, `GioiTinh`, `TrangThaiLamViec`, `EmailNV`, `ID`, `img`) 
+        $str= "INSERT INTO `nhanvien` (`MaNV`, `HovaTen`, `NgaySinh`, `SoDT`, `ChucVu`, `GioiTinh`, `TrangThaiLamViec`, `EmailNV`, `ID`, `HinhAnh`) 
         VALUES ('', '$hovaten', '$ngaysinh', '$sodt', 'Nhân viên nhà thuốc', '$gioitinh', 'Đang làm việc', '$email', NULL, NULL);";
         $tblPTTT = mysqli_query($this->con, $str);
         return $tblPTTT;

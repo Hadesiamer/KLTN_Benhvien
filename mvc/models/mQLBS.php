@@ -7,7 +7,7 @@ class mQLBS extends DB {
         $result = $this->con->query($str);
         $row = $result->fetch_assoc();
         return $row['count'];
-    }
+    }   
     public function GetAllBS() {
         $str = "SELECT bs.MaNV, nv.HovaTen, nv.NgaySinh, nv.GioiTinh, nv.SoDT, nv.EmailNV, ck.TenKhoa, ck.MaKhoa, nv.HinhAnh
             FROM bacsi bs
@@ -60,14 +60,51 @@ class mQLBS extends DB {
             return false;
         }
     }
+
+    
+    // Hàm xóa bác sĩ (cập nhật trạng thái + xóa tài khoản tương ứng) NEW
+    
     public function DeleteBS($MaNV) {
-        $str = "UPDATE nhanvien SET TrangThaiLamViec = 'Nghỉ làm', ID=null WHERE MaNV = ?";
-        $stmt = $this->con->prepare($str);
-        $stmt->bind_param("i", $MaNV);
-        return $stmt->execute();
+        // Bắt đầu transaction để đảm bảo tính toàn vẹn dữ liệu
+        $this->con->begin_transaction();
+
+        try {
+            // 1️⃣ Lấy ID tài khoản liên kết với bác sĩ
+            $sqlGetID = "SELECT ID FROM nhanvien WHERE MaNV = ?";
+            $stmt1 = $this->con->prepare($sqlGetID);
+            $stmt1->bind_param("i", $MaNV);
+            $stmt1->execute();
+            $result = $stmt1->get_result();
+            $row = $result->fetch_assoc();
+            $ID = $row['ID'] ?? null;
+
+            // 2️⃣ Cập nhật trạng thái làm việc của bác sĩ thành 'Nghỉ làm'
+            $sqlUpdate = "UPDATE nhanvien SET TrangThaiLamViec = 'Nghỉ làm' WHERE MaNV = ?";
+            $stmt2 = $this->con->prepare($sqlUpdate);
+            $stmt2->bind_param("i", $MaNV);
+            $stmt2->execute();
+
+            // 3️⃣ Nếu có tài khoản liên kết, tiến hành xóa trong bảng taikhoan
+            if ($ID !== null) {
+                $sqlDeleteTK = "DELETE FROM taikhoan WHERE ID = ?";
+                $stmt3 = $this->con->prepare($sqlDeleteTK);
+                $stmt3->bind_param("i", $ID);
+                $stmt3->execute();
+            }
+
+            // 4️⃣ Hoàn tất transaction
+            $this->con->commit();
+            return true;
+
+        } catch (Exception $e) {
+            // Nếu có lỗi, rollback lại dữ liệu
+            $this->con->rollback();
+            error_log("Lỗi khi xóa bác sĩ: " . $e->getMessage());
+            return false;
+        }
     }
 
-    public function GetAllChuyenKhoa() {
+    public function GetAllChuyenKhoa(): mixed {
         $str = "SELECT MaKhoa, TenKhoa FROM chuyenkhoa ORDER BY TenKhoa ASC";
         $stmt = $this->con->prepare($str);
         $stmt->execute();
@@ -146,8 +183,5 @@ class mQLBS extends DB {
         $row = $result->fetch_assoc();
         return ($row['max_id'] ?? 0) + 1;
     }
-    
-    
 }
 ?>
-

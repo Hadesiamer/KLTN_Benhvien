@@ -4,7 +4,7 @@ class QuanLy extends Controller {
     {
         $this->view("layoutQL");
     }
-    //QuanLy_Nguoi thuc hien: Dkhuong
+    //QuanLy
     function DSBS() {
         $ql = $this->model("mQLBS");
         $bacsi = json_decode($ql->GetAllBS(), true);
@@ -182,7 +182,7 @@ class QuanLy extends Controller {
         ]);
     }
 
-    // phần của Quang Huy Quản Lý Bác sĩ/ NVYT
+    // phần của Quản Lý Bác sĩ/ NVYT
     public function GetDashboardCounts() {
         $qlBS = $this->model("mQLBS");
         $qlNVYT = $this->model("mQLNVYT");
