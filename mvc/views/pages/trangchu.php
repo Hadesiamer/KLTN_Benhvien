@@ -25,14 +25,14 @@
                     </div>
                 <?php endforeach; ?>
                 </div>
-                <button class="see-more-button">Xem thêm ></button>
+                <!-- <button class="see-more-button">Xem thêm ></button>
                 <button id="scrollLeftDoctor" class="scroll-button" aria-label="Scroll left">&lt;</button>
-                <button id="scrollRightDoctor" class="scroll-button" aria-label="Scroll right">&gt;</button>
+                <button id="scrollRightDoctor" class="scroll-button" aria-label="Scroll right">&gt;</button> -->
             </div>
         
         </div>
         <div class="listpk">
-            <div class="booking">
+            <div class="booking_chuyenkhoa">
                     <h1>Đặt khám chuyên khoa</h1>
                     <p>Đa dạng phòng khám với nhiều chuyên khoa khác nhau như Sản - Nhi, Tai Mũi họng, Da Liễu, Tiêu Hoá...</p>
                     <div class="list" id="pkList">
@@ -47,9 +47,9 @@
                         </div>  
                     <?php endforeach; ?>   
                     </div>
-                    <button class="see-more-button">Xem thêm ></button>
+                    <!-- <button class="see-more-button">Xem thêm ></button>
                     <button id="scrollLeftPK" class="scroll-button" aria-label="Scroll left">&lt;</button>
-                    <button id="scrollRightPK" class="scroll-button" aria-label="Scroll right">&gt;</button>
+                    <button id="scrollRightPK" class="scroll-button" aria-label="Scroll right">&gt;</button> -->
             </div>
         </div>
         <div class="new" >
@@ -137,16 +137,32 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         font-family: Arial, sans-serif;
         float: left;
-        margin: 20px;
+        /* margin: 20px; */
+        margin: 20px 10px 20px 20px;
     }
     .booking{
-        width: 60%;
+        width: 63%;
         padding: 20px;
         background-color: #f5f5f5;
         border-radius: 8px;     
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         font-family: Arial, sans-serif;
         float: right;
+        /* margin: 20px; */
+        margin: 20px 20px 20px 10px;
+    }
+
+    .booking_chuyenkhoa{
+        width: 98%;
+        padding: 20px;
+        background-color: #fbfbfbff;
+        border-radius: 8px;     
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        font-family: Arial, sans-serif;
+        float: right;
         margin: 20px;
+    }
+    #doctorList{
+        margin-top: 80px;
     }
 </style>      

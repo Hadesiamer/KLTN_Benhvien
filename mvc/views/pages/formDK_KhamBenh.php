@@ -211,21 +211,21 @@ ngayKhamInput.addEventListener("change", function() {
     select{
         height: 35px;
     }
-    ul{
+    /* ul{
         list-style-type: disc;
         border-radius: 4px;
         overflow-y: auto;
         text-align: center;
         width: 100%;
-    }
+    } */
     li{
-        display: inline-block; 
-        background: #f0f0f0;
-        border: 1px solid #ccc;
+        /* display: inline-block; 
+        /* background: #f0f0f0;
+        border: 1px solid #ccc; */ /* class li đặt tên chung chung nên kéo theo bị lỗi css giống li của footer
         width: auto;
         padding: 10px;
         height: 50px;
-        line-height: 30px;
+        line-height: 30px; */
 
 
     }
