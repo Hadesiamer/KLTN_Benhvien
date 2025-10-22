@@ -69,7 +69,7 @@ class mQLBS extends DB {
         $this->con->begin_transaction();
 
         try {
-            // 1️⃣ Lấy ID tài khoản liên kết với bác sĩ
+            // 1.Lấy ID tài khoản liên kết với bác sĩ
             $sqlGetID = "SELECT ID FROM nhanvien WHERE MaNV = ?";
             $stmt1 = $this->con->prepare($sqlGetID);
             $stmt1->bind_param("i", $MaNV);
@@ -78,13 +78,13 @@ class mQLBS extends DB {
             $row = $result->fetch_assoc();
             $ID = $row['ID'] ?? null;
 
-            // 2️⃣ Cập nhật trạng thái làm việc của bác sĩ thành 'Nghỉ làm'
+            // 2️.Cập nhật trạng thái làm việc của bác sĩ thành 'Nghỉ làm'
             $sqlUpdate = "UPDATE nhanvien SET TrangThaiLamViec = 'Nghỉ làm' WHERE MaNV = ?";
             $stmt2 = $this->con->prepare($sqlUpdate);
             $stmt2->bind_param("i", $MaNV);
             $stmt2->execute();
 
-            // 3️⃣ Nếu có tài khoản liên kết, tiến hành xóa trong bảng taikhoan
+            // 3️.Nếu có tài khoản liên kết, tiến hành xóa trong bảng taikhoan
             if ($ID !== null) {
                 $sqlDeleteTK = "DELETE FROM taikhoan WHERE ID = ?";
                 $stmt3 = $this->con->prepare($sqlDeleteTK);
@@ -92,7 +92,7 @@ class mQLBS extends DB {
                 $stmt3->execute();
             }
 
-            // 4️⃣ Hoàn tất transaction
+            // 4️.Hoàn tất transaction
             $this->con->commit();
             return true;
 

@@ -521,7 +521,7 @@ class QuanLy extends Controller {
             ]);
         }
     }
-    //Phan cua HBao quan ly nhan vien nha thuoc
+    //Phan cua quan ly nhan vien nha thuoc
     function DSNVNT() {
         $ql = $this->model("mQLNVNT");
 
