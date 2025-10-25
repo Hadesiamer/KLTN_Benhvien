@@ -263,6 +263,31 @@ class mQuanLy extends DB {
         }
         return json_encode($mang);
     }
-    
+        // ===================== CHỨC NĂNG ĐỔI MẬT KHẨU CHO QUẢN LÝ =====================
+    public function KiemTraMatKhauCu($id, $matkhaucu) {
+        $sql = "SELECT * FROM taikhoan WHERE ID = ? AND password = ? AND MaPQ = 1";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return false;
+
+        $matkhaucu_md5 = md5($matkhaucu);
+        mysqli_stmt_bind_param($stmt, "is", $id, $matkhaucu_md5);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        return mysqli_num_rows($result) > 0;
+    }
+
+    public function DoiMatKhau($id, $matkhaumoi) {
+        $sql = "UPDATE taikhoan SET password = ? WHERE ID = ? AND MaPQ = 1";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return false;
+
+        $matkhaumoi_md5 = md5($matkhaumoi);
+        mysqli_stmt_bind_param($stmt, "si", $matkhaumoi_md5, $id);
+        $ok = mysqli_stmt_execute($stmt);
+
+        return $ok;
+    }
+
 }
 ?>

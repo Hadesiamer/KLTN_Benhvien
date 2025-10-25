@@ -193,6 +193,7 @@
                                 <a class="nav-link" href="/KLTN_Benhvien/QuanLy/DSBS">Nhân viên</a>
                                 <a class="nav-link" href="/KLTN_Benhvien/QuanLy/LLV">Lịch làm việc</a>
                                 <a class="nav-link" href="/KLTN_Benhvien/QuanLy/ThongKe">Thống kê</a>
+                                <a class="nav-link" href="/KLTN_Benhvien/QuanLy/DoiMk">Đổi mật khẩu</a>
                             </div>
                             <nav>
                                 <ul class="menu">

@@ -591,9 +591,54 @@ class QuanLy extends Controller {
                 "Page" => "themnvnt"
             ]);
          }
-}
+    }
+
+        // ===================== CHỨC NĂNG ĐỔI MẬT KHẨU CHO QUẢN LÝ =====================
+function DoiMK() {
+    // Kiểm tra đăng nhập và đúng quyền (role = 1 là Quản lý)
+    if (!isset($_SESSION["id"]) || $_SESSION["role"] != 1) {
+        echo "<script>alert('Bạn không có quyền truy cập vào trang này');</script>";
+        header("refresh: 0; url='/KLTN_Benhvien'");
+        exit;
+    }
+
+    $model = $this->model("mQuanLy");
+
+    // Nếu có POST từ form
+    if ($_SERVER["REQUEST_METHOD"] === "POST") {
+        $idQL = $_SESSION["id"];
+        $old = $_POST["old_password"] ?? '';
+        $new = $_POST["new_password"] ?? '';
+        $confirm = $_POST["confirm_password"] ?? '';
+
+        if ($new !== $confirm) {
+            echo "<script>alert('Mật khẩu xác nhận không khớp!');</script>";
+        } else {
+            $kq = $model->KiemTraMatKhauCu($idQL, $old);
+            if ($kq) {
+                $doi = $model->DoiMatKhau($idQL, $new);
+                if ($doi) {
+                    echo "<script>alert('Đổi mật khẩu thành công!');</script>";
+                    echo "<script>window.location.href='/KLTN_Benhvien/QuanLy/DoiMK';</script>";
+                    exit;
+                } else {
+                    echo "<script>alert('Lỗi hệ thống, không thể đổi mật khẩu!');</script>";
+                }
+            } else {
+                echo "<script>alert('Mật khẩu hiện tại không chính xác!');</script>";
+            }
+        }
+    }
+
+    // Hiển thị giao diện đổi mật khẩu
+    $this->view("LayoutQLdoimatkhau");
 }
 
+
+
+
+}
+    
     
 ?>
 
