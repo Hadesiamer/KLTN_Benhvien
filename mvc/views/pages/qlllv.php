@@ -14,7 +14,7 @@ if(isset($_SESSION['message'])): ?>
     </div>
 <?php endif;
 // Lấy ngày hiện tại và xác định tuần hiện tại
-date_default_timezone_set('Asia/Ho_Chi_Minh');
+date_default_timezone_set('Asia/Ho_Chi_Minh');  
 $homnay = date('Y-m-d');
 $maxDate = date('Y-m-d', strtotime('+14 days'));
 $week = date('w');
@@ -27,6 +27,23 @@ $last_selectedKhoa = isset($_GET['khoaSelect']) ? $_GET['khoaSelect'] : '';
 if ($selectedKhoa == '' && $last_selectedKhoa != '') {
     $selectedKhoa = $last_selectedKhoa;
 }
+
+// ================== LẤY DỮ LIỆU LỊCH LÀM VÀ NGHỈ PHÉP ==================
+$conn = new mysqli("localhost", "root", "", "domdom");
+$conn->set_charset("utf8");
+
+$manv = $_SESSION['MaNV'];
+
+// Lấy danh sách yêu cầu nghỉ phép đang chờ duyệt
+$lichnghiphep = $conn->query("SELECT * FROM lichnghiphep inner join lichlamviec on lichnghiphep.MaLLV = lichlamviec.MaLLV inner join nhanvien on lichlamviec.MaNV = nhanvien.MaNV WHERE lichnghiphep.TrangThai = 'Chờ duyệt' AND lichlamviec.TrangThai = 'Đang làm' GROUP BY lichnghiphep.MaYC");
+$lichnghi = $lichnghiphep->fetch_assoc();
+
+$count = 0;
+$soluong = $conn->query("SELECT COUNT(*) AS total FROM lichnghiphep WHERE TrangThai='Chờ duyệt'");
+$slnghi = $soluong->fetch_assoc();
+$count = $slnghi['total'] ?? 0;
+
+
 // Kiểm tra thay đổi tuần
 if (isset($_POST['changeWeek'])) {
     if ($_POST['changeWeek'] === 'prev') {
@@ -80,7 +97,7 @@ echo '<div class="col-md-3 ">';
             echo '<button class="btn btn-outline-secondary" type="submit" name="changeWeek" value="prev">';
                 echo 'Tuần trước';
             echo '</button>';
-            echo '<button class="btn btn-outline-primary" type="submit" name="changeWeek" value="current">';
+            echo '<button class="btn btn-outline-primargity" type="submit" name="changeWeek" value="current">';
                 echo 'Hiện tại';
             echo '</button>';
             echo '<button class="btn btn-outline-secondary" type="submit" name="changeWeek" value="next">';
@@ -93,7 +110,18 @@ echo '<div class="col-md-3 ">';
         echo '<button class="btn btn-outline-secondary" type="button" name="them" data-bs-toggle="modal" data-bs-target="#addDoctorModal">';
             echo 'Thêm lịch';
         echo '</button>';
+        // Xem yêu cầu nghỉ phép
+       echo '<button class="btn btn-outline-warning" style="margin-left: 25px" type="button" data-bs-toggle="modal" data-bs-target="#dsNghiPhep">';
+            echo '<i class="bi bi-envelope"></i> Xem yêu cầu nghỉ phép';
+            if($count>0){echo '<span class="badge bg-danger ms-2">' . $count . '</span>';}
+            
+        echo '</button>';
+
     echo '</div>';
+
+?>
+
+<?php                  
     
 echo '</div>
         <div class="schedule-grid mb-4" id="schedule-container">
@@ -136,6 +164,7 @@ echo '</div>
                         }
                         }
                     }
+                    //Thêm lịch làm việc ở từng ngày cụ thể
                     if(strtotime($day) > strtotime($homnay . ' +2 days')){
                         echo '
                         <button 
@@ -327,10 +356,130 @@ echo '</div>
             </script>
             ";
         }
-       
-        
-        
 ?>
+<!-- Modal danh sách yêu cầu nghỉ phép -->
+<div class="modal fade" id="dsNghiPhep" tabindex="-1" aria-labelledby="dsNghiPhepLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0">
+      <!-- Header -->
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title fw-bold" id="dsNghiPhepLabel">
+          <i class="bi bi-envelope-paper-fill me-2"></i> Danh sách yêu cầu nghỉ phép
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <?php if ($lichnghiphep->num_rows > 0): ?>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle text-center border">
+              <thead class="table-warning">
+                <tr>
+                  <th>STT</th>
+                  <th>Tên nhân viên</th>
+                  <th>Ngày nghỉ</th>
+                  <th>Ca làm việc</th>
+                  <th>Lý do</th>
+                  <th>Trạng thái</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php 
+                  $stt = 1;
+                  mysqli_data_seek($lichnghiphep, 0); // Đặt lại con trỏ dữ liệu
+                  while ($row = $lichnghiphep->fetch_assoc()):
+                ?>
+                  <tr>
+                    <td><?php echo $stt++; ?></td>
+                    <td><?php echo htmlspecialchars($row['HovaTen']); ?></td>
+                    <td><?php echo date('d/m/Y', strtotime($row['NgayLamViec'])); ?></td>
+                    <td><?php echo htmlspecialchars($row['CaLamViec']); ?></td>
+                    <td><?php echo htmlspecialchars($row['LyDo']); ?></td>
+                    <td>
+                      <span class="badge bg-warning text-dark"><?php echo $row['TrangThai']; ?></span>
+                    </td>
+                    <td>
+                      <form method="POST" action="" class="d-inline">
+                        <input type="hidden" name="MaNV" value="<?php echo $row['MaNV']; ?>">
+                        <input type="hidden" name="NgayLamViec" value="<?php echo $row['NgayLamViec']; ?>">
+                        <input type="hidden" name="CaLamViec" value="<?php echo $row['CaLamViec']; ?>">
+                        <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">
+                          <i class="bi bi-check-circle"></i> Duyệt
+                        </button>
+                      </form>
+                      <form method="POST" action="" class="d-inline">
+                        <input type="hidden" name="MaNV" value="<?php echo $row['MaNV']; ?>">
+                        <input type="hidden" name="NgayLamViec" value="<?php echo $row['NgayLamViec']; ?>">
+                        <input type="hidden" name="CaLamViec" value="<?php echo $row['CaLamViec']; ?>">
+                        <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">
+                          <i class="bi bi-x-circle"></i> Từ chối
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                <?php endwhile; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php else: ?>
+          <div class="alert alert-info text-center mb-0">
+            <i class="bi bi-info-circle me-2"></i> Hiện không có yêu cầu nghỉ phép nào đang chờ duyệt.
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i> Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<?php
+if(isset($_REQUEST['approve'])){
+    $manv = $_REQUEST['MaNV'];
+    $ngaylamviec = $_REQUEST['NgayLamViec'];
+    $calamviec = $_REQUEST['CaLamViec'];
+
+    $conn->query("UPDATE lichnghiphep SET TrangThai = 'Đã duyệt' WHERE MaLLV = (SELECT MaLLV FROM lichlamviec WHERE MaNV = '$manv' AND NgayLamViec = '$ngaylamviec' AND CaLamViec = '$calamviec' AND TrangThai='Đ') AND MaNV = '$manv'");
+    $conn->query("UPDATE lichlamviec SET TrangThai = 'Nghỉ phép' WHERE MaNV = '$manv' AND NgayLamViec = '$ngaylamviec' AND CaLamViec = '$calamviec'");
+}
+
+if(isset($_REQUEST['reject'])){
+    $manv = $_REQUEST['MaNV'];
+    $ngaylamviec = $_REQUEST['NgayLamViec'];
+    $calamviec = $_REQUEST['CaLamViec'];
+
+    $conn->query("UPDATE lichnghiphep SET TrangThai = 'Yêu cầu bị từ chối' WHERE MaLLV = (SELECT MaLLV FROM lichlamviec WHERE MaNV = '$manv' AND NgayLamViec = '$ngaylamviec' AND CaLamViec = '$calamviec') AND MaNV = '$manv'");
+}
+
+?>
+
+<style>
+  #dsNghiPhep .modal-content {
+    border-radius: 15px;
+    overflow: hidden;
+  }
+
+  #dsNghiPhep .table th, 
+  #dsNghiPhep .table td {
+    vertical-align: middle;
+  }
+
+  #dsNghiPhep .btn {
+    border-radius: 8px;
+  }
+
+  #dsNghiPhep .modal-header {
+    border-bottom: 3px solid #ffc107;
+  }
+</style>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -473,6 +622,8 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    const dsModal = new bootstrap.Modal(document.getElementById('dsNghiPhep'));
+
 });
 </script>
 
@@ -496,3 +647,4 @@ document.addEventListener("DOMContentLoaded", function () {
 }
 
 </style>
+

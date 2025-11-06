@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../../../public/css/main.css">
     <title>Document</title>
     <style>
@@ -171,6 +173,7 @@
                         $tenbs = $_SESSION['ten'];
                         echo '<div class="navbar-nav ms-auto">
                                 <a class="nav-link" href="/KLTN_Benhvien/Bacsi">Chức năng</a>
+                                
                             </div>
                             <nav>
                                 <ul class="menu">
@@ -192,6 +195,7 @@
                                 <a class="nav-link" href="/KLTN_Benhvien/QuanLy/DSBS">Nhân viên</a>
                                 <a class="nav-link" href="/KLTN_Benhvien/QuanLy/LLV">Lịch làm việc</a>
                                 <a class="nav-link" href="/KLTN_Benhvien/QuanLy/ThongKe">Thống kê</a>
+                                
                             </div>
                             <nav>
                                 <ul class="menu">
