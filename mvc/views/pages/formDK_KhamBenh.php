@@ -34,21 +34,36 @@ $sqlAllBS = "SELECT nhanvien.MaNV, nhanvien.HovaTen, bacsi.MaKhoa
 $resAllBS = $conn->query($sqlAllBS);
 $bacsiall = $resAllBS->fetch_all(MYSQLI_ASSOC);
 
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'getKhungGio') {
-    $MaBS = $conn->real_escape_string($_POST['MaBS']);
-    $Ngay = $conn->real_escape_string($_POST['Ngay']);
-    $res = $conn->query("SELECT KhungGio FROM lichkham WHERE MaBS='$MaBS' AND Ngay='$Ngay' AND TrangThai='trong'");
-    if ($res && $res->num_rows > 0) {
-        while ($r = $res->fetch_assoc()) {
-            echo "<button type='button' class='time-slot'>{$r['KhungGio']}</button>";
-        }
-    } else {
-        echo "<p>Không còn khung giờ trống trong ngày này.</p>";
+// Xử lý AJAX lấy khung giờ làm việc
+if (isset($_POST['action']) && $_POST['action'] === 'getNgayLamViec') {
+    $MaBS = $_POST['MaBS'] ?? '';
+    if ($MaBS === '') {
+        exit(json_encode([]));
     }
+
+    $sqlNgay = "SELECT NgayLamViec FROM lichlamviec 
+                WHERE MaNV = ? AND TrangThai = 'Đang làm'";
+    $stmt = $conn->prepare($sqlNgay);
+    $stmt->bind_param("s", $MaBS);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $ngayList = [];
+    while ($row = $result->fetch_assoc()) {
+        $ngayList[] = $row['NgayLamViec'];
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode($ngayList);
     exit;
 }
+
+
+
+
+
 ?>
+<div class="booking-form-wrapper">
 <form action="" >
     <h2 style="text-align: center">Đăng ký khám bệnh</h2>
     <p>Đặt lịch khám nhanh chóng, dễ dàng và thuận tiện tại nhà.</p>
@@ -91,34 +106,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     </div>
     <div class="form-group">
         <label for="name">Ngay Kham</label>
-        <input type="date" id="NgayKham" name="NgayKham" min="<?= date('Y-m-d') ?>" required>
+        <input type="date" id="NgayKham" name="NgayKham" required disabled>
     </div>
-    <div class="form-group" id="khunggio-group">
-        <label for="name">Khung gio</label>
-        <div class="khunggio-box" id="khungGioList">
-            <p>Vui lòng chọn bác sĩ và ngày khám để xem khung giờ trống.</p>
-        </div>
-    </div>
+   
 
 
     
 </form>
+</div>
 <script>
-
 const bacsiData = <?= json_encode($bacsiall) ?>;
 
 const chuyenKhoaSel = document.getElementById("chuyenKhoa");
 const dichvuSel = document.getElementById("MaDV");
 const datLichSel = document.getElementById("datLich");
 const bacsiSel = document.getElementById("MaBS");
+const ngayKhamInput = document.getElementById("NgayKham");
 
-chuyenKhoaSel.addEventListener("change", function(){
+let ngayLamViec = []; // lưu danh sách ngày bác sĩ có làm
+
+// --- Khi chọn chuyên khoa ---
+chuyenKhoaSel.addEventListener("change", function() {
     if (this.value !== "") {
         dichvuSel.disabled = false;  // mở khóa dịch vụ
     } else {
         dichvuSel.disabled = true;
         datLichSel.disabled = true;
         bacsiSel.innerHTML = "<option value=''>Chọn bác sĩ</option>";
+        return;
     }
 
     // load bác sĩ cho chuyên khoa đã chọn
@@ -132,12 +147,44 @@ chuyenKhoaSel.addEventListener("change", function(){
     });
 });
 
-dichvuSel.addEventListener("change", function(){
-    if (this.value !== "") {
-        datLichSel.disabled = false; // mở khóa đặt lịch
-    } else {
-        datLichSel.disabled = true;
+// --- Khi chọn bác sĩ ---
+bacsiSel.addEventListener("change", function() {
+    const MaBS = this.value;
+    if (!MaBS) {
+        ngayKhamInput.disabled = true;
+        return;
     }
+
+    // mở khóa input ngày
+    ngayKhamInput.disabled = false;
+    ngayKhamInput.value = "";
+
+    // gọi AJAX để lấy danh sách ngày bác sĩ có làm việc
+    fetch("", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: "action=getNgayLamViec&MaBS=" + encodeURIComponent(MaBS)
+    })
+    .then(res => res.json())
+    .then(list => {
+        ngayLamViec = list.map(n => new Date(n).toISOString().split("T")[0]);
+        console.log("Ngày làm việc của bác sĩ:", ngayLamViec);
+
+        // reset lắng nghe sự kiện input (đảm bảo không bị chồng chéo)
+        ngayKhamInput.oninput = function() {
+            const val = this.value;
+            if (!ngayLamViec.includes(val)) {
+                alert("❌ Bác sĩ không làm việc vào ngày này!");
+                this.value = "";
+            }
+        };
+    })
+    .catch(err => console.error("Lỗi khi tải ngày làm việc:", err));
+});
+
+// --- Khi chọn dịch vụ ---
+dichvuSel.addEventListener("change", function(){
+    datLichSel.disabled = (this.value === "");
 });
 
 function toggleBacSi() {
@@ -155,88 +202,63 @@ document.addEventListener("DOMContentLoaded", function() {
     toggleBacSi();
 });
 
-const ngayKhamInput = document.getElementById("NgayKham");
-const khungGioGroup = document.getElementById("khunggio-group");
-const khungGioList = document.getElementById("khungGioList");
 
-// Giả sử bạn đã có bảng lichkham trong DB (MaBS, Ngay, KhungGio, TrangThai)
-// Khi chọn ngày, ta gọi AJAX tới chính file này để lấy khung giờ
-ngayKhamInput.addEventListener("change", function() {
-    const ngay = this.value;
-    const bacsi = bacsiSel.value;
-    if (!ngay || !bacsi) {
-        khungGioGroup.style.display = "block";
-        khungGioList.innerHTML = "<p>Vui lòng chọn bác sĩ trước</p>";
-        return;
-    }
 
-    khungGioGroup.style.display = "block";
-    khungGioList.innerHTML = "<p>Đang tải khung giờ...</p>";
-
-    fetch("", {
-        method: "POST",
-        headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: "action=getKhungGio&MaBS=" + encodeURIComponent(bacsi) + "&Ngay=" + encodeURIComponent(ngay)
-    })
-    .then(res => res.text())
-    .then(html => {
-        khungGioList.innerHTML = html;
-    })
-    .catch(err => {
-        khungGioList.innerHTML = "<p>Lỗi khi tải khung giờ!</p>";
-        console.error(err);
-    });
-});
 </script>
 
 
 
 <style>
+.booking-form-wrapper .form-group {
+    margin-bottom: 15px;
+}
 
-    .form-group{
-        margin-bottom: 15px;
-    }
-    label{
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-    }
-    input[type="text"], select{
-        width: 100%;
-        padding: 8px;
-        box-sizing: border-box;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
-    select{
-        height: 35px;
-    }
-    ul{
-        list-style-type: disc;
-        border-radius: 4px;
-        overflow-y: auto;
-        text-align: center;
-        width: 100%;
-    }
-    li{
-        display: inline-block; 
-        background: #f0f0f0;
-        border: 1px solid #ccc;
-        width: auto;
-        padding: 10px;
-        height: 50px;
-        line-height: 30px;
+.booking-form-wrapper label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
 
+.booking-form-wrapper input[type="text"],
+.booking-form-wrapper select {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
 
-    }
-    .khunggio-box {
+.booking-form-wrapper select {
+    height: 35px;
+}
+
+.booking-form-wrapper ul {
+    list-style-type: disc;
+    border-radius: 4px;
+    overflow-y: auto;
+    text-align: center;
+    width: 100%;
+}
+
+.booking-form-wrapper li {
+    display: inline-block;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    width: auto;
+    padding: 10px;
+    height: 50px;
+    line-height: 30px;
+}
+
+.booking-form-wrapper .khunggio-box {
     border: 1px solid #ddd;
     border-radius: 6px;
     padding: 10px;
     background: #f9f9f9;
     min-height: 60px;
 }
-.time-slot {
+
+.booking-form-wrapper .time-slot {
     margin: 4px;
     padding: 6px 10px;
     background: white;
@@ -246,10 +268,12 @@ ngayKhamInput.addEventListener("change", function() {
     color: #007bff;
     transition: all 0.2s;
 }
-.time-slot:hover {
+
+.booking-form-wrapper .time-slot:hover {
     background: #007bff;
     color: white;
 }
+
 
 </style>
 <?php
