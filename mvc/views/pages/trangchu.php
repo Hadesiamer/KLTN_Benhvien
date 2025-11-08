@@ -31,6 +31,7 @@
             </div>
         
         </div>
+                <!-- Đoạn này Nhàn xóa, tui mở lại -->
         <div class="listpk">
             <div class="booking_chuyenkhoa">
                     <h1>Đặt khám chuyên khoa</h1>
@@ -52,6 +53,8 @@
                     <button id="scrollRightPK" class="scroll-button" aria-label="Scroll right">&gt;</button> -->
             </div>
         </div>
+                <!-- Đoạn trên Nhàn xóa, tui mở lại -->
+
         <div class="new" >
         <h1>Tin tức y tế</h1>
         <div class="news-grid container" style="background: #E6E6FA;">
@@ -165,4 +168,10 @@
     #doctorList{
         margin-top: 80px;
     }
-</style>      
+
+    .new {
+        clear: both; 
+        margin-top: 20px;
+        padding: 20px;
+    }
+</style>

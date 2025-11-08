@@ -168,11 +168,11 @@ if ($_SESSION["role"] != 2) {
         <div class="sidebar">
             <h2>DANH SÁCH CHỨC NĂNG</h2>
             <ul class="function-list">
-                <li><a href="/KLTN_Benhvien/Bacsi/DangKyLichLamViec">Đăng ký lịch làm việc</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/XemLichLamViec">Xem lịch làm việc</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/XemDanhSachKham">Xem danh sách khám</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/XemThongTinBenhNhan">Xem thông tin bệnh nhân</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/XemLichSuKhamBenh">Xem lịch sử khám bệnh</a></li>
+                
             </ul>
         </div>
 
