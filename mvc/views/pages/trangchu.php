@@ -31,27 +31,7 @@
             </div>
         
         </div>
-        <div class="listpk">
-            <div class="booking">
-                    <h1>Đặt khám chuyên khoa</h1>
-                    <p>Đa dạng phòng khám với nhiều chuyên khoa khác nhau như Sản - Nhi, Tai Mũi họng, Da Liễu, Tiêu Hoá...</p>
-                    <div class="list" id="pkList">
-                    <?php foreach ($dt2 as $r): ?>
-                        <div class="bv_card">
-                            <a href="" style="text-decoration: none">
-                                <img src="public/img/<?=$r["img"]?>" alt="" class="image2"> <!-- Chỗ này để ảnh 300x150 dùm nhé-->
-                                <div class="pk_info">
-                                    <h2 class="name" style="text-align:center;"><?=$r["TenKhoa"]?></h2>
-                                </div>
-                            </a>
-                        </div>  
-                    <?php endforeach; ?>   
-                    </div>
-                    <button class="see-more-button">Xem thêm ></button>
-                    <button id="scrollLeftPK" class="scroll-button" aria-label="Scroll left">&lt;</button>
-                    <button id="scrollRightPK" class="scroll-button" aria-label="Scroll right">&gt;</button>
-            </div>
-        </div>
+        
         <div class="new" >
         <h1>Tin tức y tế</h1>
         <div class="news-grid container" style="background: #E6E6FA;">
@@ -149,4 +129,9 @@
         float: right;
         margin: 20px;
     }
-</style>      
+    .new {
+        clear: both; 
+        margin-top: 20px;
+        padding: 20px;
+    }
+</style>    
