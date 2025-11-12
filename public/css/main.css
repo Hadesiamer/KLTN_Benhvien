@@ -421,3 +421,84 @@ body, html {
     opacity: 0;
     transition: opacity 1s ease-in-out;
 }
+
+        /* Styling for the login name */
+        .menu {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            position: relative;
+        }
+
+        .menu > li {
+            position: relative;
+            display: inline-block;
+        }
+
+        .menu > li > a {
+            display: block;
+            padding: 10px 15px;
+            color: #007bff;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .menu > li > a:hover {
+            background-color: #e9ecef;
+            color: #0056b3;
+        }
+
+        /* Submenu styles */
+        .submenu {
+            display: none;
+            list-style-type: none;
+            position: absolute;
+            top: 100%; /* Positioned right below the login name */
+            left: 0;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 5px 0;
+            z-index: 1000;
+        }
+
+        .submenu li {
+            width: 200px;
+        }
+
+        .submenu li a {
+            display: block;
+            padding: 10px 15px;
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: background-color 0.3s;
+        }
+
+        .submenu li a:hover {
+            background-color: #f8f9fa;
+            color: #007bff;
+        }
+
+        /* Show the submenu when hovering over the parent menu item */
+        .menu > li:hover .submenu {
+            display: block;
+        }
+
+        #nutdn .nav-link {
+            font-weight: bold;
+            color: #007bff;
+            background-color: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #nutdn .nav-link:hover {
+            background-color: #d1e7ff;
+            color: #0056b3;
+        }

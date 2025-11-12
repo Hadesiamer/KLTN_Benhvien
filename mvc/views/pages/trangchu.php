@@ -144,7 +144,7 @@
         margin: 20px 10px 20px 20px;
     }
     .booking{
-        width: 63%;
+        width: 62%;
         padding: 20px;
         background-color: #f5f5f5;
         border-radius: 8px;     
@@ -163,7 +163,8 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         font-family: Arial, sans-serif;
         float: right;
-        margin: 20px;
+        margin-top: 60px;
+        position: center;
     }
     #doctorList{
         margin-top: 80px;
