@@ -104,16 +104,21 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// ********** LOGIC KIỂM TRA ĐĂNG NHẬP (QUAN TRỌNG) **********
+// ********** LOGIC KIỂM TRA ĐĂNG NHẬP (ĐÃ SỬA) **********
 $loginPageUrl = '/KLTN_Benhvien/login'; 
 $registerPageUrl = '/KLTN_Benhvien/Register';
 
-// Kiểm tra xem người dùng đã đăng nhập chưa
-$isLoggedIn = isset($_SESSION['idbn']) && !empty($_SESSION['idbn']); 
-//Lấy thông tin tài khỏan đã đăng nhập
+// 1. Khởi tạo biến dữ liệu người dùng (phải là NULL)
+$loggedInUserData = null; 
+
+// 2. Kiểm tra xem người dùng đã đăng nhập chưa
+$isLoggedIn = isset($_SESSION['id']) && !empty($_SESSION['id']); 
+
+// 3. Nếu Đã đăng nhập, tiến hành lấy dữ liệu
 if ($isLoggedIn) {
     $userId = $_SESSION['id'];
-    $loggedInUserData = null;
+    
+    // ... (Giữ nguyên logic query SQL lấy thông tin người dùng)
     $userQuery = $conn->prepare("SELECT * FROM benhnhan WHERE ID = ?");
     $userQuery->bind_param("i", $userId);
     $userQuery->execute();
@@ -222,6 +227,17 @@ if ($resBooked) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="public/css/formDK.css">
+    <script>
+        // Dữ liệu từ PHP
+        const bacsiData = <?= json_encode($bacsiall) ?>;
+        const lichLamViecData = <?= json_encode($lichlamviecAll) ?>; 
+        const defaultTimeSlots = <?= json_encode($defaultTimeSlots) ?>;
+        const bookedSlotsData = <?= json_encode($bookedSlotsAll) ?>; 
+        const isLoggedIn = <?= json_encode($isLoggedIn) ?>;
+        const userData = <?= json_encode($loggedInUserData) ?>;
+
+
+</script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
     <style>
@@ -322,6 +338,7 @@ if ($resBooked) {
 
 </head>
 <body>
+
 <div class="main-booking-area">
     <div class="booking-form-wrapper" id="booking-step-1">
         <form id="form-step-1">
@@ -444,7 +461,7 @@ if ($resBooked) {
         <div class="modal-content">
             <span class="close-button close-auth-modal">&times;</span>
             <h2 style="text-align: center;"><i class="fas fa-lock"></i> Xác nhận Tài khoản</h2>
-            <p style="text-align: center;">Vui lòng Đăng nhập hoặc Đăng ký để hoàn tất lịch khám. Nếu không, bạn có thể chọn **Tiếp tục với tư cách Khách**:</p>
+            <p style="text-align: center;">Vui lòng Đăng nhập hoặc Đăng ký để đăng ký lịch khám.</p>
             <div class="login-modal-buttons">
                 <a href="<?= $loginPageUrl ?>" class="btn-login"><i class="fas fa-sign-in-alt"></i> **Đã có tài khoản** - Đăng nhập</a>
                 <a href="<?= $registerPageUrl ?>" class="btn-register"><i class="fas fa-user-plus"></i> **Chưa có tài khoản** - Đăng ký ngay</a>
@@ -453,17 +470,7 @@ if ($resBooked) {
     </div>
     
 </div>
-<script>
-// Dữ liệu từ PHP
-const bacsiData = <?= json_encode($bacsiall) ?>;
-const lichLamViecData = <?= json_encode($lichlamviecAll) ?>; 
-const defaultTimeSlots = <?= json_encode($defaultTimeSlots) ?>;
-const bookedSlotsData = <?= json_encode($bookedSlotsAll) ?>; 
-const isLoggedIn = <?= json_encode($isLoggedIn) ?>; // Biến kiểm tra Đăng nhập
-const userData = <?= json_encode($loggedInUserData) ?>;
 
-
-</script>
 <script src="public/js/xuly_formDK.js"></script>
 
 </body>

@@ -52,10 +52,6 @@
                         <span>Email</span>
                         <span>'.$r["Email"].'</span>
                     </div>
-                    <div>
-                        <span>Mã phiếu khám</span>
-                        <span>'.$r["MaPK"].'</span>
-                    </div>
                 </div>
 
                 <div class="edit-button">

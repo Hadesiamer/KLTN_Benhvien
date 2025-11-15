@@ -1,9 +1,7 @@
-// Biến DOM 
+// Biến DOM    
 const chuyenKhoaSel = document.getElementById("chuyenKhoa");
-// Thay thế dichvuSel cũ bằng:
 const dichvuButtonsContainer = document.getElementById("DichVuSelection");
 const dichvuHiddenInput = document.getElementById("MaDV_Hidden"); 
-
 const datLichSel = document.getElementById("datLich");
 const bacsiSel = document.getElementById("MaBS");
 const ngayKhamInput = document.getElementById("NgayKham"); 
@@ -31,19 +29,30 @@ const bacsiGroup = document.getElementById("bacsi-group");
 // >>> THÊM BIẾN DOM MỚI CHO HIỂN THỊ BÁC SĨ TỰ ĐỘNG CHỌN <<<
 const doctorDisplayBox = document.getElementById("doctor-selection-display");
 const selectedDoctorInfo = document.getElementById("selected-doctor-info");
-// >>> HẾT BIẾN DOM MỚI <<<
+
+// ********** BIẾN DOM QUAN TRỌNG CHO LOGIC ĐĂNG NHẬP (ĐÃ THÊM) **********
+const mainBookingArea = document.getElementById("booking-step-1");
+const bookingStep2 = document.getElementById("booking-step-2");
+const lichErrorMsgContainer = document.getElementById("lich-error-msg");
+// ************************************************************************
 
 // Biến tạm lưu dữ liệu
 window.finalBookingData = {};
 window.isTrongGioMode = false;
 
-// ********** KHAI BÁO URL API (CẦN ĐIỀU CHỈNH ĐƯỜNG DẪN THỰC TẾ) **********
 // Giả định file process_booking.php nằm cùng cấp hoặc có thể truy cập trực tiếp
 const BOOKING_API_URL = "mvc/views/pages/formDK_KhamBenh.php";
 
 // ********** CHỨC NĂNG MODAL CHUNG **********
-function openModal(modal) { modal.style.display = "flex"; document.body.style.overflow = 'hidden'; }
-function closeModal(modal) { modal.style.display = "none"; document.body.style.overflow = 'auto'; }
+function openModal(modal) { 
+    modal.style.display = "flex"; 
+    document.body.style.overflow = 'hidden'; 
+    }
+
+function closeModal(modal) { 
+    modal.style.display = "none"; 
+    document.body.style.overflow = 'auto'; 
+}
 
 closeTimeBtn.addEventListener('click', () => closeModal(panel));
 closeAuthBtn.addEventListener('click', () => closeModal(authModal));
@@ -58,6 +67,11 @@ let fp = flatpickr("#NgayKham", {
     clickOpens: false, 
     enable: [],
     onChange: function(selectedDates, dateStr, instance) {
+        // ********* THÊM KIỂM TRA ĐĂNG NHẬP NGAY ĐẦU HÀM *********
+        // Nếu form đang bị "chặn" (dù không bị làm mờ) và chưa đăng nhập, không cho xử lý logic
+        if (!isLoggedIn && mainBookingArea.dataset.isBlocked === 'true') return; 
+        // **********************************************************
+        
         gioKhamHidden.value = "";
         
         // --- THÊM LOGIC ẨN HỘP HIỂN THỊ BÁC SĨ KHI NGÀY KHÁM THAY ĐỔI ---
@@ -98,8 +112,11 @@ let fp = flatpickr("#NgayKham", {
 
 function displayMessage(message = '', element = errorMsgDiv) { element.textContent = message; }
 
-// Hàm mới: BẮT BUỘC mở lịch khi click vào input (Khắc phục lỗi CSS Overlay)
+//  BẮT BUỘC mở lịch khi click vào input 
 function forceOpenFlatpickr() {
+    // Kiểm tra nếu đang ở trạng thái bị chặn (chưa đăng nhập) thì không mở
+    if (mainBookingArea.dataset.isBlocked === 'true') return;
+
     if (!ngayKhamInput.hasAttribute('readonly')) {
         fp.open();
     }
@@ -314,7 +331,6 @@ function filterDoctorsWithFutureSchedule(doctors) {
     const todayStr = new Date().toISOString().split('T')[0];
     
     return doctors.filter(b => {
-        // KHẮC PHỤC LỖI TYPE CASTING: Chuyển MaNV sang kiểu String để truy cập key trong lichLamViecData
         const maBS = String(b.MaNV); 
         const lich = lichLamViecData[maBS];
         
@@ -355,6 +371,12 @@ function validateAndToggleSubmit() {
     const gioKham = gioKhamHidden.value;
     const maCK = chuyenKhoaSel.value;
     const maDV = dichvuHiddenInput.value; // Dùng Hidden Input
+    
+    // Nếu chưa đăng nhập, nút Submit luôn bị disabled (xử lý trong disableFormInteractions)
+    if (!isLoggedIn) {
+        disableFormInteractions(true);
+        return;
+    }
 
     if (maBS && ngayKham && gioKham && maCK && maDV) {
         btnSubmit.disabled = false;
@@ -599,6 +621,54 @@ function toggleBacsi() {
     
     validateAndToggleSubmit();
 }
+
+// ********** HÀM XỬ LÝ LOGIC ĐĂNG NHẬP (ĐÃ CẬP NHẬT THEO YÊU CẦU MỚI) **********
+
+// HÀM VÔ HIỆU HÓA TƯƠNG TÁC FORM
+function disableFormInteractions(shouldDisable) {
+    // Theo yêu cầu mới: KHÔNG VÔ HIỆU HÓA hay LÀM MỜ các trường (select, input)
+    // Chỉ cần:
+    // 1. Vô hiệu hóa nút Submit
+    // 2. Đánh dấu trạng thái "bị chặn" cho khu vực form chính để logic khác kiểm tra
+    
+    // 1. Vô hiệu hóa nút Submit
+    btnSubmit.disabled = shouldDisable;
+    btnSubmit.style.backgroundColor = shouldDisable ? '#ccc' : '#007bff';
+    btnSubmit.style.color = shouldDisable ? '#666' : 'white';
+
+    // 2. Đánh dấu trạng thái bị chặn
+    mainBookingArea.dataset.isBlocked = shouldDisable ? 'true' : 'false';
+}
+
+// HÀM KIỂM TRA ĐĂNG NHẬP VÀ HIỂN THỊ MODAL
+function checkLoginAndPrompt(event) {
+    // Nếu đã đăng nhập, hoặc người dùng đang đóng modal, thì bỏ qua
+    if (isLoggedIn || event.target.classList.contains('close-button')) {
+        return;
+    }
+    
+    // Các phần tử cần bị chặn khi chưa đăng nhập: SELECT, nút Dịch vụ, input Ngày khám
+    const isInteractiveElement = event.target.tagName === 'SELECT' || 
+                                 event.target.classList.contains('service-button') || 
+                                 event.target.id === 'NgayKham' ||
+                                 event.target.id === 'btnSubmitBooking';
+                                 
+    // Bắt sự kiện click lên bất kỳ phần tử tương tác nào
+    if (isInteractiveElement) {
+        
+        event.preventDefault(); // <<< CHẶN HÀNH ĐỘNG MẶC ĐỊNH (Không cho mở Select, không cho mở lịch)
+        event.stopPropagation(); // Ngăn chặn lan truyền sự kiện
+
+        // Vô hiệu hóa form (chủ yếu là nút Submit) và đánh dấu trạng thái chặn
+        disableFormInteractions(true);
+        displayMessage("⚠️ Vui lòng Đăng nhập hoặc Đăng ký để bắt đầu đặt lịch.", lichErrorMsgContainer);
+        
+        // Mở Modal (Đảm bảo gọi cuối cùng)
+        openModal(authModal);
+    }
+}
+// *****************************************************************************
+
 document.addEventListener("DOMContentLoaded", function() {
     // ⚠️ Đã cập nhật để dùng dichvuHiddenInput.value
     if (dichvuHiddenInput.value === "1") { 
@@ -626,57 +696,21 @@ document.addEventListener("DOMContentLoaded", function() {
             initialButton.classList.add('selected');
         }
     }
+    
+    // ********** LOGIC KIỂM TRA ĐĂNG NHẬP NGAY KHI TƯƠNG TÁC **********
+    if (mainBookingArea && !isLoggedIn) {
+        // Vô hiệu hóa nút Submit và đánh dấu trạng thái chặn
+        disableFormInteractions(true);
+        displayMessage("⚠️ Vui lòng Đăng nhập hoặc Đăng ký để bắt đầu đặt lịch.", lichErrorMsgContainer);
+        
+        // Gắn listener CHẶN (Capture Phase: true)
+        // Listener này sẽ chạy trước hành động mặc định của trình duyệt (vd: mở select)
+        mainBookingArea.addEventListener('click', checkLoginAndPrompt, true); 
+        mainBookingArea.addEventListener('change', checkLoginAndPrompt, true); 
+    }
+    // *****************************************************************************
 });
 
-// ********** HÀM XỬ LÝ LOGIC ĐĂNG NHẬP (ĐÃ CẬP NHẬT LUỒNG CHUYỂN HƯỚNG VÀ GỌI API) **********
-
-// ********** HÀM XỬ LÝ LOGIC ĐĂNG NHẬP **********
-
-function handleBookingFinalStep() {
-    const trieuChung = trieuChungInput.value.trim();
-    if (!trieuChung) {
-        alert("Vui lòng mô tả triệu chứng của bạn để hoàn tất đăng ký.");
-        return;
-    }
-    
-    window.finalBookingData.TrieuChung = trieuChung;
-
-    if (isLoggedIn) {
-        // --- LOGIC KIỂM TRA THÔNG TIN HỒ SƠ ĐẦY ĐỦ ---
-        const customerHoTen = userData && userData.HovaTen ? userData.HovaTen.trim() : '';
-        const customerSDT = userData && userData.SoDT ? userData.SoDT.trim() : '';
-        const customerMaKH = userData && userData.MaBN ? userData.MaBN : null;
-        
-        // Chỉ chấp nhận nếu có đủ Họ Tên, SĐT và Mã Khách hàng (MaKH > 0)
-        if (!customerHoTen || !customerSDT || !customerMaKH || customerMaKH <= 0) {
-            alert("⚠️ Hồ sơ khám bệnh chưa hoàn chỉnh (thiếu Họ Tên, SĐT, hoặc Mã Khách hàng). Bạn sẽ được chuyển hướng đến trang tạo hồ sơ.");
-            
-            // CHUYỂN HƯỚNG ĐẾN TRANG TẠO HỒ SƠ/CẬP NHẬT THÔNG TIN
-            window.location.href = "/KLTN_Benhvien/Register/BNHS";
-            
-            return; 
-        } else {
-            // Đã có đủ thông tin, tiến hành hoàn tất
-            completeBooking({
-                isLoggedIn: true,
-                MaKH: customerMaKH, 
-                HoTen: userData.HoTen,
-                SDT: userData.SDT,
-                Email: userData.Email || '',
-            });
-        }
-    } else {
-        // --- CHƯA ĐĂNG NHẬP: Mở modal Auth và BẮT BUỘC đăng nhập/đăng ký ---
-        openModal(authModal);
-    }
-}
-
-// XÓA logic xử lý Khách lẻ, nút này giờ chuyển thành Đăng ký
-if (btnContinueAsGuest) { 
-    // Giữ nguyên logic HTML của nút này là Đăng ký (vì nó đã trỏ đến $registerPageUrl)
-}
-
-// XÓA TOÀN BỘ KHỐI XỬ LÝ SUBMIT FORM KHÁCH LẺ (trước đó đã được xóa)
 
 function handleBookingFinalStep() {
     const trieuChung = trieuChungInput.value.trim();
@@ -726,9 +760,7 @@ async function completeBooking(customerInfo) {
     
     const dataToSend = {
         // 1. Dữ liệu bệnh nhân (MaBN)
-        MaKH: customerInfo.MaBN, // <-- GỬI ĐI VỚI KEY MaKH để khớp với PHP backend ($data['MaKH']) 
-                                 //     hoặc dùng MaBN nếu PHP đã sửa lại (tôi dùng MaKH theo code PHP gốc)
-        
+        MaKH: customerInfo.MaBN, 
         // 2. Dữ liệu lịch khám (từ Bước 1)
         maBS: window.finalBookingData.maBS,
         maCK: window.finalBookingData.maCK,
@@ -776,11 +808,7 @@ async function completeBooking(customerInfo) {
 
 function resetAllSteps() {
     document.getElementById('form-step-1').reset();
-    document.getElementById('form-step-2').reset();
-    
-    // Đảm bảo biến này được bỏ đi hoặc thay thế bằng form thực tế nếu cần
-    // if (formGuestInfo) formGuestInfo.reset(); 
-    
+    document.getElementById('form-step-2').reset();  
     goToPreviousStep(); 
     
     // Gọi toggleBacsi() để reset trạng thái lựa chọn và lịch
@@ -795,9 +823,9 @@ function resetAllSteps() {
         });
         dichvuHiddenInput.value = ""; // Đảm bảo hidden input reset
     }
+    
+    // Bỏ trạng thái bị chặn khi reset
+    disableFormInteractions(false);
 }
 
 btnSubmit.addEventListener('click', goToNextStep);
-
-
-

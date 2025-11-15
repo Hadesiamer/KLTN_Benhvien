@@ -38,9 +38,10 @@
         {
             $str = "SELECT 
                         lichkham.*, 
-                        nhanvien.*,
+                        nhanvien.HovaTen as HovaTenNV,
                         benhnhan.*, 
-                        chuyenkhoa.* 
+                        chuyenkhoa.*,
+                        phongkham.*
                     FROM 
                         lichkham
                     INNER JOIN 
@@ -51,6 +52,8 @@
                         nhanvien ON bacsi.MaNV = nhanvien.MaNV
                     INNER JOIN 
                         chuyenkhoa ON bacsi.MaKhoa = chuyenkhoa.MaKhoa 
+                    INNER JOIN 
+                        phongkham ON lichkham.MaKhoa = phongkham.MaKhoa
                     WHERE lichkham.MaLK = '$MaLK'";
             $tblCTLK = mysqli_query($this->con, $str);
             $result = [];

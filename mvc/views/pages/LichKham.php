@@ -1,5 +1,10 @@
 <?php
 $lichKhamData = json_decode($data["LK"], true);
+// Xác định Mã LK đầu tiên
+$firstMaLK = isset($lichKhamData[0]['MaLK']) ? $lichKhamData[0]['MaLK'] : null;
+
+// Kiểm tra xem đây có phải là lần tải trang đầu tiên (không có lịch nào được POST) không
+$isInitialLoad = !isset($_POST['MaLK']) || empty($_POST['MaLK']);
 ?>
 <link rel="stylesheet" href="./public/css/lichkham.css">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -19,10 +24,17 @@ $lichKhamData = json_decode($data["LK"], true);
     <div class="col-4">
         <div class="list-group">
          <?php if (isset($lichKhamData) && !empty($lichKhamData)): ?>
+            <?php $isFirstItem = true; // Biến cờ kiểm tra lịch đầu tiên ?>
             <?php foreach ($lichKhamData as $lichKham): ?>
+                <?php
+                    // Đánh dấu lịch đầu tiên nếu là lần tải trang ban đầu
+                    $isSelectedDefault = $isInitialLoad && $isFirstItem;
+                    $isFirstItem = false; // Tắt cờ sau vòng lặp đầu tiên
+                ?>
                 <form method="POST" action="/KLTN_Benhvien/LichKham">
                     <input type="hidden" name="MaLK" value="<?= $lichKham['MaLK']; ?>">
-                    <div class="patient-item list-group-item" onclick="this.closest('form').submit()">
+                    <div class="patient-item list-group-item <?= $isSelectedDefault ? 'selected-default' : ''; ?>" 
+                         onclick="this.closest('form').submit()">
                         <p style="font-size: 18px;">
                             BS. <?= $lichKham['HovaTenNV']; ?>
                         </p>
@@ -60,6 +72,10 @@ $lichKhamData = json_decode($data["LK"], true);
                     <p><strong>Ngày khám:</strong> <?= $ct['NgayKham']; ?></p>
                     <p><strong>Giờ khám:</strong> <?= $ct['GioKham']; ?></p>
                     <p><strong>Chuyên khoa:</strong> <?= $ct['TenKhoa']; ?></p>
+                    <p><strong>Bác sĩ phụ trách:</strong> <?= $ct['HovaTenNV']; ?></p>
+                    <p><strong>Phòng khám:</strong> <?= $ct['TenPhongKham']; ?></p>
+                    <p><strong>Tòa:</strong> <?= $ct['ViTri']; ?></p>
+
 
                     <h5>Thông tin bệnh nhân</h5> <hr>
                     <p><strong>Mã bệnh nhân:</strong> <?= $ct['MaBN']; ?></p>
@@ -114,8 +130,9 @@ $lichKhamData = json_decode($data["LK"], true);
         <?php endif; ?>
     </div>
 
-    <script>
+ <script>
     document.addEventListener("DOMContentLoaded", function () {
+        // --- Logic Ẩn Alert Message ---
         const alertMessage = document.getElementById("alert-message");
         if (alertMessage) {
             setTimeout(() => {
@@ -124,12 +141,26 @@ $lichKhamData = json_decode($data["LK"], true);
                 setTimeout(() => alertMessage.remove(), 100); 
             }, 1000); 
         }
+
+        // --- Logic Tự Động Chọn Lịch Khám Đầu Tiên ---
+        // Kiểm tra xem có MaLK nào đang được POST để hiển thị chi tiết không
+        const isScheduleSubmitted = <?= (isset($_POST['MaLK']) && !empty($_POST['MaLK'])) ? 'true' : 'false'; ?>;
+
+        if (!isScheduleSubmitted) {
+            // Tìm lịch khám đầu tiên đã được đánh dấu
+            const defaultItem = document.querySelector(".patient-item.selected-default");
+            
+            if (defaultItem) {
+                // Kích hoạt hành động submit form của lịch đầu tiên
+                defaultItem.click(); 
+            }
+        }
     });
-    </script>
-    <script>
-        document.getElementById("btnChangeSchedule").addEventListener("click", function(event) {
-            event.preventDefault(); 
-            document.getElementById("changeScheduleForm").style.display = "block";
-        });
-    </script>
-    
+</script>
+<script>
+    // Giữ nguyên script cho nút thay đổi lịch (nếu cần)
+    document.getElementById("btnChangeSchedule").addEventListener("click", function(event) {
+        event.preventDefault(); 
+        document.getElementById("changeScheduleForm").style.display = "block";
+    });
+</script>
