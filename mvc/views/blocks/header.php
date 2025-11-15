@@ -236,10 +236,10 @@
                             <div class="navbar-nav ms-auto">
                                 <a class="nav-link" href="/KLTN_Benhvien">Trang chủ</a>
                                 <a class="nav-link" href="#">Tư vấn trực tiếp</a>
-                                <a class="nav-link" href="vechungtoi">Về chúng tôi</a>
-                                <a class="nav-link" href="huongdan">Hướng dẫn</a>
+                                <a class="nav-link" href="/KLTN_Benhvien/vechungtoi">Về chúng tôi</a>
+                                <a class="nav-link" href="/KLTN_Benhvien/huongdan">Hướng dẫn</a>
                             </div>
-                        <div id="nutdn" class="navbar-nav"><a class="nav-link" href="Login">Đăng nhập</a></div>';
+                        <div id="nutdn" class="navbar-nav"><a class="nav-link" href="/KLTN_Benhvien/Login">Đăng nhập</a></div>';
                     }
                 ?>
             </div>
