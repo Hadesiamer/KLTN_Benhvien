@@ -10,8 +10,8 @@
         </div>
 
         <div class="booking">
-                <h1>Đặt khám bác sĩ</h1>
-                <p>Phiếu khám kèm số thứ tự và thời gian của bạn được xác nhận.</p>
+                <h1>Bác sĩ tiêu biểu</h1>
+                <p>Một số bác sĩ tiêu biểu của bệnh viện chúng tôi.</p>
                 <div class="list" id="doctorList">
                 <?php foreach ($dt as $r): ?>
                     <div class="bs_card">
@@ -34,7 +34,7 @@
                 <!-- Đoạn này Nhàn xóa, tui mở lại -->
         <div class="listpk">
             <div class="booking_chuyenkhoa">
-                    <h1>Đặt khám chuyên khoa</h1>
+                    <h1>Chuyên khoa chúng tôi</h1>
                     <p>Đa dạng phòng khám với nhiều chuyên khoa khác nhau như Sản - Nhi, Tai Mũi họng, Da Liễu, Tiêu Hoá...</p>
                     <div class="list" id="pkList">
                     <?php foreach ($dt2 as $r): ?>

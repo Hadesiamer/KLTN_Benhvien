@@ -8,6 +8,7 @@ class mQLBS extends DB {
         $row = $result->fetch_assoc();
         return $row['count'];
     }   
+
     public function GetAllBS() {
         $str = "SELECT bs.MaNV, nv.HovaTen, nv.NgaySinh, nv.GioiTinh, nv.SoDT, nv.EmailNV, ck.TenKhoa, ck.MaKhoa, nv.HinhAnh
             FROM bacsi bs
@@ -61,15 +62,13 @@ class mQLBS extends DB {
         }
     }
 
-    
     // Hàm xóa bác sĩ (cập nhật trạng thái + xóa tài khoản tương ứng) NEW
-    
     public function DeleteBS($MaNV) {
         // Bắt đầu transaction để đảm bảo tính toàn vẹn dữ liệu
         $this->con->begin_transaction();
 
         try {
-            // 1.Lấy ID tài khoản liên kết với bác sĩ
+            // 1. Lấy ID tài khoản liên kết với bác sĩ
             $sqlGetID = "SELECT ID FROM nhanvien WHERE MaNV = ?";
             $stmt1 = $this->con->prepare($sqlGetID);
             $stmt1->bind_param("i", $MaNV);
@@ -78,13 +77,13 @@ class mQLBS extends DB {
             $row = $result->fetch_assoc();
             $ID = $row['ID'] ?? null;
 
-            // 2️.Cập nhật trạng thái làm việc của bác sĩ thành 'Nghỉ làm'
+            // 2. Cập nhật trạng thái làm việc của bác sĩ thành 'Nghỉ làm'
             $sqlUpdate = "UPDATE nhanvien SET TrangThaiLamViec = 'Nghỉ làm' WHERE MaNV = ?";
             $stmt2 = $this->con->prepare($sqlUpdate);
             $stmt2->bind_param("i", $MaNV);
             $stmt2->execute();
 
-            // 3️.Nếu có tài khoản liên kết, tiến hành xóa trong bảng taikhoan
+            // 3. Nếu có tài khoản liên kết, tiến hành xóa trong bảng taikhoan
             if ($ID !== null) {
                 $sqlDeleteTK = "DELETE FROM taikhoan WHERE ID = ?";
                 $stmt3 = $this->con->prepare($sqlDeleteTK);
@@ -92,7 +91,7 @@ class mQLBS extends DB {
                 $stmt3->execute();
             }
 
-            // 4️.Hoàn tất transaction
+            // 4. Hoàn tất transaction
             $this->con->commit();
             return true;
 
@@ -124,6 +123,11 @@ class mQLBS extends DB {
     
             // Generate new MaNV
             $MaNV = $this->GenerateNewMaNV();
+
+            // Đặt ảnh đại diện theo giới tính
+            // Nam  -> bacsinam.png
+            // Nữ   -> bacsinu.png
+            $HinhAnh = ($GioiTinh === 'Nữ') ? 'bacsinu.png' : 'bacsinam.png';
     
             // Create user account first to get the ID
             $username = $SoDT;
@@ -137,10 +141,20 @@ class mQLBS extends DB {
             $newAccountId = $this->con->insert_id;
     
             // Insert into nhanvien table with the new account ID
-            $str2 = "INSERT INTO nhanvien (MaNV, HovaTen, NgaySinh, GioiTinh, SoDT, EmailNV, ChucVu, TrangThaiLamViec, ID) 
-                     VALUES (?, ?, ?, ?, ?, ?, 'Bác sĩ', 'Đang làm việc', ?)";
+            $str2 = "INSERT INTO nhanvien (MaNV, HovaTen, NgaySinh, GioiTinh, SoDT, EmailNV, ChucVu, TrangThaiLamViec, ID, HinhAnh) 
+                     VALUES (?, ?, ?, ?, ?, ?, 'Bác sĩ', 'Đang làm việc', ?, ?)";
             $stmt2 = $this->con->prepare($str2);
-            $stmt2->bind_param("isssssi", $MaNV, $HovaTen, $NgaySinh, $GioiTinh, $SoDT, $EmailNV, $newAccountId);
+            $stmt2->bind_param(
+                "isssssis",
+                $MaNV,
+                $HovaTen,
+                $NgaySinh,
+                $GioiTinh,
+                $SoDT,
+                $EmailNV,
+                $newAccountId,
+                $HinhAnh
+            );
             $stmt2->execute();
     
             // Insert into bacsi table
