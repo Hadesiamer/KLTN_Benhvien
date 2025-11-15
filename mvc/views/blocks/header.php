@@ -174,7 +174,6 @@
                     } else if (isset($_SESSION['role']) && $_SESSION['role'] == 2) { // Bác sĩ
                         $tenbs = $_SESSION['ten'];
                         echo '<div class="navbar-nav ms-auto">
-                                <a class="nav-link" href="/KLTN_Benhvien/Bacsi">Chức năng</a>
                                 
                             </div>
                             <nav>
