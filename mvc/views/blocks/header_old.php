@@ -4,64 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!--<link rel="stylesheet" href="../../../public/css/main.css">-->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Sửa đường dẫn css -->
     <link rel="stylesheet" href="/public/css/main.css"> 
     
     <title>Document</title>
     <style>
-        /* --- CODE CSS ĐƯỢC THÊM VÀO TỪ FILE EXTERNAL --- */
-        
-        /* Full */
-        *{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        .header
-        {
-            height: 50px;
-            width: 100%;
-            background-color: #333;
-        }
-
-        /* header */
-        .sidebar-item {
-            cursor: pointer;
-        }
-        .sidebar-item:hover {
-            background-color: #e9ecef;
-        }
-        .schedule-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-        }
-        .schedule-day {
-            text-align: center;
-        }
-        .btn-sm {
-            width: 100%;
-            margin-bottom: 5px;
-        }
-        .navbar-brand, .sidebar-item, .navbar-nav a {
-            font-weight: bold;
-        }
-        .sidebar-item.active {
-            background-color: #e9ecef;
-            color: #0d6efd;
-            border: none;
-            border-bottom: 4px solid #0d6efd;
-        }
-        .navbar-nav .nav-link {
-            margin-right: 20px;
-        }
-        .card {
-            border: none;
-            box-shadow: 1px 7px 9px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* --- CODE CSS CŨ CỦA HEADER.PHP --- */
-
         /* Styling for the login name */
         .menu {
             list-style-type: none;
