@@ -81,11 +81,26 @@ $lichKhamData = json_decode($data["LK"], true);
         </div>
         <br>
       
-        <div class="button">
-        
-            <button type="button" class="btn btn-change"  id="btnPay" disabled data-bs-toggle="modal" data-bs-target="#paymentModal">
-                Thanh toán lịch khám
-            </button>
+        <div class="button-area"> 
+            <?php foreach ($chiTietData as $ct): ?>
+                <p style="color: #007bff; font-size: 0.9em; margin-top: 15px;">
+                    * Nếu bạn muốn thay đổi lịch khám, vui lòng hủy lịch này và đăng ký lại lịch mới.
+                </p>
+                <div class="button">
+                    <button type="button" class="btn btn-change"  id="btnPay" disabled data-bs-toggle="modal" data-bs-target="#paymentModal">
+                        Thanh toán lịch khám
+                    </button>
+                    
+                    <form method="POST" action="" style="display: inline-block;" id="cancelForm"> 
+                        <input type="hidden" name="MaLK_Huy" value="<?= $ct['MaLK']; ?>" id="MaLK_Huy_Input">
+                        <button type="button" 
+                                class="btn btn-danger" 
+                                onclick="confirmCancel()">
+                            Hủy lịch khám
+                        </button>
+                    </form>
+                </div>
+            <?php endforeach; ?>
             
         </div>
 
@@ -108,7 +123,9 @@ $lichKhamData = json_decode($data["LK"], true);
                     <?php foreach ($chiTietData as $ct): ?>
                         <form action="/KLTN_Benhvien/ThanhToan" method="POST">
                         <input type="hidden" name="MaBN1" value="<?= $ct['MaBN'];?>">
-                        <button type="submit" class="btn btn-secondary" name="thanhtoan" data-bs-dismiss="modal">Đóng</button>
+                        <input type="hidden" name="ThanhToanLK" value="<?= $ct['MaLK'];?>"> 
+                        <button type="submit" class="btn btn-success" name="thanhtoan">Xác nhận thanh toán</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                         </form>
                         <?php endforeach; ?>
                     </div>
@@ -118,7 +135,31 @@ $lichKhamData = json_decode($data["LK"], true);
 
 
         <script>
+            // Hàm xác nhận và submit form Hủy
+            function confirmCancel() {
+                // Lấy MaLK từ input hidden
+                const maLK = document.getElementById('MaLK_Huy_Input').value; 
+                
+                if (confirm("Bạn có chắc chắn muốn hủy lịch khám Mã số " + maLK + " không?")) {
+                    // Submit form Hủy
+                    document.getElementById('cancelForm').submit();
+                }
+            }
+            
+            
             document.addEventListener("DOMContentLoaded", function () {
+            // Giữ nguyên logic ẩn alert message
+            <?php if (isset($data["Message"]) && $data["Message"] != ""): ?>
+                setTimeout(() => {
+                    const alertMessage = document.getElementById("alert-message");
+                    if (alertMessage) {
+                        alertMessage.style.transition = "opacity 0.5s ease";
+                        alertMessage.style.opacity = "0";
+                        setTimeout(() => alertMessage.remove(), 500); 
+                    }
+                }, 2000); 
+            <?php endif; ?>
+
             const paymentMethod = document.getElementById("paymentMethod");
             const btnPay = document.getElementById("btnPay");
             const paymentInstructions = document.getElementById("paymentInstructions");
@@ -136,12 +177,13 @@ $lichKhamData = json_decode($data["LK"], true);
                 const selectedMethod = paymentMethod.value;
                 if (selectedMethod === "cash") {
                     paymentInstructions.innerHTML = `
-                        <p>Vui lòng đến quầy để được hướng dẫn thực hiện thanh toán.</p>
+                        <p>Vui lòng đến quầy để được hướng dẫn thực hiện thanh toán. Sau khi nhận thanh toán, nhân viên sẽ tiến hành xác nhận lịch hẹn trên hệ thống.</p>
                     `;
                 } else if (selectedMethod === "bank") {
                     paymentInstructions.innerHTML = `
                         <p>Vui lòng quét mã QR sau để thực hiện thanh toán:</p>
                         <img src="./public/img/DOMDOM_qrcode.png" alt="QR Code" style="width: 100%; max-width: 300px; display: block; margin: 0 auto;">
+                        <p style="text-align: center; margin-top: 10px; font-weight: bold;">Sau khi thanh toán qua Ngân hàng, vui lòng nhấn 'Xác nhận thanh toán' bên dưới.</p>
                     `;
                 }
             });
@@ -154,15 +196,19 @@ if (isset ($data['rs']))
     if($data["rs"]== 'true')
     {
         echo'<script language="javascript">
-							alert("Hoàn tất");	
-							</script>';
+                            alert("Hoàn tất");  
+                            </script>';
     }
     else
     {
         echo'<script language="javascript">
-							alert("Thất bại");	
-							</script>';
+                            alert("Thất bại");  
+                            </script>';
     }
 }
 
+// Đóng kết nối CSDL nếu nó đã được mở và chưa đóng
+if ($conn) {
+    $conn->close();
+}
 ?>

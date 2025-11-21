@@ -27,7 +27,7 @@ class LichKham extends Controller
         $lichKham = $khachhang->GetLK($MaBN);
         $chiTietLichKham = ($MaLK != "") ? $khachhang->getCTLK($MaLK) : [];
         $this->view("layoutBN", [
-            "Page" => "LichKham",
+            "Page" => "ThanhToan",
             "LK" => $lichKham,
             "CTLK" => $chiTietLichKham,
             "Message" => $message,

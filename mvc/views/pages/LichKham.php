@@ -68,7 +68,7 @@ if (isset($lichKhamData) && is_array($lichKhamData)) {
                 </form>
             <?php endforeach; ?>
         <?php else: ?>
-            <p class="text-center text-muted p-3">Bạn chưa có lịch khám nào (Đã thanh toán)!</p>
+            <p class="text-center text-muted p-3">Bạn chưa có lịch khám nào!</p>
         <?php endif; ?>
         </div>
     </div>
@@ -106,9 +106,9 @@ if (isset($lichKhamData) && is_array($lichKhamData)) {
                         <span class="badge 
                             <?php 
                                 // Dùng chuỗi CSDL (có dấu) để hiển thị màu sắc
-                                if (isset($ct['TrangThaiThanhToan']) && $ct['TrangThaiThanhToan'] == 'Chưa thanh toán') {
+                                if (isset($ct['TrangThaiThanhToan']) && $ct['TrangThaiThanhToan'] == 'Chua thanh toan') {
                                     echo 'bg-warning text-dark';
-                                } elseif (isset($ct['TrangThaiThanhToan']) && $ct['TrangThaiThanhToan'] == 'Đã thanh toán') {
+                                } elseif (isset($ct['TrangThaiThanhToan']) && $ct['TrangThaiThanhToan'] == 'Da thanh toan') {
                                     echo 'bg-success';
                                 } elseif (isset($ct['TrangThaiThanhToan']) && $ct['TrangThaiThanhToan'] == 'Đã hủy') {
                                     echo 'bg-danger';
@@ -199,7 +199,7 @@ if (isset($lichKhamData) && is_array($lichKhamData)) {
             <div style="width: 100%; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; line-height: 1.5; font-size: 14px;">
                 
                 <div style="text-align: center; padding-bottom: 10px;">
-                    <p style="font-size: 14px; margin: 0; font-weight: bold;">BỆNH VIỆN ĐỨC TÂM</p>
+                    <p style="font-size: 14px; margin: 0; font-weight: bold;">BỆNH VIỆN QUẬN THỦ ĐỨC</p>
                     <p style="font-size: 12px; margin: 0; color: #007bff; font-style: italic;">Chất lượng - Cảm Thông - Vững Tiến</p>
                 </div>
 
