@@ -118,12 +118,13 @@ echo '<div class="col-md-3 ">';
         echo '</button>';
 
     echo '</div>';
+    echo '</div>';
 
 ?>
 
 <?php                  
     
-echo '</div>
+echo '
         <div class="schedule-grid mb-4" id="schedule-container">
             <table class="schedule-table table table-bordered">
                 <thead>
@@ -629,6 +630,66 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 <style>
+/* --- SỬA CHỮA LỖI CỘT TRỐNG VÀ GIÃN BẢNG LỊCH RA --- */
+.schedule-grid,
+#schedule-container {
+    /* Quan trọng: Ghi đè bất kỳ quy tắc Grid/Flex nào đang được áp dụng */
+    display: block !important; 
+    /* Đảm bảo nó chiếm 100% chiều rộng của container cha */
+    width: 100%; 
+    /* Cho phép cuộn ngang nếu bảng quá rộng */
+    overflow-x: auto; 
+    padding: 0; /* Xóa padding không cần thiết */
+    margin-bottom: 20px;
+    height: auto; /* Chiều cao tự động để phù hợp với nội dung */
+}
+
+.schedule-table {
+    width: 100%;       /* Buộc bảng chiếm 100% */
+    table-layout: fixed; /* Giúp các cột ngày chia đều */
+    font-size: 14px; 
+    border-collapse: collapse;
+    height: auto; /* Chiều cao tự động để phù hợp với nội dung */
+}
+
+/* Điều chỉnh cột Ca */
+.schedule-table th.shift,
+.schedule-table td.shift {
+    width: 10%; 
+    min-width: 80px;
+    text-align: center;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+/* Tăng chiều cao ô để nội dung thoáng hơn */
+.schedule-table .shift-cell {
+    height: 300px; 
+    padding: 8px;
+    vertical-align: top;
+}
+/* -------------------------------------------------------- */
+
+
+/* Các CSS khác (Giữ nguyên) */
+  #dsNghiPhep .modal-content {
+    border-radius: 15px;
+    overflow: hidden;
+  }
+
+  #dsNghiPhep .table th, 
+  #dsNghiPhep .table td {
+    vertical-align: middle;
+  }
+
+  #dsNghiPhep .btn {
+    border-radius: 8px;
+  }
+
+  #dsNghiPhep .modal-header {
+    border-bottom: 3px solid #ffc107;
+  }
+
     .add-btn, .delete-btn, .edit-btn {
     border: none;
     background: none;
@@ -647,4 +708,3 @@ document.addEventListener("DOMContentLoaded", function () {
 }
 
 </style>
-
