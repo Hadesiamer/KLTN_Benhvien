@@ -1,5 +1,4 @@
 <?php
-session_start();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'request_leave') {
     $conn = new mysqli("localhost", "root", "", "domdom");
@@ -134,7 +133,6 @@ $conn->close();
         </table>
     </div>
 
-    <button id="print-schedule" class="btn btn-primary mt-3">In Lịch Làm Việc</button>
 </div>
 
 <!-- Modal xin nghỉ -->

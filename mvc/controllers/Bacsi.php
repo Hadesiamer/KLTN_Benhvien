@@ -77,6 +77,7 @@ class Bacsi extends Controller
             ]);
         }
     }
+
     function XemLichLamViec()
     {
         $model = $this->model("MBacsi");
@@ -90,18 +91,17 @@ class Bacsi extends Controller
         ]);
     }
 
-
-
     //NhatCuong function 1/2: Xem Danh Sách Khám Bệnh
     function XemDanhSachKham()
     {
         $bacsi = $this->model("MBacsi");
-        $this->view("LayoutXemDanhSachKham", [
-            "Page" => "Danhsachkham",
+        $this->view("layoutBacsi", [
+            "Page" => "xemdanhsachkham",             // dùng master layoutBacsi + page mới
             "DanhSachKham" => $bacsi->GetDanhSachKhamAll()
         ]);
     }
-    //NhatCuong function 2/2: Xem Danh Sách Khám Bệnh
+
+    //NhatCuong function 2/2: Xem Danh Sách Khám Bệnh (AJAX filter)
     function GetDanhSach()
     {
         if (isset($_POST["shift"])) {
@@ -120,7 +120,7 @@ class Bacsi extends Controller
                     break;
             }
 
-            // Chỉ trả về nội dung của Danhsachkham.php
+            // Chỉ trả về nội dung của Danhsachkham.php (partial) để JS chèn vào appointment-list-container
             $this->view("pages/Danhsachkham", [
                 "DanhSachKham" => $danhSach
             ]);
@@ -149,7 +149,6 @@ class Bacsi extends Controller
                 "Page" => "xemthongtinbenhnhan"
             ]);
         }
-        // }
     }
 
     //NhatCuong: usecase: Xem lịch sử khám bệnh
@@ -174,7 +173,6 @@ class Bacsi extends Controller
             ]);
         }
     }
-
 
     //Lập phiếu khám
     function Lapphieukham()
@@ -207,7 +205,6 @@ class Bacsi extends Controller
             $ngaytaikham = $_POST["ngayTaiKham"];
             $model = $this->model("mBacsi");
 
-           
             $thuoc = $_POST["thuoc"];
             $key = array_keys($thuoc);
             $l = count($key);
@@ -218,27 +215,26 @@ class Bacsi extends Controller
                     $soluong = $thuoc[$t]["SoLuong"];
                     $lieudung = $thuoc[$t]["LieuDung"];
                     $cachdung = $thuoc[$t]["CachDung"];
-                    
+
                     $rs3 = $model->TaoCTDT($mathuoc, $soluong, $lieudung, $cachdung);
                 }
             }
             $rs = $model->AddPK($ngaytao, $trieuchung, $kq, $chuandoan, $loidan, $ngaytaikham, $malk, $bsi, $mabn);
-            $this->view("LayoutXemDanhSachKham", [
-                "Page" => "Danhsachkham",
+            $this->view("layoutBacsi", [
+                "Page" => "xemdanhsachkham",        // quay lại layoutBacsi + page mới
                 "DanhSachKham" => $model->GetDanhSachKhamAll(),
-                "result" => $rs3
+                "result" => $rs3                    // dùng để show alert trong page xemdanhsachkham
             ]);
         }
-
-
     }
-    function ThongTinBacSi() {
+
+    function ThongTinBacSi()
+    {
         $maNV = $_SESSION["idnv"];
         $model = $this->model("mBacsi");
-        $this->view("layoutBacsi",[
+        $this->view("layoutBacsi", [
             "Page" => "thongtinbacsi",
             "thongtinbs" => $model->get1BS(100)
-
         ]);
     }
 }

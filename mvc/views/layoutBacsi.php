@@ -11,7 +11,7 @@ if ($_SESSION["role"] != 2) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lịch Sử Khám Bệnh</title>
+    <title>Chức năng bác sĩ</title>
     <link rel="stylesheet" href="/KLTN_Benhvien/public/css/main.css">
     <link rel="stylesheet" href="/KLTN_Benhvien/public/css/ttbs.css">
     <style>
@@ -171,7 +171,7 @@ if ($_SESSION["role"] != 2) {
                 <li><a href="/KLTN_Benhvien/Bacsi/XemLichLamViec">Xem lịch làm việc</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/XemDanhSachKham">Xem danh sách khám</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/XemThongTinBenhNhan">Xem thông tin bệnh nhân</a></li>
-                <li><a href="/KLTN_Benhvien/Bacsi/XemLichSuKhamBenh">Xem lịch sử khám bệnh</a></li>
+                <li><a href="/KLTN_Benhvien/Bacsi/ThongKe">Thống kê</a></li>
                 
             </ul>
         </div>
