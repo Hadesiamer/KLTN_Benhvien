@@ -1,143 +1,162 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="./../public/css/main.css">
-</head>
 <?php
-    $conn = new mysqli("localhost", "root", "", "domdom");
-    $conn->set_charset("utf8");
+// Page: Thông tin bác sĩ đang đăng nhập
+// Dữ liệu được truyền từ controller Bacsi::ThongTinBacSi()
+// $data["thongtinbs"] là JSON do MBacsi::get1BS($maNV) trả về
 
-    //Lay thong tin bac si
-    $idnv = $_SESSION['idnv'];
-    $bacsi = $conn->query("SELECT * FROM bacsi inner join nhanvien on bacsi.MaNV = nhanvien.MaNV inner join chuyenkhoa on bacsi.MaKhoa=chuyenkhoa.MaKhoa   WHERE bacsi.MaNV = '$idnv'");
-    $result_bacsi = $bacsi->fetch_assoc();
+$bacsi = null;
+
+if (isset($data["thongtinbs"])) {
+    $decoded = json_decode($data["thongtinbs"], true);
+    if (is_array($decoded) && count($decoded) > 0) {
+        $bacsi = $decoded[0];
+    }
+}
 ?>
-<body>
-    <div class="container">
-        <h2 class="mb-4">Thông tin bác sĩ</h2>
-        
-        <table class="table table-bordered">
-            <tr>
-                <th>Ảnh đại diện</th>
-                <td><img src="/KLTN_Benhvien/public/img/<?php echo htmlspecialchars($result_bacsi['HinhAnh']); ?>" alt="Ảnh đại diện" style="max-width: 150px; height: auto;"></td>
-            </tr>
-            <tr>
-                <th>Mã bác sĩ</th>
-                <td><?php echo htmlspecialchars($result_bacsi['MaNV']); ?></td>
-            </tr>
-            <tr>
-                <th>Họ tên</th>
-                <td><?php echo htmlspecialchars($result_bacsi['HovaTen']); ?></td>
-            </tr>
-            <tr>
-                <th>Giới tính</th>
-                <td><?php echo htmlspecialchars($result_bacsi['GioiTinh']); ?></td>
-            </tr>
-            <tr>
-                <th>Ngày sinh</th>
-                <td><?php echo htmlspecialchars($result_bacsi['NgaySinh']); ?></td>
-            </tr>
-            <tr>
-                <th>Số điện thoại</th>
-                <td><?php echo htmlspecialchars($result_bacsi['SoDT']); ?></td>
-            </tr>
-            <tr>
-                <th>Email</th>
-                <td><?php echo htmlspecialchars($result_bacsi['EmailNV']); ?></td>
-            </tr>
-            <tr>
-                <th>Chuyên khoa</th>
-                <td><?php echo htmlspecialchars($result_bacsi['TenKhoa']); ?></td>
-            </tr>
-            <tr>
-                <th>Trang thai lam viec</th>
-                <td><?php echo htmlspecialchars($result_bacsi['TrangThaiLamViec']); ?></td>
-            </tr>
-        </table>
+
+<!-- TIÊU ĐỀ ĐƯA RA NGOÀI CONTAINER (giống xem thông tin bệnh nhân) -->
+<h2 class="mb-4 bs-title-page">Thông tin bác sĩ</h2>
+
+<?php if ($bacsi): ?>
+    <div class="bs-container">
+
+        <div class="bs-card">
+            <!-- AVATAR + TÊN -->
+            <div class="bs-avatar-col">
+                <div class="bs-avatar-wrapper">
+                    <img src="/KLTN_Benhvien/public/img/<?= htmlspecialchars($bacsi['HinhAnh'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                         alt="Ảnh đại diện">
+                </div>
+                <div class="bs-name-block">
+                    <div class="bs-name">
+                        <?= htmlspecialchars($bacsi['HovaTen'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                    </div>
+                    <div class="bs-specialty">
+                        <?= htmlspecialchars($bacsi['TenKhoa'] ?? 'Chuyên khoa: đang cập nhật', ENT_QUOTES, 'UTF-8') ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THÔNG TIN -->
+            <div class="bs-info-col">
+                <table class="bs-table">
+                    <tr><th>Mã bác sĩ</th><td><?= htmlspecialchars($bacsi['MaNV'] ?? '') ?></td></tr>
+                    <tr><th>Họ tên</th><td><?= htmlspecialchars($bacsi['HovaTen'] ?? '') ?></td></tr>
+                    <tr><th>Giới tính</th><td><?= htmlspecialchars($bacsi['GioiTinh'] ?? '') ?></td></tr>
+                    <tr>
+                        <th>Ngày sinh</th>
+                        <td>
+                            <?= !empty($bacsi['NgaySinh']) ? date("d-m-Y", strtotime($bacsi['NgaySinh'])) : "Đang cập nhật" ?>
+                        </td>
+                    </tr>
+                    <tr><th>Số điện thoại</th><td><?= htmlspecialchars($bacsi['SoDT'] ?? '') ?></td></tr>
+                    <tr><th>Email</th><td><?= htmlspecialchars($bacsi['EmailNV'] ?? '') ?></td></tr>
+                    <tr><th>Chức vụ</th><td><?= htmlspecialchars($bacsi['ChucVu'] ?? "Bác sĩ") ?></td></tr>
+                    <tr><th>Chuyên khoa</th><td><?= htmlspecialchars($bacsi['TenKhoa'] ?? '') ?></td></tr>
+                    <tr><th>Trạng thái làm việc</th><td><?= htmlspecialchars($bacsi['TrangThaiLamViec'] ?? '') ?></td></tr>
+                </table>
+            </div>
+        </div>
     </div>
-</body>
+<?php else: ?>
+    <p class="bs-no-data">Không tìm thấy thông tin bác sĩ. Vui lòng kiểm tra lại tài khoản đăng nhập.</p>
+<?php endif; ?>
+
 
 <style>
-    body {
-        font-family: "Segoe UI", Arial, sans-serif;
-        background-color: #f5f8fc;
-        margin: 0;
-        padding: 0;
+    .bs-title-page {
+        text-align: left !important;
+        font-size: 26px;
+        font-weight: bold;
+        color: #111111ff;
+        margin-bottom: 25px;
+        margin-top: 0;
     }
 
-    .container {
-        max-width: 700px;
-        margin: 50px auto;
+    .bs-container {
+        max-width: 900px;
+        margin: 0 auto 40px;
+        padding: 0 10px;
+    }
+
+    .bs-card {
+        display: flex;
+        flex-wrap: wrap;
         background: #ffffff;
         border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        padding: 25px 30px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        padding: 20px 25px;
+        gap: 20px;
+        border-left: 5px solid #1a73e8;
     }
 
-    h2 {
-        text-align: center;
-        color: #0073e6;
-        font-size: 26px;
-        margin-bottom: 25px;
-        font-weight: 600;
+    .bs-avatar-col {
+        flex: 0 0 260px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border-right: 1px solid #e3ecfa;
+        padding-right: 16px;
     }
 
-    table {
+    .bs-avatar-wrapper img {
+        width: 130px;
+        height: 130px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid #cce0ff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        transition: 0.3s;
+    }
+    .bs-avatar-wrapper img:hover {
+        transform: scale(1.05);
+    }
+
+    .bs-name {
+        font-size: 20px;
+        font-weight: bold;
+        color: #0c4ca3;
+    }
+    .bs-specialty {
+        color: #4a6fad;
+        font-size: 14px;
+    }
+
+    .bs-info-col { flex: 1; }
+
+    .bs-table {
         width: 100%;
         border-collapse: collapse;
     }
 
-    th {
-        text-align: left;
+    .bs-table th {
+        background: #f0f6ff;
+        font-weight: bold;
         width: 35%;
-        background-color: #f0f6ff;
-        color: #004a99;
-        padding: 12px;
-        font-weight: 600;
+        padding: 10px 12px;
         border-bottom: 1px solid #dbe4f0;
+        color: #004a99;
     }
-
-    td {
-        padding: 12px;
-        color: #333;
+    .bs-table td {
+        padding: 10px 12px;
         border-bottom: 1px solid #eaeaea;
     }
-
-    tr:hover td {
-        background-color: #f9fcff;
+    .bs-table tr:hover td {
+        background: #f8fbff;
     }
 
-    img {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid #cce0ff;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-        transition: transform 0.3s ease;
+    .bs-no-data {
+        color: red;
+        font-style: italic;
     }
 
-    img:hover {
-        transform: scale(1.05);
-    }
-
-    @media (max-width: 600px) {
-        .container {
-            padding: 15px;
+    @media (max-width: 768px) {
+        .bs-card {
+            flex-direction: column;
         }
-
-        h2 {
-            font-size: 22px;
-        }
-
-        th, td {
-            padding: 8px;
-            font-size: 14px;
+        .bs-avatar-col {
+            border-right: none;
+            border-bottom: 1px solid #e3ecfa;
+            padding-bottom: 16px;
         }
     }
 </style>
-

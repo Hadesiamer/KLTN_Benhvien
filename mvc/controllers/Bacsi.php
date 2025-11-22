@@ -228,13 +228,74 @@ class Bacsi extends Controller
         }
     }
 
+            // Thông tin bác sĩ đang đăng nhập
     function ThongTinBacSi()
     {
+        // Bảo vệ: chỉ cho role bác sĩ (2) vào, giống layoutBacsi.php
+        if (!isset($_SESSION["role"]) || $_SESSION["role"] != 2) {
+            echo "<script>alert('Bạn không có quyền truy cập');</script>";
+            header("refresh:0; url='/KLTN_Benhvien'");
+            return;
+        }
+
+        // Kiểm tra đã có session MaNV chưa
+        if (!isset($_SESSION["idnv"]) || empty($_SESSION["idnv"])) {
+            echo "<script>alert('Không tìm thấy thông tin tài khoản bác sĩ. Vui lòng đăng nhập lại.');</script>";
+            header("refresh:0; url='/KLTN_Benhvien/Login'");
+            return;
+        }
+
+        // MaNV của bác sĩ đang đăng nhập (được set trong Login.php)
         $maNV = $_SESSION["idnv"];
-        $model = $this->model("mBacsi");
+
+        // Gọi đúng model MBacsi (class trong mBacsi.php)
+        $model = $this->model("MBacsi");
+
+        // Lấy thông tin bác sĩ và truyền sang view thongtinbacsi
         $this->view("layoutBacsi", [
-            "Page" => "thongtinbacsi",
-            "thongtinbs" => $model->get1BS(100)
+            "Page"        => "thongtinbacsi",
+            "thongtinbs"  => $model->get1BS($maNV)
         ]);
     }
+
+    function Doimatkhau()
+    {
+    if (!isset($_SESSION["idnv"])) {
+        echo "Chưa đăng nhập!";
+        return;
+    }
+
+    $maNV = $_SESSION["idnv"];
+    $model = $this->model("mBacsi");
+
+    if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+        $old = $_POST["old_password"];
+        $new = $_POST["new_password"];
+        $confirm = $_POST["confirm_password"];
+
+        // Kiểm tra nhập lại
+        if ($new !== $confirm) {
+            $this->view("layoutBacsi", [
+                "Page" => "bacsidoimk",
+                "msg" => "Mật khẩu xác nhận không khớp!"
+            ]);
+            return;
+        }
+
+        // Gọi model kiểm tra & đổi mật khẩu
+        $result = $model->DoiMatKhau($maNV, $old, $new);
+
+        $this->view("layoutBacsi", [
+            "Page" => "bacsidoimk",
+            "msg" => $result
+        ]);
+    } else {
+        $this->view("layoutBacsi", [
+            "Page" => "bacsidoimk"
+        ]);
+    }
+    }
+
+
 }

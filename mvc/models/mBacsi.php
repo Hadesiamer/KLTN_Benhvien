@@ -334,24 +334,120 @@ class MBacsi extends DB
     return mysqli_query($this->con, $str2);
 }
 
-
+    // Lấy thông tin 1 bác sĩ theo MaNV (bác sĩ đang đăng nhập)
     public function get1BS($maNV)
     {
-        $str = "SELECT nv.MaNV, nv.HovaTen, nv.NgaySinh, nv.SoDT, nv.ChucVu, nv.GioiTinh, nv.EmailNV, nv.HinhAnh, ck.TenKhoa
+        // Ép int cho an toàn
+        $maNV = intval($maNV);
+
+        $str = "SELECT 
+                    nv.MaNV,
+                    nv.HovaTen,
+                    nv.NgaySinh,
+                    nv.SoDT,
+                    nv.ChucVu,
+                    nv.GioiTinh,
+                    nv.TrangThaiLamViec,
+                    nv.EmailNV,
+                    nv.HinhAnh,
+                    ck.TenKhoa
                 FROM nhanvien nv
-                JOIN 
-                     bacsi bs ON nv.maNV = bs.maNV
-                JOIN 
-                     chuyenkhoa ck ON bs.MaKhoa = ck.MaKhoa
-                where 
-                     nv.MaNV = $maNV";
+                JOIN bacsi bs ON nv.MaNV = bs.MaNV
+                JOIN chuyenkhoa ck ON bs.MaKhoa = ck.MaKhoa
+                WHERE nv.MaNV = $maNV";
+
         $rows = mysqli_query($this->con, $str);
 
         $mang = array();
-        while ($row = mysqli_fetch_array($rows)) {
-            $mang[] = $row;
+        if ($rows) {
+            while ($row = mysqli_fetch_assoc($rows)) {
+                $mang[] = $row;
+            }
         }
         return json_encode($mang);
     }
+
+
+        // Đổi mật khẩu cho BÁC SĨ (dựa trên bảng taikhoan)
+    public function DoiMatKhau($maNV, $oldPass, $newPass)
+    {
+        // Ép int cho an toàn
+        $maNV = intval($maNV);
+
+        // 1. Lấy mật khẩu hiện tại từ bảng taikhoan thông qua nhanvien.ID
+        $sql = "SELECT tk.password 
+                FROM taikhoan tk
+                INNER JOIN nhanvien nv ON tk.ID = nv.ID
+                WHERE nv.MaNV = ?";
+
+        $stmt = $this->con->prepare($sql);
+        if (!$stmt) {
+            return "Lỗi hệ thống (không chuẩn bị được truy vấn).";
+        }
+
+        $stmt->bind_param("i", $maNV);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        if ($res->num_rows === 0) {
+            return "Không tìm thấy tài khoản bác sĩ!";
+        }
+
+        $row = $res->fetch_assoc();
+        $currentHash = $row["password"];
+
+        // 2. Xác định mật khẩu đang lưu dạng gì: md5 hay plain text
+        $isMd5 = (strlen($currentHash) === 32 && ctype_xdigit($currentHash));
+
+        // 3. Kiểm tra mật khẩu hiện tại
+        $oldPassOk = false;
+        if ($isMd5) {
+            if (md5($oldPass) === $currentHash) {
+                $oldPassOk = true;
+            }
+        } else {
+            if ($oldPass === $currentHash) {
+                $oldPassOk = true;
+            }
+        }
+
+        if (!$oldPassOk) {
+            return "Mật khẩu hiện tại không đúng!";
+        }
+
+        // 4. Không cho trùng mật khẩu cũ
+        if ($isMd5 && md5($newPass) === $currentHash) {
+            return "Mật khẩu mới không được trùng với mật khẩu hiện tại!";
+        }
+        if (!$isMd5 && $newPass === $currentHash) {
+            return "Mật khẩu mới không được trùng với mật khẩu hiện tại!";
+        }
+
+        // 5. Tính giá trị sẽ lưu xuống DB
+        $newToSave = $isMd5 ? md5($newPass) : $newPass;
+
+        // 6. Cập nhật mật khẩu mới vào bảng taikhoan
+        $sql2 = "UPDATE taikhoan tk
+                 INNER JOIN nhanvien nv ON tk.ID = nv.ID
+                 SET tk.password = ?
+                 WHERE nv.MaNV = ?";
+
+        $stmt2 = $this->con->prepare($sql2);
+        if (!$stmt2) {
+            return "Lỗi hệ thống (không chuẩn bị được câu lệnh cập nhật).";
+        }
+
+        $stmt2->bind_param("si", $newToSave, $maNV);
+
+        if ($stmt2->execute()) {
+            return "Đổi mật khẩu thành công!";
+        }
+
+        return "Đổi mật khẩu thất bại!";
+    }
+
+
+    
+
 
 }
