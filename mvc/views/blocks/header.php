@@ -157,9 +157,8 @@
                         $tenbn = $_SESSION['ten'];
                             echo '<div class="navbar-nav ms-auto">
                                     <a class="nav-link" href="/KLTN_Benhvien">Trang chủ</a>
-                                    <a class="nav-link" href="/KLTN_Benhvien/DangKyLK">Đặt lịch khám</a>
                                     <a class="nav-link" href="#">Tư vấn trực tiếp</a>
-                                    <a class="nav-link" href="/KLTN_Benhvien/LichKham">Lịch khám</a>
+                                    <a class="nav-link" href="/KLTN_Benhvien/BN/LichKham">Lịch khám</a>
                                     <a class="nav-link" href="/KLTN_Benhvien/ThanhToan">Thanh toán</a>
                                     <a class="nav-link" href="/KLTN_Benhvien/BN">Hồ sơ cá nhân</a>
                                     <a class="nav-link" href="/KLTN_Benhvien/XemPhieuKham">Hồ sơ phiếu khám</a>

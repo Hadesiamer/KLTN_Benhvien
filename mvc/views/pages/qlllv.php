@@ -32,7 +32,7 @@ if ($selectedKhoa == '' && $last_selectedKhoa != '') {
 $conn = new mysqli("localhost", "root", "", "domdom");
 $conn->set_charset("utf8");
 
-$manv = $_SESSION['MaNV'];
+// Lỗi: $manv = $_SESSION['MaNV'];
 
 // Lấy danh sách yêu cầu nghỉ phép đang chờ duyệt
 $lichnghiphep = $conn->query("SELECT * FROM lichnghiphep inner join lichlamviec on lichnghiphep.MaLLV = lichlamviec.MaLLV inner join nhanvien on lichlamviec.MaNV = nhanvien.MaNV WHERE lichnghiphep.TrangThai = 'Chờ duyệt' AND lichlamviec.TrangThai = 'Đang làm' GROUP BY lichnghiphep.MaYC");

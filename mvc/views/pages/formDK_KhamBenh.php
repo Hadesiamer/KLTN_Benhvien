@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $data) {
     $ngayKham = $data['ngayKham'];
     $gioKham = $data['gioKham'];
     $trieuChung = $data['TrieuChung'];
-    $trangThai = 'Chưa thanh toán'; // Mặc định
+    $trangThai = 'Chua thanh toan'; // Mặc định
     
     // *** LOGIC KIỂM TRA BẮT BUỘC ĐĂNG NHẬP ***
     if (empty($maKH) || !is_numeric($maKH) || $maKH <= 0) {
@@ -96,6 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $data) {
     }
 }
 
+// ================== PHẦN DƯỚI LÀ XỬ LÝ KHI LOAD TRANG FORM (REQUEST GET) ==================
+
 // Kết nối CSDL
 $conn = new mysqli("localhost", "root", "", "domdom");
 $conn->set_charset("utf8");
@@ -103,6 +105,22 @@ $conn->set_charset("utf8");
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
+
+/*
+ * ================== AUTO XÓA LỊCH KHÁM QUÁ 5 PHÚT CHƯA THANH TOÁN ==================
+ * Điều kiện:
+ *  - TrangThaiThanhToan = 'Chua thanh toan'
+ *  - Thoigiandat < NOW() - 5 phút
+ *  => Cần cột Thoigiandat (DATETIME, DEFAULT CURRENT_TIMESTAMP) trong bảng lichkham
+ */
+$autoDeleteSql = "
+    DELETE FROM lichkham
+    WHERE TrangThaiThanhToan = 'Chua thanh toan'
+      AND Thoigiandat < (NOW() - INTERVAL 5 MINUTE)
+";
+$conn->query($autoDeleteSql);
+// ==========================================================================
+
 
 // ********** LOGIC KIỂM TRA ĐĂNG NHẬP (ĐÃ SỬA) **********
 $loginPageUrl = '/KLTN_Benhvien/login'; 
@@ -197,7 +215,7 @@ $defaultTimeSlots = [
 $sqlBooked = "SELECT MaBS, DATE_FORMAT(NgayKham, '%Y-%m-%d') as NgayKham, 
                      TIME_FORMAT(GioKham, '%H:%i') as GioKham
               FROM lichkham 
-              WHERE NgayKham >= CURDATE() AND TrangThaiThanhToan NOT IN ('Hủy', 'Chưa xác nhận')"; 
+              WHERE NgayKham >= CURDATE() AND TrangThaiThanhToan NOT IN ('', 'Huy')"; 
 $resBooked = $conn->query($sqlBooked);
 
 $bookedSlotsAll = [];
@@ -235,9 +253,7 @@ if ($resBooked) {
         const bookedSlotsData = <?= json_encode($bookedSlotsAll) ?>; 
         const isLoggedIn = <?= json_encode($isLoggedIn) ?>;
         const userData = <?= json_encode($loggedInUserData) ?>;
-
-
-</script>
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
     <style>

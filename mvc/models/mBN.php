@@ -18,6 +18,7 @@ class mBN extends DB
         $row = mysqli_fetch_assoc($result);
         return $row['count'] > 0;
     }
+
     public function UpdateBN($mabn, $hoten, $gioitinh, $ngaysinh, $diachi, $email, $bhyt) {
         if ($this->emailExistsForUpdate($email, $mabn)) {
             return json_encode(array(
@@ -94,6 +95,83 @@ class mBN extends DB
             ];
         }
     }
+
+    // ================== LỊCH KHÁM ĐÃ ĐẶT (ĐÃ THANH TOÁN) ==================
+
+    // Lấy danh sách lịch khám đã ĐÃ THANH TOÁN của 1 bệnh nhân
+    public function getLichKhamDaThanhToan($mabn) {
+        $str = "
+            SELECT 
+                lichkham.*, 
+                nhanvien.*,
+                nhanvien.HovaTen as HovaTenNV,
+                benhnhan.*, 
+                chuyenkhoa.*
+            FROM lichkham
+            INNER JOIN benhnhan ON lichkham.MaBN = benhnhan.MaBN 
+            INNER JOIN bacsi    ON lichkham.MaBS = bacsi.MaNV 
+            INNER JOIN nhanvien ON bacsi.MaNV = nhanvien.MaNV
+            INNER JOIN chuyenkhoa ON bacsi.MaKhoa = chuyenkhoa.MaKhoa
+            WHERE 
+                lichkham.MaBN = '$mabn'
+                AND lichkham.TrangThaiThanhToan = 'Da thanh toan'
+            ORDER BY lichkham.MaLK DESC
+        ";
+        $rows = mysqli_query($this->con, $str);
+
+        $result = [];
+        if ($rows) {
+            while ($row = mysqli_fetch_assoc($rows)) {
+                $result[] = $row;
+            }
+        }
+
+        return json_encode($result);
+    }
+
+    // Lấy chi tiết 1 lịch khám đã ĐÃ THANH TOÁN theo MaLK
+        // Lấy chi tiết 1 lịch khám ĐÃ THANH TOÁN theo MaLK (và MaBN nếu có)
+    public function getChiTietLichKhamDaThanhToan($MaLK, $mabn = null) {
+        // Ép kiểu an toàn
+        $MaLK = (int)$MaLK;
+
+        $whereMaBN = "";
+        if ($mabn !== null) {
+            $mabn = (int)$mabn;
+            $whereMaBN = " AND lichkham.MaBN = '$mabn'";
+        }
+
+        $str = "
+            SELECT 
+                lichkham.*, 
+                nhanvien.*,
+                nhanvien.HovaTen as HovaTenNV,
+                benhnhan.*, 
+                chuyenkhoa.*
+            FROM lichkham
+            INNER JOIN benhnhan   ON lichkham.MaBN = benhnhan.MaBN 
+            INNER JOIN bacsi      ON lichkham.MaBS = bacsi.MaNV 
+            INNER JOIN nhanvien   ON bacsi.MaNV = nhanvien.MaNV
+            INNER JOIN chuyenkhoa ON bacsi.MaKhoa = chuyenkhoa.MaKhoa 
+            WHERE 
+                lichkham.MaLK = '$MaLK'
+                $whereMaBN
+                AND lichkham.TrangThaiThanhToan = 'Da thanh toan'
+            ORDER BY lichkham.MaLK ASC
+        ";
+
+        $rows = mysqli_query($this->con, $str);
+
+        $result = [];
+        if ($rows) {
+            while ($row = mysqli_fetch_assoc($rows)) {
+                $result[] = $row;
+            }
+        }
+
+        return json_encode($result);
+    }
+
 } 
     
 ?>

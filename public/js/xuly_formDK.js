@@ -47,17 +47,19 @@ const BOOKING_API_URL = "mvc/views/pages/formDK_KhamBenh.php";
 function openModal(modal) { 
     modal.style.display = "flex"; 
     document.body.style.overflow = 'hidden'; 
-    }
+}
 
 function closeModal(modal) { 
     modal.style.display = "none"; 
     document.body.style.overflow = 'auto'; 
 }
 
-closeTimeBtn.addEventListener('click', () => closeModal(panel));
-closeAuthBtn.addEventListener('click', () => closeModal(authModal));
-
-
+if (closeTimeBtn) {
+    closeTimeBtn.addEventListener('click', () => closeModal(panel));
+}
+if (closeAuthBtn) {
+    closeAuthBtn.addEventListener('click', () => closeModal(authModal));
+}
 
 // ********** HÀM XỬ LÝ LỊCH VÀ BƯỚC **********
 let fp = flatpickr("#NgayKham", {
@@ -110,7 +112,9 @@ let fp = flatpickr("#NgayKham", {
     }
 });
 
-function displayMessage(message = '', element = errorMsgDiv) { element.textContent = message; }
+function displayMessage(message = '', element = errorMsgDiv) { 
+    if (element) element.textContent = message; 
+}
 
 //  BẮT BUỘC mở lịch khi click vào input 
 function forceOpenFlatpickr() {
@@ -141,6 +145,7 @@ function updateFlatpickr(enabledDates = [], openStatus = false, minDate = "today
 function updateTimeSlotTabs(hasMorning, hasAfternoon) {
     const tabSang = document.querySelector('.tab-button[data-time-group="sang"]');
     const tabChieu = document.querySelector('.tab-button[data-time-group="chieu"]');
+    if (!tabSang || !tabChieu) return;
     tabSang.classList.remove('disabled-tab', 'active');
     tabChieu.classList.remove('disabled-tab', 'active');
     if (!hasMorning) { tabSang.classList.add('disabled-tab'); }
@@ -161,22 +166,34 @@ tabButtons.forEach(button => {
 function switchTab(groupName) {
     const allSlots = gioKhamContainer.querySelectorAll('span.time-slot'); 
     let hasAvailableSlots = false;
-    tabButtons.forEach(button => { button.classList.remove('active'); if (button.dataset.timeGroup === groupName) button.classList.add('active'); });
-    allSlots.forEach(slot => {
-        if (slot.dataset.group === groupName) { slot.style.display = 'inline-block'; hasAvailableSlots = true; } 
-        else { slot.style.display = 'none'; }
+    tabButtons.forEach(button => { 
+        button.classList.remove('active'); 
+        if (button.dataset.timeGroup === groupName) button.classList.add('active'); 
     });
-    const tempMsg = document.querySelector('#GioKhamContainer p.no-slot-msg'); if (tempMsg) tempMsg.remove();
+    allSlots.forEach(slot => {
+        if (slot.dataset.group === groupName) { 
+            slot.style.display = 'inline-block'; 
+            hasAvailableSlots = true; 
+        } else { 
+            slot.style.display = 'none'; 
+        }
+    });
+    const tempMsg = document.querySelector('#GioKhamContainer p.no-slot-msg'); 
+    if (tempMsg) tempMsg.remove();
     if (!hasAvailableSlots) {
-        const p = document.createElement('p'); p.className = 'no-slot-msg';
+        const p = document.createElement('p'); 
+        p.className = 'no-slot-msg';
         p.style.cssText = 'color:#666; text-align:center; padding:10px 0; width: 100%;';
-        p.textContent = 'Không có khung giờ trống trong buổi này.'; gioKhamContainer.appendChild(p);
+        p.textContent = 'Không có khung giờ trống trong buổi này.'; 
+        gioKhamContainer.appendChild(p);
     }
 }
 
 // Xử lý chọn giờ và tự động chọn Bác sĩ (ĐÃ CẬP NHẬT CHO TÍNH NĂNG MỚI)
 function handleTimeSlotClick(event) {
-    gioKhamContainer.querySelectorAll('.time-slot').forEach(slot => { slot.classList.remove('selected'); });
+    gioKhamContainer.querySelectorAll('.time-slot').forEach(slot => { 
+        slot.classList.remove('selected'); 
+    });
     event.target.classList.add('selected');
     const selectedTime = event.target.dataset.time;
     const maBsList = event.target.dataset.maBsList; 
@@ -208,7 +225,8 @@ function handleTimeSlotClick(event) {
     const period = selectedTime < '12:00' ? 'Sáng' : 'Chiều';
     ngayKhamInput.value = `${selectedDate} (${selectedTime} - ${period})`;
     
-    validateAndToggleSubmit(); closeModal(panel); 
+    validateAndToggleSubmit(); 
+    closeModal(panel); 
 }
 
 // Tải khung giờ trống (hỗ trợ cả 2 chế độ)
@@ -227,7 +245,9 @@ function loadAvailableTimeSlots(dateStr, isTheoGioKham = false) {
         bacsiSel.value = ""; 
         displayMessage("", errorMsgDiv);
         
-        const doctorsInKhoa = bacsiData.filter(b => b.MaKhoa === maCK).map(b => String(b.MaNV)); // Ép kiểu MaNV sang String
+        const doctorsInKhoa = bacsiData
+            .filter(b => b.MaKhoa === maCK)
+            .map(b => String(b.MaNV)); // Ép kiểu MaNV sang String
 
         doctorsInKhoa.forEach(maBS => {
             const caLamViec = lichLamViecData[maBS]?.[dateStr];
@@ -259,10 +279,16 @@ function loadAvailableTimeSlots(dateStr, isTheoGioKham = false) {
     } else {
         // --- CHẾ ĐỘ THEO BÁC SĨ (VÀ KHÁM TRONG GIỜ) ---
         const maBS = String(bacsiSel.value); // Ép kiểu MaBS sang String
-        if (!maBS) { displayMessage("⚠️ Vui lòng chọn bác sĩ trước khi chọn ngày khám.", errorMsgDiv); return false; }
+        if (!maBS) { 
+            displayMessage("⚠️ Vui lòng chọn bác sĩ trước khi chọn ngày khám.", errorMsgDiv); 
+            return false; 
+        }
         
         const caLamViec = lichLamViecData[maBS]?.[dateStr]; 
-        if (!caLamViec) { displayMessage("⚠️ Bác sĩ không có lịch làm việc trong ngày này.", errorMsgDiv); return false; } 
+        if (!caLamViec) { 
+            displayMessage("⚠️ Bác sĩ không có lịch làm việc trong ngày này.", errorMsgDiv); 
+            return false; 
+        } 
         displayMessage("", errorMsgDiv);
         
         const bookedSlotsOnDate = bookedSlotsData[maBS]?.[dateStr] || [];
@@ -279,8 +305,11 @@ function loadAvailableTimeSlots(dateStr, isTheoGioKham = false) {
                 const currentHour = currentDate.getHours();
                 const currentPeriod = currentHour < 12 ? 'Sáng' : 'Chiều';
 
-                if (currentPeriod === 'Sáng') { isValidByCa = isValidByCa && isMorning; } 
-                else { isValidByCa = isValidByCa && isAfternoon; }
+                if (currentPeriod === 'Sáng') { 
+                    isValidByCa = isValidByCa && isMorning; 
+                } else { 
+                    isValidByCa = isValidByCa && isAfternoon; 
+                }
             }
             return isValidByCa;
         });
@@ -299,11 +328,13 @@ function loadAvailableTimeSlots(dateStr, isTheoGioKham = false) {
     const availableTimes = Object.keys(availableSlotsByTime).sort();
 
     if (availableTimes.length > 0) {
-        let hasMorning = false; let hasAfternoon = false;
+        let hasMorning = false; 
+        let hasAfternoon = false;
         
         availableTimes.forEach(slot => {
             const group = slot < '12:00' ? 'sang' : 'chieu';
-            if (group === 'sang') hasMorning = true; if (group === 'chieu') hasAfternoon = true;
+            if (group === 'sang') hasMorning = true; 
+            if (group === 'chieu') hasAfternoon = true;
             
             const numAvailable = availableSlotsByTime[slot].length;
             const slotSpan = document.createElement("span"); 
@@ -322,7 +353,10 @@ function loadAvailableTimeSlots(dateStr, isTheoGioKham = false) {
         
         updateTimeSlotTabs(hasMorning, hasAfternoon); 
         let initialGroup = hasMorning ? 'sang' : (hasAfternoon ? 'chieu' : '');
-        if (initialGroup) { switchTab(initialGroup); return true; } 
+        if (initialGroup) { 
+            switchTab(initialGroup); 
+            return true; 
+        } 
     }
     return false;
 }
@@ -402,13 +436,19 @@ function goToNextStep() {
     document.getElementById('booking-step-1').style.display = 'none';
     document.getElementById('booking-step-2').style.display = 'block';
     
-    window.scrollTo({ top: document.getElementById('booking-step-2').offsetTop - 20, behavior: 'smooth' });
+    window.scrollTo({ 
+        top: document.getElementById('booking-step-2').offsetTop - 20, 
+        behavior: 'smooth' 
+    });
 }
 
 function goToPreviousStep() {
     document.getElementById('booking-step-2').style.display = 'none';
     document.getElementById('booking-step-1').style.display = 'block';
-    window.scrollTo({ top: document.getElementById('booking-step-1').offsetTop - 20, behavior: 'smooth' });
+    window.scrollTo({ 
+        top: document.getElementById('booking-step-1').offsetTop - 20, 
+        behavior: 'smooth' 
+    });
 }
 // ********** HẾT HÀM XỬ LÝ LỊCH VÀ BƯỚC **********
 
@@ -463,7 +503,11 @@ bacsiSel.addEventListener("change", function() {
                 }
             } else { // Chế độ theoBacSi thuần
                  if (allAvailableDates.length > 0) {
-                    updateFlatpickr(allAvailableDates.filter(date => date >= todayStr), true, "today"); 
+                    updateFlatpickr(
+                        allAvailableDates.filter(date => date >= todayStr), 
+                        true, 
+                        "today"
+                    ); 
                 } else {
                     updateFlatpickr([], false);
                     displayMessage("⚠️ Bác sĩ này chưa có lịch làm việc trong tương lai gần.", errorMsgDiv); 
@@ -507,9 +551,13 @@ if (dichvuButtonsContainer) {
                 datLichSel.disabled = (maDV === "");
                 
                 if (maDV !== "" && datLichSel.value === "") {
-                     datLichSel.value = datLichSel.options[0] ? datLichSel.options[0].value : 'theoBacSi'; 
+                     datLichSel.value = datLichSel.options[0] 
+                        ? datLichSel.options[0].value 
+                        : 'theoBacSi'; 
                 } else if (maDV === "") {
-                     datLichSel.value = datLichSel.options[0] ? datLichSel.options[0].value : ''; 
+                     datLichSel.value = datLichSel.options[0] 
+                        ? datLichSel.options[0].value 
+                        : ''; 
                 }
             }
             
@@ -527,7 +575,9 @@ datLichSel.addEventListener("change", function() {
     if (datLichSel.value !== "") {
         if (!chuyenKhoaSel.value) {
             alert("Vui lòng chọn Chuyên khoa trước khi chọn chế độ Đặt lịch.");
-            datLichSel.value = datLichSel.options[0] ? datLichSel.options[0].value : 'theoBacSi'; 
+            datLichSel.value = datLichSel.options[0] 
+                ? datLichSel.options[0].value 
+                : 'theoBacSi'; 
             return;
         }
     }
@@ -568,12 +618,22 @@ function toggleBacsi() {
         
         if (doctorsInShift.length > 0) {
             populateBacsiSelect(doctorsInShift, true);
-            displayMessage(`ℹ️ Chế độ Khám Trong Giờ. Vui lòng chọn Bác sĩ có lịch làm việc trong ca ${currentPeriod} hôm nay.`, errorMsgDiv);
-            updateFlatpickr([new Date().toISOString().split('T')[0]], true, "today"); 
+            displayMessage(
+                `ℹ️ Chế độ Khám Trong Giờ. Vui lòng chọn Bác sĩ có lịch làm việc trong ca ${currentPeriod} hôm nay.`,
+                errorMsgDiv
+            );
+            updateFlatpickr(
+                [new Date().toISOString().split('T')[0]], 
+                true, 
+                "today"
+            ); 
         } else {
             populateBacsiSelect([], true);
             updateFlatpickr([], false); 
-            displayMessage(`⚠️ Không có Bác sĩ nào trong chuyên khoa này có lịch trong ca ${currentPeriod} hôm nay để khám trong giờ.`, errorMsgDiv);
+            displayMessage(
+                `⚠️ Không có Bác sĩ nào trong chuyên khoa này có lịch trong ca ${currentPeriod} hôm nay để khám trong giờ.`,
+                errorMsgDiv
+            );
         }
 
     } else if (datLich === "theoBacSi") {
@@ -587,7 +647,10 @@ function toggleBacsi() {
             displayMessage("ℹ️ Chọn Bác sĩ để xem lịch khám trong tương lai.", errorMsgDiv);
         } else {
             populateBacsiSelect([], true);
-            displayMessage("⚠️ Không có Bác sĩ nào trong chuyên khoa này có lịch làm việc trong tương lai.", errorMsgDiv);
+            displayMessage(
+                "⚠️ Không có Bác sĩ nào trong chuyên khoa này có lịch làm việc trong tương lai.",
+                errorMsgDiv
+            );
         }
 
     } else if (datLich === "theoGioKham") {
@@ -608,14 +671,22 @@ function toggleBacsi() {
         // 3. Tính toán union (tổng hợp) các ngày làm việc từ tất cả BS có lịch
         const allCKDates = futureDoctorIDs
                             .flatMap(maBS => Object.keys(lichLamViecData[maBS] || {}))
-                            .filter((date, index, self) => self.indexOf(date) === index && date >= todayStr);
+                            .filter((date, index, self) => 
+                                self.indexOf(date) === index && date >= todayStr
+                            );
                             
         if (allCKDates.length > 0) {
             updateFlatpickr(allCKDates, true, "today"); 
-            displayMessage("ℹ️ Vui lòng chọn Ngày khám để xem giờ trống của tất cả Bác sĩ trong chuyên khoa.", errorMsgDiv);
+            displayMessage(
+                "ℹ️ Vui lòng chọn Ngày khám để xem giờ trống của tất cả Bác sĩ trong chuyên khoa.",
+                errorMsgDiv
+            );
         } else {
             updateFlatpickr([], false);
-            displayMessage("⚠️ Không có Bác sĩ nào trong chuyên khoa này có lịch làm việc trong tương lai.", errorMsgDiv);
+            displayMessage(
+                "⚠️ Không có Bác sĩ nào trong chuyên khoa này có lịch làm việc trong tương lai.",
+                errorMsgDiv
+            );
         }
     } 
     
@@ -656,12 +727,15 @@ function checkLoginAndPrompt(event) {
     // Bắt sự kiện click lên bất kỳ phần tử tương tác nào
     if (isInteractiveElement) {
         
-        event.preventDefault(); // <<< CHẶN HÀNH ĐỘNG MẶC ĐỊNH (Không cho mở Select, không cho mở lịch)
+        event.preventDefault(); // <<< CHẶN HÀNH ĐỘNG MẶC ĐỊNG (Không cho mở Select, không cho mở lịch)
         event.stopPropagation(); // Ngăn chặn lan truyền sự kiện
 
         // Vô hiệu hóa form (chủ yếu là nút Submit) và đánh dấu trạng thái chặn
         disableFormInteractions(true);
-        displayMessage("⚠️ Vui lòng Đăng nhập hoặc Đăng ký để bắt đầu đặt lịch.", lichErrorMsgContainer);
+        displayMessage(
+            "⚠️ Vui lòng Đăng nhập hoặc Đăng ký để bắt đầu đặt lịch.", 
+            lichErrorMsgContainer
+        );
         
         // Mở Modal (Đảm bảo gọi cuối cùng)
         openModal(authModal);
@@ -680,9 +754,13 @@ document.addEventListener("DOMContentLoaded", function() {
         datLichSel.disabled = (dichvuHiddenInput.value === "");
         
         if (datLichSel.value === "" && dichvuHiddenInput.value !== "") {
-            datLichSel.value = datLichSel.options[0] ? datLichSel.options[0].value : 'theoBacSi'; 
+            datLichSel.value = datLichSel.options[0] 
+                ? datLichSel.options[0].value 
+                : 'theoBacSi'; 
         } else if (datLichSel.value === "") {
-             datLichSel.value = datLichSel.options[0] ? datLichSel.options[0].value : ''; 
+             datLichSel.value = datLichSel.options[0] 
+                ? datLichSel.options[0].value 
+                : ''; 
         }
     }
     
@@ -691,7 +769,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Logic để chọn nút mặc định nếu có giá trị đã được gán sẵn
     if (dichvuHiddenInput.value && dichvuButtonsContainer) {
-        const initialButton = dichvuButtonsContainer.querySelector(`[data-dv-id="${dichvuHiddenInput.value}"]`);
+        const initialButton = dichvuButtonsContainer.querySelector(
+            `[data-dv-id="${dichvuHiddenInput.value}"]`
+        );
         if (initialButton) {
             initialButton.classList.add('selected');
         }
@@ -701,7 +781,10 @@ document.addEventListener("DOMContentLoaded", function() {
     if (mainBookingArea && !isLoggedIn) {
         // Vô hiệu hóa nút Submit và đánh dấu trạng thái chặn
         disableFormInteractions(true);
-        displayMessage("⚠️ Vui lòng Đăng nhập hoặc Đăng ký để bắt đầu đặt lịch.", lichErrorMsgContainer);
+        displayMessage(
+            "⚠️ Vui lòng Đăng nhập hoặc Đăng ký để bắt đầu đặt lịch.",
+            lichErrorMsgContainer
+        );
         
         // Gắn listener CHẶN (Capture Phase: true)
         // Listener này sẽ chạy trước hành động mặc định của trình duyệt (vd: mở select)
@@ -768,11 +851,8 @@ async function completeBooking(customerInfo) {
         ngayKham: window.finalBookingData.ngayKham,
         gioKham: window.finalBookingData.gioKham,
         
-        // 3. Triệu chứng (từ Bước 2)q
-        
+        // 3. Triệu chứng (từ Bước 2)
         TrieuChung: window.finalBookingData.TrieuChung 
-        
-        // Bỏ các trường không cần thiết như CustomerType, HovaTen, SoDT, Email
     };
     
     // Vô hiệu hóa nút để tránh gửi nhiều lần
@@ -790,11 +870,16 @@ async function completeBooking(customerInfo) {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            alert(`✅ ĐẶT LỊCH THÀNH CÔNG!\nMã lịch hẹn: ${result.MaLH}\nVui lòng đến sớm 15 phút để hoàn tất thủ tục.`);
-            resetAllSteps();
+            // ✅ ĐÚNG YÊU CẦU: KHÔNG alert, KHÔNG truyền mã, CHUYỂN THẲNG TRANG THANH TOÁN
+            console.log("Đặt lịch thành công, chuyển sang trang Thanh toán...");
+            window.location.href = "/KLTN_Benhvien/ThanhToan";
+            return;
         } else {
             // Hiển thị lỗi từ server
-            alert(`❌ LỖI ĐẶT LỊCH:\n${result.message || 'Có lỗi xảy ra trong quá trình xử lý.'}`);
+            alert(
+                `❌ LỖI ĐẶT LỊCH:\n` + 
+                (result.message || 'Có lỗi xảy ra trong quá trình xử lý.')
+            );
         }
 
     } catch (error) {
