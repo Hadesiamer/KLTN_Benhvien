@@ -75,6 +75,29 @@ $lichKhamData = json_decode($data["LK"], true);
                 if (!empty($ct['NgayKham'])) {
                     $ngayKhamChiTietFormatted = date('d-m-Y', strtotime($ct['NgayKham']));
                 }
+
+                // Ép kiểu Năm sinh về dd-mm-yyyy
+                $namSinhFormatted = '';
+                if (!empty($ct['NgaySinh'])) {
+                    $namSinhFormatted = date('d-m-Y', strtotime($ct['NgaySinh']));
+                }
+
+                // Đổi trạng thái trong DB -> tiếng Việt có dấu để hiển thị
+                $trangThaiDisplay = '';
+                if (!empty($ct['TrangThaiThanhToan'])) {
+                    $trangThaiDb = strtolower(trim($ct['TrangThaiThanhToan']));
+                    switch ($trangThaiDb) {
+                        case 'chua thanh toan':
+                            $trangThaiDisplay = 'Chưa thanh toán';
+                            break;
+                        case 'da thanh toan':
+                            $trangThaiDisplay = 'Đã thanh toán';
+                            break;
+                        default:
+                            $trangThaiDisplay = $ct['TrangThaiThanhToan'];
+                            break;
+                    }
+                }
             ?>
 
             <div class="card mb-3 shadow-sm">
@@ -103,7 +126,7 @@ $lichKhamData = json_decode($data["LK"], true);
                                 <div style="font-size:14px;">
                                     <strong>Trạng thái:</strong> 
                                     <span class="badge bg-warning text-dark">
-                                        <?= htmlspecialchars($ct['TrangThaiThanhToan']); ?>
+                                        <?= htmlspecialchars($trangThaiDisplay); ?>
                                     </span>
                                 </div>
                             </div>
@@ -114,12 +137,12 @@ $lichKhamData = json_decode($data["LK"], true);
                     <!-- THÔNG TIN BỆNH NHÂN GỌN -->
                     <div class="row mb-2" style="font-size:14px;">
                         <div class="col-6">
-                            <p class="mb-1"><strong>Bệnh nhân:</strong> <?= htmlspecialchars($ct['HovaTen']); ?></p>
+                            <p class="mb-1"><strong=Bệnh nhân:</strong> <?= htmlspecialchars($ct['HovaTen']); ?></p>
                             <p class="mb-1"><strong>Mã Bệnh Nhân:</strong> <?= htmlspecialchars($ct['MaBN']); ?></p>
                             <p class="mb-1"><strong>SĐT:</strong> <?= htmlspecialchars($ct['SoDT']); ?></p>
                         </div>
                         <div class="col-6">
-                            <p class="mb-1"><strong>Năm sinh:</strong> <?= htmlspecialchars($ct['NgaySinh']); ?></p>
+                            <p class="mb-1"><strong>Năm sinh:</strong> <?= htmlspecialchars($namSinhFormatted); ?></p>
                             <p class="mb-1"><strong>Giới tính:</strong> <?= htmlspecialchars($ct['GioiTinh']); ?></p>
                             <p class="mb-1"><strong>BHYT:</strong> <?= htmlspecialchars($ct['BHYT']); ?></p>
                         </div>

@@ -1,4 +1,7 @@
 <?php
+// NhatCuong: Đặt múi giờ VN cho toàn bộ controller
+date_default_timezone_set('Asia/Ho_Chi_Minh');
+
 class Bacsi extends Controller
 {
     // Hàm mặc định khi vào trang bác sĩ
@@ -91,40 +94,92 @@ class Bacsi extends Controller
         ]);
     }
 
-    //NhatCuong function 1/2: Xem Danh Sách Khám Bệnh
+    // ===========================
+    // NhatCuong: Xem Danh Sách Khám Bệnh
+    // - Lần load đầu: lấy ngày hôm nay + ca TẤT CẢ
+    // - Đổi ngày / ca: dùng AJAX gọi hàm GetDanhSach() bên dưới
+    // ===========================
     function XemDanhSachKham()
     {
         $bacsi = $this->model("MBacsi");
+        $maNV  = $_SESSION['idnv'];          // MaNV của bác sĩ đang đăng nhập
+        $today = date('Y-m-d');
+
+        // Lần đầu mở trang: mặc định lấy hôm nay + tất cả ca
+        $ds = $bacsi->GetDanhSachKhamTheoBSAll($maNV, $today);
+
         $this->view("layoutBacsi", [
-            "Page" => "xemdanhsachkham",             // dùng master layoutBacsi + page mới
-            "DanhSachKham" => $bacsi->GetDanhSachKhamAll()
+            "Page"         => "Danhsachkham",
+            "DanhSachKham" => $ds,
+            "NgayKham"     => $today,
+            "Shift"        => "all"
         ]);
     }
 
-    //NhatCuong function 2/2: Xem Danh Sách Khám Bệnh (AJAX filter)
+    // ===========================
+    // AJAX: trả về JSON danh sách khám theo bác sĩ + ngày + ca
+    // ===========================
     function GetDanhSach()
     {
-        if (isset($_POST["shift"])) {
-            $bacsi = $this->model("MBacsi");
-            $shift = $_POST["shift"];
-
-            switch ($shift) {
-                case "morning":
-                    $danhSach = $bacsi->GetDanhSachKhamSang();
-                    break;
-                case "afternoon":
-                    $danhSach = $bacsi->GetDanhSachKhamChieu();
-                    break;
-                default:
-                    $danhSach = $bacsi->GetDanhSachKhamAll();
-                    break;
-            }
-
-            // Chỉ trả về nội dung của Danhsachkham.php (partial) để JS chèn vào appointment-list-container
-            $this->view("pages/Danhsachkham", [
-                "DanhSachKham" => $danhSach
-            ]);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo "Method Not Allowed";
+            return;
         }
+
+        if (!isset($_SESSION['idnv'])) {
+            http_response_code(401);
+            echo "Not authenticated";
+            return;
+        }
+
+        $bacsi = $this->model("MBacsi");
+        $maNV  = $_SESSION['idnv'];
+
+        // Lấy ngày (YYYY-mm-dd), mặc định hôm nay
+        $ngayXem = isset($_POST['date']) && !empty($_POST['date'])
+            ? $_POST['date']
+            : date('Y-m-d');
+
+        $d = DateTime::createFromFormat('Y-m-d', $ngayXem);
+        if (!$d || $d->format('Y-m-d') !== $ngayXem) {
+            $ngayXem = date('Y-m-d');
+        }
+
+        // Lấy ca (all/morning/afternoon)
+        $shift = isset($_POST['shift']) ? $_POST['shift'] : 'all';
+
+        switch ($shift) {
+            case "morning":
+                $ds = $bacsi->GetDanhSachKhamTheoBSSang($maNV, $ngayXem);
+                break;
+            case "afternoon":
+                $ds = $bacsi->GetDanhSachKhamTheoBSChieu($maNV, $ngayXem);
+                break;
+            default:
+                $shift = "all";
+                $ds = $bacsi->GetDanhSachKhamTheoBSAll($maNV, $ngayXem);
+                break;
+        }
+
+        // $ds là JSON (do model trả về json_encode), ta decode lại thành mảng
+        $arr = [];
+        if (!empty($ds)) {
+            $decoded = json_decode($ds, true);
+            if (is_array($decoded)) {
+                $arr = $decoded;
+            }
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            "success" => true,
+            "data"    => $arr,
+            "date"    => $ngayXem,
+            "shift"   => $shift,
+            "today"   => date('Y-m-d')
+        ]);
+        exit;
     }
 
     function XemThongTinBenhNhan()
@@ -151,7 +206,7 @@ class Bacsi extends Controller
         }
     }
 
-    //NhatCuong: usecase: Xem lịch sử khám bệnh
+    // NhatCuong: usecase: Xem lịch sử khám bệnh
     function XemLichSuKhamBenh()
     {
         if (isset($_POST['search'])) {
@@ -174,7 +229,7 @@ class Bacsi extends Controller
         }
     }
 
-    //Lập phiếu khám
+    // Lập phiếu khám
     function Lapphieukham()
     {
         $bs = $this->model("mBacSi");
@@ -220,15 +275,22 @@ class Bacsi extends Controller
                 }
             }
             $rs = $model->AddPK($ngaytao, $trieuchung, $kq, $chuandoan, $loidan, $ngaytaikham, $malk, $bsi, $mabn);
+
+            // NhatCuong: quay lại danh sách khám theo BÁC SĨ + NGÀY HIỆN TẠI + đã thanh toán
+            $ngayHienTai = date('Y-m-d');
+            $danhSachSauLap = $model->GetDanhSachKhamTheoBSAll($bsi, $ngayHienTai);
+
             $this->view("layoutBacsi", [
-                "Page" => "xemdanhsachkham",        // quay lại layoutBacsi + page mới
-                "DanhSachKham" => $model->GetDanhSachKhamAll(),
-                "result" => $rs3                    // dùng để show alert trong page xemdanhsachkham
+                "Page"         => "Danhsachkham",
+                "DanhSachKham" => $danhSachSauLap,
+                "NgayKham"     => $ngayHienTai,
+                "Shift"        => "all",
+                "result"       => isset($rs3) ? $rs3 : null
             ]);
         }
     }
 
-            // Thông tin bác sĩ đang đăng nhập
+    // Thông tin bác sĩ đang đăng nhập
     function ThongTinBacSi()
     {
         // Bảo vệ: chỉ cho role bác sĩ (2) vào, giống layoutBacsi.php
@@ -260,42 +322,40 @@ class Bacsi extends Controller
 
     function Doimatkhau()
     {
-    if (!isset($_SESSION["idnv"])) {
-        echo "Chưa đăng nhập!";
-        return;
-    }
-
-    $maNV = $_SESSION["idnv"];
-    $model = $this->model("mBacsi");
-
-    if ($_SERVER["REQUEST_METHOD"] === "POST") {
-
-        $old = $_POST["old_password"];
-        $new = $_POST["new_password"];
-        $confirm = $_POST["confirm_password"];
-
-        // Kiểm tra nhập lại
-        if ($new !== $confirm) {
-            $this->view("layoutBacsi", [
-                "Page" => "bacsidoimk",
-                "msg" => "Mật khẩu xác nhận không khớp!"
-            ]);
+        if (!isset($_SESSION["idnv"])) {
+            echo "Chưa đăng nhập!";
             return;
         }
 
-        // Gọi model kiểm tra & đổi mật khẩu
-        $result = $model->DoiMatKhau($maNV, $old, $new);
+        $maNV = $_SESSION["idnv"];
+        $model = $this->model("mBacsi");
 
-        $this->view("layoutBacsi", [
-            "Page" => "bacsidoimk",
-            "msg" => $result
-        ]);
-    } else {
-        $this->view("layoutBacsi", [
-            "Page" => "bacsidoimk"
-        ]);
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+            $old = $_POST["old_password"];
+            $new = $_POST["new_password"];
+            $confirm = $_POST["confirm_password"];
+
+            // Kiểm tra nhập lại
+            if ($new !== $confirm) {
+                $this->view("layoutBacsi", [
+                    "Page" => "bacsidoimk",
+                    "msg" => "Mật khẩu xác nhận không khớp!"
+                ]);
+                return;
+            }
+
+            // Gọi model kiểm tra & đổi mật khẩu
+            $result = $model->DoiMatKhau($maNV, $old, $new);
+
+            $this->view("layoutBacsi", [
+                "Page" => "bacsidoimk",
+                "msg" => $result
+            ]);
+        } else {
+            $this->view("layoutBacsi", [
+                "Page" => "bacsidoimk"
+            ]);
+        }
     }
-    }
-
-
 }

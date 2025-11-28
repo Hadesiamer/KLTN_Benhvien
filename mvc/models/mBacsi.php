@@ -47,84 +47,204 @@ class MBacsi extends DB
 
 
     //NhatCuong; Usecase: Xem danh sách khám bệnh1/3; Hàm truy vấn for input-radio:Sáng 
-    public function GetDanhSachKhamSang()
+    // public function GetDanhSachKhamSang()
+    // {
+    //     $str = 'SELECT 
+    //                 bn.MaBN,
+    //                 lk.MaLK, 
+    //                 bn.HovaTen, 
+    //                 bn.NgaySinh, 
+    //                 bn.SoDT,
+    //                 lk.GioKham
+    //             FROM 
+    //                 lichkham lk
+    //             JOIN 
+    //                 benhnhan bn ON lk.MaBN = bn.MaBN
+    //             WHERE 
+    //                 DATE(lk.NgayKham) = CURDATE()
+    //                 AND HOUR(lk.Giokham) < 12
+    //             ORDER BY 
+    //                 lk.GioKham ASC';
+    //     $rows = mysqli_query($this->con, $str);
+    //     $mang = array();
+    //     while ($row = mysqli_fetch_array($rows)) {
+    //         $mang[] = $row;
+    //     }
+    //     return json_encode($mang);
+    // }
+
+    // //NhatCuong; Usecase: Xem danh sách khám bệnh2/3; Hàm truy vấn for input-radio:Chiều
+    // public function GetDanhSachKhamChieu()
+    // {
+    //     $str = 'SELECT 
+    //                 bn.MaBN,
+    //                 lk.MaLK, 
+    //                 bn.HovaTen, 
+    //                 bn.NgaySinh, 
+    //                 bn.SoDT,
+    //                 lk.GioKham
+    //             FROM 
+    //                 lichkham lk
+    //             JOIN 
+    //                 benhnhan bn ON lk.MaBN = bn.MaBN
+    //             WHERE 
+    //                 DATE(lk.NgayKham) = CURDATE()
+    //                 AND HOUR(lk.GioKham) >= 12
+    //             ORDER BY 
+    //                 lk.GioKham ASC';
+    //     $rows = mysqli_query($this->con, $str);
+    //     $mang = array();
+    //     while ($row = mysqli_fetch_array($rows)) {
+    //         $mang[] = $row;
+    //     }
+    //     return json_encode($mang);
+    // }
+
+    // //NhatCuong; Usecase: Xem danh sách khám bệnh3/3; Hàm truy vấn for input-radio:Tất cả
+    // public function GetDanhSachKhamAll()
+    // {
+    //     $str = 'SELECT 
+    //                 bn.MaBN,
+    //                 lk.MaLK, 
+    //                 bn.HovaTen, 
+    //                 bn.NgaySinh, 
+    //                 bn.SoDT,
+    //                 lk.GioKham
+    //             FROM 
+    //                 lichkham lk
+    //             JOIN 
+    //                 benhnhan bn ON lk.MaBN = bn.MaBN
+    //             WHERE 
+    //                 DATE(lk.NgayKham) = CURDATE()
+    //             ORDER BY 
+    //                 lk.GioKham ASC';
+    //     $rows = mysqli_query($this->con, $str);
+    //     $mang = array();
+    //     while ($row = mysqli_fetch_array($rows)) {
+    //         $mang[] = $row;
+    //     }
+    //     return json_encode($mang);
+    // }
+
+        // ===========================
+    // NhatCuong: DS KHÁM THEO BÁC SĨ + NGÀY + ĐÃ THANH TOÁN
+    // ===========================
+
+    // Tất cả (không phân ca)
+    public function GetDanhSachKhamTheoBSAll($maBS, $ngayKham)
     {
-        $str = 'SELECT 
-                    bn.MaBN,
-                    lk.MaLK, 
-                    bn.HovaTen, 
-                    bn.NgaySinh, 
-                    bn.SoDT,
-                    lk.GioKham
-                FROM 
-                    lichkham lk
-                JOIN 
-                    benhnhan bn ON lk.MaBN = bn.MaBN
-                WHERE 
-                    DATE(lk.NgayKham) = CURDATE()
-                    AND HOUR(lk.Giokham) < 12
-                ORDER BY 
-                    lk.GioKham ASC';
+        $maBS = intval($maBS);
+
+        // Chuẩn hóa ngày về dạng YYYY-mm-dd
+        $ngayKham = date('Y-m-d', strtotime($ngayKham));
+
+        $str = "
+            SELECT 
+                bn.MaBN,
+                lk.MaLK,
+                bn.HovaTen,
+                bn.NgaySinh,
+                bn.SoDT,
+                lk.GioKham,
+                lk.TrieuChung
+            FROM 
+                lichkham lk
+            JOIN 
+                benhnhan bn ON lk.MaBN = bn.MaBN
+            WHERE 
+                lk.MaBS = $maBS
+                AND lk.NgayKham = '$ngayKham'
+                AND lk.TrangThaiThanhToan = 'Da thanh toan'
+            ORDER BY 
+                lk.GioKham ASC
+        ";
+
         $rows = mysqli_query($this->con, $str);
         $mang = array();
-        while ($row = mysqli_fetch_array($rows)) {
-            $mang[] = $row;
+        if ($rows) {
+            while ($row = mysqli_fetch_array($rows)) {
+                $mang[] = $row;
+            }
         }
         return json_encode($mang);
     }
 
-    //NhatCuong; Usecase: Xem danh sách khám bệnh2/3; Hàm truy vấn for input-radio:Chiều
-    public function GetDanhSachKhamChieu()
+    // Ca sáng
+    public function GetDanhSachKhamTheoBSSang($maBS, $ngayKham)
     {
-        $str = 'SELECT 
-                    bn.MaBN,
-                    lk.MaLK, 
-                    bn.HovaTen, 
-                    bn.NgaySinh, 
-                    bn.SoDT,
-                    lk.GioKham
-                FROM 
-                    lichkham lk
-                JOIN 
-                    benhnhan bn ON lk.MaBN = bn.MaBN
-                WHERE 
-                    DATE(lk.NgayKham) = CURDATE()
-                    AND HOUR(lk.GioKham) >= 12
-                ORDER BY 
-                    lk.GioKham ASC';
+        $maBS = intval($maBS);
+        $ngayKham = date('Y-m-d', strtotime($ngayKham));
+
+        $str = "
+            SELECT 
+                bn.MaBN,
+                lk.MaLK,
+                bn.HovaTen,
+                bn.NgaySinh,
+                bn.SoDT,
+                lk.GioKham,
+                lk.TrieuChung
+            FROM 
+                lichkham lk
+            JOIN 
+                benhnhan bn ON lk.MaBN = bn.MaBN
+            WHERE 
+                lk.MaBS = $maBS
+                AND lk.NgayKham = '$ngayKham'
+                AND lk.TrangThaiThanhToan = 'Da thanh toan'
+                AND HOUR(lk.GioKham) < 12
+            ORDER BY 
+                lk.GioKham ASC
+        ";
+
         $rows = mysqli_query($this->con, $str);
         $mang = array();
-        while ($row = mysqli_fetch_array($rows)) {
-            $mang[] = $row;
+        if ($rows) {
+            while ($row = mysqli_fetch_array($rows)) {
+                $mang[] = $row;
+            }
         }
         return json_encode($mang);
     }
 
-    //NhatCuong; Usecase: Xem danh sách khám bệnh3/3; Hàm truy vấn for input-radio:Tất cả
-    public function GetDanhSachKhamAll()
+    // Ca chiều
+    public function GetDanhSachKhamTheoBSChieu($maBS, $ngayKham)
     {
-        $str = 'SELECT 
-                    bn.MaBN,
-                    lk.MaLK, 
-                    bn.HovaTen, 
-                    bn.NgaySinh, 
-                    bn.SoDT,
-                    lk.GioKham
-                FROM 
-                    lichkham lk
-                JOIN 
-                    benhnhan bn ON lk.MaBN = bn.MaBN
-                WHERE 
-                    DATE(lk.NgayKham) = CURDATE()
-                ORDER BY 
-                    lk.GioKham ASC';
+        $maBS = intval($maBS);
+        $ngayKham = date('Y-m-d', strtotime($ngayKham));
+
+        $str = "
+            SELECT 
+                bn.MaBN,
+                lk.MaLK,
+                bn.HovaTen,
+                bn.NgaySinh,
+                bn.SoDT,
+                lk.GioKham,
+                lk.TrieuChung
+            FROM 
+                lichkham lk
+            JOIN 
+                benhnhan bn ON lk.MaBN = bn.MaBN
+            WHERE 
+                lk.MaBS = $maBS
+                AND lk.NgayKham = '$ngayKham'
+                AND lk.TrangThaiThanhToan = 'Da thanh toan'
+                AND HOUR(lk.GioKham) >= 12
+            ORDER BY 
+                lk.GioKham ASC
+        ";
+
         $rows = mysqli_query($this->con, $str);
         $mang = array();
-        while ($row = mysqli_fetch_array($rows)) {
-            $mang[] = $row;
+        if ($rows) {
+            while ($row = mysqli_fetch_array($rows)) {
+                $mang[] = $row;
+            }
         }
         return json_encode($mang);
     }
+
     //NhatCuong; Usecase 1/3: Xem lịch sử khám bệnh, phiếu khám
     public function GetPhieuKhamBenhNhan($maBN)
     {

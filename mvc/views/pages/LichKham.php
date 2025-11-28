@@ -9,11 +9,8 @@ if (is_array($data["CTLK"])) {
 $chiTietData = json_decode($data["CTLK"], true);
 ?>
 
-<link rel="stylesheet" href="./public/css/thanhtoan.css">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<h2 class="mt-3">Lịch khám đã đặt</h2>
+<h2 class="mt-3">Lịch khám đã đặt nè</h2>
 
 <div class="row mt-3">
     <!-- DANH SÁCH LỊCH KHÁM BÊN TRÁI -->
@@ -59,9 +56,16 @@ $chiTietData = json_decode($data["CTLK"], true);
                 // Lấy 1 bản ghi đầu tiên để hiển thị gọn
                 $ct = $chiTietData[0];
 
+                // Định dạng ngày khám dd-mm-yyyy
                 $ngayKhamFormatted = '';
                 if (!empty($ct['NgayKham'])) {
                     $ngayKhamFormatted = date('d-m-Y', strtotime($ct['NgayKham']));
+                }
+
+                // Ép kiểu Năm sinh về dd-mm-yyyy
+                $namSinhFormatted = '';
+                if (!empty($ct['NgaySinh'])) {
+                    $namSinhFormatted = date('d-m-Y', strtotime($ct['NgaySinh']));
                 }
 
                 $moTaKhoa = $ct['MoTa'] ?? '';
@@ -112,7 +116,7 @@ $chiTietData = json_decode($data["CTLK"], true);
                         <div><strong>Tên bệnh nhân:</strong> <?= htmlspecialchars($ct['HovaTen'] ?? ''); ?></div>
                         <div><strong>Mã bệnh nhân:</strong> <?= htmlspecialchars($ct['MaBN'] ?? ''); ?></div>
                         <div><strong>Số điện thoại:</strong> <?= htmlspecialchars($ct['SoDT'] ?? ''); ?></div>
-                        <div><strong>Năm sinh:</strong> <?= htmlspecialchars($ct['NgaySinh'] ?? ''); ?></div>
+                        <div><strong>Năm sinh:</strong> <?= htmlspecialchars($namSinhFormatted); ?></div>
                         <div><strong>Giới tính:</strong> <?= htmlspecialchars($ct['GioiTinh'] ?? ''); ?></div>
                         <div><strong>Địa chỉ:</strong> <?= htmlspecialchars($ct['DiaChi'] ?? ''); ?></div>
                         <div><strong>BHYT:</strong> <?= htmlspecialchars($ct['BHYT'] ?? ''); ?></div>

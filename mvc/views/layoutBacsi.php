@@ -1,4 +1,7 @@
 <?php
+date_default_timezone_set('Asia/Ho_Chi_Minh'); // Đặt múi giờ VN
+?>
+<?php
 if ($_SESSION["role"] != 2) {
     echo "<script>alert('Bạn không có quyền truy cập')</script>";
     header("refresh: 0; url='/KLTN_Benhvien'");

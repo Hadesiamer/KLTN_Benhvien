@@ -7,8 +7,15 @@
 </head>
 <body>
 <?php
-    $tt = json_decode($data["TT"],true);
-        foreach($tt as $r):
+    $tt = json_decode($data["TT"], true);
+    foreach($tt as $r):
+
+        // --- Ép kiểu ngày sinh dd-mm-yyyy ---
+        $ngaySinhFormatted = "";
+        if (!empty($r["NgaySinh"])) {
+            $ngaySinhFormatted = date("d-m-Y", strtotime($r["NgaySinh"]));
+        }
+
         echo '<div class="profile-container">
                 <div class="profile-header">
                     <div class="avatar">👤</div>
@@ -34,7 +41,7 @@
                     </div>
                     <div>
                         <span>Ngày sinh</span>
-                        <span>'.$r["NgaySinh"].'</span>
+                        <span>'.$ngaySinhFormatted.'</span>
                     </div>
                     <div>
                         <span>Địa chỉ</span>
@@ -60,8 +67,7 @@
                     </form>
                 </div>
             </div>';
-        endforeach;
-    
+    endforeach;
 
 ?>
 </body>

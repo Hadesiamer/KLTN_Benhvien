@@ -13,7 +13,7 @@ if (isset($data["XL"])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Thông tin</title>
     <style>
         .profile-container {
             background-color: white;
@@ -172,7 +172,7 @@ if (isset($data["XL"])) {
                     <input type="email" name="email" class="form-control" id="email" value="'.$r['Email'].'" required>
                 </div>
                 <div class="mb-3">
-                    <label for="diachi" class="form-label">Đia chỉ</label>
+                    <label for="diachi" class="form-label">Đia chỉ </label>
                     <input type="text" name="diachi" class="form-control" id="diachi" value="'.$r['DiaChi'].'">
                 </div>
                 <div class="d-flex justify-content-end">
