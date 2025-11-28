@@ -45,88 +45,7 @@ class MBacsi extends DB
         return json_encode($mang);
     }
 
-
-    //NhatCuong; Usecase: Xem danh sách khám bệnh1/3; Hàm truy vấn for input-radio:Sáng 
-    // public function GetDanhSachKhamSang()
-    // {
-    //     $str = 'SELECT 
-    //                 bn.MaBN,
-    //                 lk.MaLK, 
-    //                 bn.HovaTen, 
-    //                 bn.NgaySinh, 
-    //                 bn.SoDT,
-    //                 lk.GioKham
-    //             FROM 
-    //                 lichkham lk
-    //             JOIN 
-    //                 benhnhan bn ON lk.MaBN = bn.MaBN
-    //             WHERE 
-    //                 DATE(lk.NgayKham) = CURDATE()
-    //                 AND HOUR(lk.Giokham) < 12
-    //             ORDER BY 
-    //                 lk.GioKham ASC';
-    //     $rows = mysqli_query($this->con, $str);
-    //     $mang = array();
-    //     while ($row = mysqli_fetch_array($rows)) {
-    //         $mang[] = $row;
-    //     }
-    //     return json_encode($mang);
-    // }
-
-    // //NhatCuong; Usecase: Xem danh sách khám bệnh2/3; Hàm truy vấn for input-radio:Chiều
-    // public function GetDanhSachKhamChieu()
-    // {
-    //     $str = 'SELECT 
-    //                 bn.MaBN,
-    //                 lk.MaLK, 
-    //                 bn.HovaTen, 
-    //                 bn.NgaySinh, 
-    //                 bn.SoDT,
-    //                 lk.GioKham
-    //             FROM 
-    //                 lichkham lk
-    //             JOIN 
-    //                 benhnhan bn ON lk.MaBN = bn.MaBN
-    //             WHERE 
-    //                 DATE(lk.NgayKham) = CURDATE()
-    //                 AND HOUR(lk.GioKham) >= 12
-    //             ORDER BY 
-    //                 lk.GioKham ASC';
-    //     $rows = mysqli_query($this->con, $str);
-    //     $mang = array();
-    //     while ($row = mysqli_fetch_array($rows)) {
-    //         $mang[] = $row;
-    //     }
-    //     return json_encode($mang);
-    // }
-
-    // //NhatCuong; Usecase: Xem danh sách khám bệnh3/3; Hàm truy vấn for input-radio:Tất cả
-    // public function GetDanhSachKhamAll()
-    // {
-    //     $str = 'SELECT 
-    //                 bn.MaBN,
-    //                 lk.MaLK, 
-    //                 bn.HovaTen, 
-    //                 bn.NgaySinh, 
-    //                 bn.SoDT,
-    //                 lk.GioKham
-    //             FROM 
-    //                 lichkham lk
-    //             JOIN 
-    //                 benhnhan bn ON lk.MaBN = bn.MaBN
-    //             WHERE 
-    //                 DATE(lk.NgayKham) = CURDATE()
-    //             ORDER BY 
-    //                 lk.GioKham ASC';
-    //     $rows = mysqli_query($this->con, $str);
-    //     $mang = array();
-    //     while ($row = mysqli_fetch_array($rows)) {
-    //         $mang[] = $row;
-    //     }
-    //     return json_encode($mang);
-    // }
-
-        // ===========================
+    // ===========================
     // NhatCuong: DS KHÁM THEO BÁC SĨ + NGÀY + ĐÃ THANH TOÁN
     // ===========================
 
@@ -134,9 +53,7 @@ class MBacsi extends DB
     public function GetDanhSachKhamTheoBSAll($maBS, $ngayKham)
     {
         $maBS = intval($maBS);
-
-        // Chuẩn hóa ngày về dạng YYYY-mm-dd
-        $ngayKham = date('Y-m-d', strtotime($ngayKham));
+        $ngayKham = date('Y-m-d', strtotime($ngayKham)); // Chuẩn hóa ngày
 
         $str = "
             SELECT 
@@ -146,7 +63,8 @@ class MBacsi extends DB
                 bn.NgaySinh,
                 bn.SoDT,
                 lk.GioKham,
-                lk.TrieuChung
+                lk.TrieuChung,
+                lk.loaidichvu AS LoaiDichVu
             FROM 
                 lichkham lk
             JOIN 
@@ -183,7 +101,8 @@ class MBacsi extends DB
                 bn.NgaySinh,
                 bn.SoDT,
                 lk.GioKham,
-                lk.TrieuChung
+                lk.TrieuChung,
+                lk.loaidichvu AS LoaiDichVu
             FROM 
                 lichkham lk
             JOIN 
@@ -221,7 +140,8 @@ class MBacsi extends DB
                 bn.NgaySinh,
                 bn.SoDT,
                 lk.GioKham,
-                lk.TrieuChung
+                lk.TrieuChung,
+                lk.loaidichvu AS LoaiDichVu
             FROM 
                 lichkham lk
             JOIN 
@@ -275,7 +195,6 @@ class MBacsi extends DB
     //NhatCuong; Usecase 2/3: Xem lịch sử khám bệnh, thông tin bệnh nhân
     public function GetThongTinBenhNhan($maBN)
     {
-
         $str = "SELECT MaBN, HovaTen, NgaySinh, GioiTinh, BHYT, DiaChi, SoDT, Email
             FROM benhnhan WHERE MaBN = '$maBN' or BHYT = '$maBN'";
 
@@ -286,6 +205,7 @@ class MBacsi extends DB
         }
         return json_encode($mang);
     }
+
     public function GetThongTinBenhNhan1($maBN, $malk)
     {
         $str = "SELECT bn.MaBN, bn.HovaTen, bn.NgaySinh, bn.GioiTinh, bn.BHYT, bn.DiaChi, bn.SoDT,lk.MaLK
@@ -435,24 +355,24 @@ class MBacsi extends DB
         return mysqli_query($this->con, $str);
     }
     public function TaoCTDT($mathuoc, $soluong, $lieudung, $cachdung)
-{
-    // Truy vấn để lấy MaDT mới nhất
-    $str = "SELECT MaDT FROM `donthuoc` ORDER BY MaDT DESC LIMIT 1";
-    $result = mysqli_query($this->con, $str);
-    
-    // Kiểm tra nếu có dữ liệu trả về
-    if ($result && $row = mysqli_fetch_assoc($result)) {
-        $madt_moi = $row['MaDT']; // Lấy giá trị MaDT
-    } else {
-        // Xử lý khi không tìm thấy MaDT
-        return false; // Hoặc throw lỗi nếu cần
+    {
+        // Truy vấn để lấy MaDT mới nhất
+        $str = "SELECT MaDT FROM `donthuoc` ORDER BY MaDT DESC LIMIT 1";
+        $result = mysqli_query($this->con, $str);
+        
+        // Kiểm tra nếu có dữ liệu trả về
+        if ($result && $row = mysqli_fetch_assoc($result)) {
+            $madt_moi = $row['MaDT']; // Lấy giá trị MaDT
+        } else {
+            // Xử lý khi không tìm thấy MaDT
+            return false; // Hoặc throw lỗi nếu cần
+        }
+        
+        // Thực hiện câu lệnh INSERT
+        $str2 = "INSERT INTO chitietdonthuoc (MaDT, MaThuoc, SoLuong, LieuDung, CachDung) 
+                 VALUES ('$madt_moi', '$mathuoc', '$soluong', '$lieudung', '$cachdung')";
+        return mysqli_query($this->con, $str2);
     }
-    
-    // Thực hiện câu lệnh INSERT
-    $str2 = "INSERT INTO chitietdonthuoc (MaDT, MaThuoc, SoLuong, LieuDung, CachDung) 
-             VALUES ('$madt_moi', '$mathuoc', '$soluong', '$lieudung', '$cachdung')";
-    return mysqli_query($this->con, $str2);
-}
 
     // Lấy thông tin 1 bác sĩ theo MaNV (bác sĩ đang đăng nhập)
     public function get1BS($maNV)
@@ -487,8 +407,7 @@ class MBacsi extends DB
         return json_encode($mang);
     }
 
-
-        // Đổi mật khẩu cho BÁC SĨ (dựa trên bảng taikhoan)
+    // Đổi mật khẩu cho BÁC SĨ (dựa trên bảng taikhoan)
     public function DoiMatKhau($maNV, $oldPass, $newPass)
     {
         // Ép int cho an toàn
@@ -565,9 +484,4 @@ class MBacsi extends DB
 
         return "Đổi mật khẩu thất bại!";
     }
-
-
-    
-
-
 }

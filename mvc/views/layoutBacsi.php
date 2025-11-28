@@ -28,7 +28,7 @@ if ($_SESSION["role"] != 2) {
         .layout {
             display: flex;
             width: 100%;
-            max-width: 1400px;
+            max-width: 1500px; /* tăng từ 1400 lên 1500 cho rộng thêm */
             margin: 80px auto 0;
             gap: 20px;
         }
@@ -176,8 +176,6 @@ if ($_SESSION["role"] != 2) {
                 <li><a href="/KLTN_Benhvien/Bacsi/XemThongTinBenhNhan">Xem thông tin bệnh nhân</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/Thongtinbacsi">Thông tin bác sĩ</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/Doimatkhau">Đổi mật khẩu</a></li>
-
-                
             </ul>
         </div>
 

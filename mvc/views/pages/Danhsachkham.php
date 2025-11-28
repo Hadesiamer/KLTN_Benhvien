@@ -20,14 +20,30 @@ if (isset($data["DanhSachKham"])) {
 } else {
     $danhSach = [];
 }
+
+// Hàm map loại dịch vụ (PHP)
+function mapLoaiDichVuLabel($code)
+{
+    $code = (int)$code;
+    switch ($code) {
+        case 1:
+            return "Khám trong giờ";
+        case 2:
+            return "Khám ngoài giờ";
+        case 3:
+            return "Khám online";
+        default:
+            return "Không xác định";
+    }
+}
 ?>
 
 <div class="appointment-card">
-    <!-- TIÊU ĐỀ CŨ ĐÃ ĐƯỢC ĐƯA LẠI -->
+    <!-- TIÊU ĐỀ -->
     <div class="appointment-header">
-        <h2 >Danh sách khám bệnh</h2>
+        <h2 class="page-title">Danh sách khám bệnh</h2>
         <span class="page-subtitle">
-            Xem danh sách bệnh nhân theo ngày & ca khám. Chỉ lập phiếu khám trong ngày hiện tại.
+            Xem danh sách bệnh nhân theo ngày &amp; ca khám. Chỉ lập phiếu khám trong ngày hiện tại.
         </span>
     </div>
 
@@ -71,6 +87,7 @@ if (isset($data["DanhSachKham"])) {
                     <th>Ngày sinh</th>
                     <th>Số điện thoại</th>
                     <th>Giờ khám</th>
+                    <th>Loại dịch vụ</th>
                     <th>Triệu chứng</th>
                     <th>Chức năng</th>
                 </tr>
@@ -87,6 +104,8 @@ if (isset($data["DanhSachKham"])) {
                         }
 
                         $trieuChung = isset($benhnhan['TrieuChung']) ? $benhnhan['TrieuChung'] : "";
+                        $loaiDichVuCode = isset($benhnhan['LoaiDichVu']) ? $benhnhan['LoaiDichVu'] : null;
+                        $loaiDichVuText = mapLoaiDichVuLabel($loaiDichVuCode);
 
                         $btnDisabledAttr = $isToday ? "" : "disabled";
                         $btnExtraClass   = $isToday ? "" : " btn-disabled";
@@ -99,6 +118,7 @@ if (isset($data["DanhSachKham"])) {
                             <td><?php echo htmlspecialchars($ngaySinhFormatted); ?></td>
                             <td><?php echo htmlspecialchars($benhnhan['SoDT']); ?></td>
                             <td><?php echo htmlspecialchars($benhnhan['GioKham']); ?></td>
+                            <td class="loai-dv-cell"><?php echo htmlspecialchars($loaiDichVuText); ?></td>
                             <td class="trieu-chung-cell">
                                 <?php echo htmlspecialchars($trieuChung); ?>
                             </td>
@@ -119,7 +139,7 @@ if (isset($data["DanhSachKham"])) {
                         $STT++;
                     }
                 } else {
-                    echo "<tr><td colspan='8'>Không có dữ liệu</td></tr>";
+                    echo "<tr><td colspan='9'>Không có dữ liệu</td></tr>";
                 }
                 ?>
             </tbody>
@@ -262,7 +282,7 @@ if (isset($data["DanhSachKham"])) {
 
     /* BẢNG */
     .appointment-table-wrapper {
-        max-height: 450px;
+        max-height: 480px;
         margin-top: 10px;
         overflow-y: auto;
         overflow-x: auto;
@@ -274,6 +294,7 @@ if (isset($data["DanhSachKham"])) {
     .patient-list {
         width: 100%;
         border-collapse: collapse;
+        min-width: 1000px; /* cho bảng rộng ra thêm 1 chút để chứa cột Loại DV */
     }
 
     .patient-list thead {
@@ -335,10 +356,20 @@ if (isset($data["DanhSachKham"])) {
         text-align: center;
     }
 
+    /* Loại dịch vụ: cho rộng 140px */
+    .patient-list th:nth-child(7),
+    .patient-list td:nth-child(7) {
+        width: 140px;
+    }
+
     .trieu-chung-cell {
-        max-width: 280px;
+        max-width: 260px;
         white-space: normal;
         word-break: break-word;
+    }
+
+    .loai-dv-cell {
+        white-space: nowrap;
     }
 
     /* NÚT LẬP PHIẾU KHÁM */
@@ -409,6 +440,21 @@ if (isset($data["DanhSachKham"])) {
         return `${dd}-${mm}-${yyyy}`;
     }
 
+    // Map loại dịch vụ (JS, dùng cho dữ liệu trả về từ AJAX)
+    function mapLoaiDichVuLabel(code) {
+        const c = parseInt(code, 10);
+        switch (c) {
+            case 1:
+                return "Khám trong giờ";
+            case 2:
+                return "Khám ngoài giờ";
+            case 3:
+                return "Khám online";
+            default:
+                return "Không xác định";
+        }
+    }
+
     // Hàm load danh sách bằng AJAX
     function loadDanhSach(dateStr, shift) {
         const params = new URLSearchParams();
@@ -425,7 +471,7 @@ if (isset($data["DanhSachKham"])) {
             .then(res => res.json())
             .then(res => {
                 if (!res || !res.success) {
-                    tbody.innerHTML = "<tr><td colspan='8'>Không có dữ liệu</td></tr>";
+                    tbody.innerHTML = "<tr><td colspan='9'>Không có dữ liệu</td></tr>";
                     return;
                 }
 
@@ -444,7 +490,7 @@ if (isset($data["DanhSachKham"])) {
                 tbody.innerHTML = "";
 
                 if (data.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='8'>Không có dữ liệu</td></tr>";
+                    tbody.innerHTML = "<tr><td colspan='9'>Không có dữ liệu</td></tr>";
                     return;
                 }
 
@@ -456,6 +502,7 @@ if (isset($data["DanhSachKham"])) {
 
                     const ngaySinhFormatted = formatDateDDMMYYYY(benhnhan.NgaySinh);
                     const trieuChung = benhnhan.TrieuChung || "";
+                    const loaiDvText = mapLoaiDichVuLabel(benhnhan.LoaiDichVu);
 
                     const btnDisabledAttr = isToday ? "" : "disabled";
                     const btnExtraClass   = isToday ? "" : " btn-disabled";
@@ -468,6 +515,7 @@ if (isset($data["DanhSachKham"])) {
                         <td>${escapeHtml(ngaySinhFormatted)}</td>
                         <td>${escapeHtml(benhnhan.SoDT)}</td>
                         <td>${escapeHtml(benhnhan.GioKham)}</td>
+                        <td class="loai-dv-cell">${escapeHtml(loaiDvText)}</td>
                         <td class="trieu-chung-cell">${escapeHtml(trieuChung)}</td>
                         <td>
                             <form action="/KLTN_Benhvien/Bacsi/Lapphieukham" method="POST">
@@ -487,7 +535,7 @@ if (isset($data["DanhSachKham"])) {
             })
             .catch(err => {
                 console.error(err);
-                tbody.innerHTML = "<tr><td colspan='8'>Lỗi khi tải dữ liệu</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='9'>Lỗi khi tải dữ liệu</td></tr>";
             });
     }
 
