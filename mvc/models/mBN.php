@@ -129,8 +129,7 @@ class mBN extends DB
         return json_encode($result);
     }
 
-    // Lấy chi tiết 1 lịch khám đã ĐÃ THANH TOÁN theo MaLK
-        // Lấy chi tiết 1 lịch khám ĐÃ THANH TOÁN theo MaLK (và MaBN nếu có)
+    // Lấy chi tiết 1 lịch khám ĐÃ THANH TOÁN theo MaLK (và MaBN nếu có)
     public function getChiTietLichKhamDaThanhToan($MaLK, $mabn = null) {
         // Ép kiểu an toàn
         $MaLK = (int)$MaLK;
@@ -172,6 +171,135 @@ class mBN extends DB
         return json_encode($result);
     }
 
+    // ================== HỒ SƠ PHIẾU KHÁM BỆNH NHÂN ==================
+
+    // Lấy danh sách phiếu khám + thông tin liên quan của 1 bệnh nhân
+    public function getPhieuKhamBenhNhan($mabn) {
+        $mabn = (int)$mabn;
+
+        $sql = "
+            SELECT 
+                pk.MaPK,
+                pk.NgayTao,
+                pk.TrieuChung,
+                pk.KetQua,
+                pk.ChuanDoan,
+                pk.LoiDan,
+                pk.NgayTaikham,
+                pk.MaXN,
+                pk.MaLK,
+                pk.MaDon,
+
+                -- Thông tin lịch khám
+                lk.NgayKham,
+                lk.GioKham,
+
+                -- Thông tin bác sĩ & khoa
+                nv.HovaTen AS TenBacSi,
+                ck.TenKhoa,
+                ck.MoTa AS ViTriKhoa,
+
+                -- Thông tin xét nghiệm (nếu có)
+                xn.LoaiXN,
+                xn.KetQua AS KetQuaXN,
+
+                -- Thông tin 1 thuốc trong đơn (nếu có)
+                t.TenThuoc,
+                cdt.SoLuong,
+                cdt.LieuDung,
+                cdt.GhiChu AS CachDung
+            FROM phieukham pk
+            LEFT JOIN lichkham     lk  ON pk.MaLK  = lk.MaLK
+            LEFT JOIN bacsi        bs  ON lk.MaBS  = bs.MaNV
+            LEFT JOIN nhanvien     nv  ON bs.MaNV  = nv.MaNV
+            LEFT JOIN chuyenkhoa   ck  ON bs.MaKhoa = ck.MaKhoa
+
+            LEFT JOIN xetnghiem    xn  ON pk.MaXN  = xn.MaXN
+
+            LEFT JOIN don_thuoc    dt  ON pk.MaDon = dt.MaDon
+            LEFT JOIN ct_don_thuoc cdt ON dt.MaDon = cdt.MaDon
+            LEFT JOIN thuoc        t   ON cdt.MaThuoc = t.MaThuoc
+
+            WHERE pk.MaBN = ?
+            ORDER BY pk.NgayTao DESC, pk.MaPK DESC
+        ";
+
+        $result = [];
+        if ($stmt = $this->con->prepare($sql)) {
+            $stmt->bind_param("i", $mabn);
+            if ($stmt->execute()) {
+                $res = $stmt->get_result();
+                while ($row = $res->fetch_assoc()) {
+                    $result[] = $row;
+                }
+            }
+            $stmt->close();
+        }
+
+        return json_encode($result);
+    }
+
+    // Chi tiết 1 phiếu khám (dùng để in), theo MaPK + MaBN
+    public function getChiTietPhieuKham($maPK, $maBN) {
+        $maPK = (int)$maPK;
+        $maBN = (int)$maBN;
+
+        $sql = "
+            SELECT 
+                pk.MaPK,
+                pk.NgayTao,
+                pk.TrieuChung,
+                pk.KetQua,
+                pk.ChuanDoan,
+                pk.LoiDan,
+                pk.NgayTaikham,
+                pk.MaXN,
+                pk.MaLK,
+                pk.MaDon,
+
+                lk.NgayKham,
+                lk.GioKham,
+
+                nv.HovaTen AS TenBacSi,
+                ck.TenKhoa,
+                ck.MoTa AS ViTriKhoa,
+
+                xn.LoaiXN,
+                xn.KetQua AS KetQuaXN,
+
+                t.TenThuoc,
+                cdt.SoLuong,
+                cdt.LieuDung,
+                cdt.GhiChu AS CachDung
+            FROM phieukham pk
+            LEFT JOIN lichkham     lk  ON pk.MaLK  = lk.MaLK
+            LEFT JOIN bacsi        bs  ON lk.MaBS  = bs.MaNV
+            LEFT JOIN nhanvien     nv  ON bs.MaNV  = nv.MaNV
+            LEFT JOIN chuyenkhoa   ck  ON bs.MaKhoa = ck.MaKhoa
+
+            LEFT JOIN xetnghiem    xn  ON pk.MaXN  = xn.MaXN
+
+            LEFT JOIN don_thuoc    dt  ON pk.MaDon = dt.MaDon
+            LEFT JOIN ct_don_thuoc cdt ON dt.MaDon = cdt.MaDon
+            LEFT JOIN thuoc        t   ON cdt.MaThuoc = t.MaThuoc
+
+            WHERE pk.MaPK = ? AND pk.MaBN = ?
+            ORDER BY cdt.MaCT ASC
+        ";
+
+        $result = [];
+        if ($stmt = $this->con->prepare($sql)) {
+            $stmt->bind_param("ii", $maPK, $maBN);
+            if ($stmt->execute()) {
+                $res = $stmt->get_result();
+                while ($row = $res->fetch_assoc()) {
+                    $result[] = $row;
+                }
+            }
+            $stmt->close();
+        }
+
+        return json_encode($result);
+    }
 } 
-    
 ?>

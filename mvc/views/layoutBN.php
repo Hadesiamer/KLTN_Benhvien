@@ -33,7 +33,7 @@
                             <li><a href="/KLTN_Benhvien/BN/LichKham">Lịch khám đã đặt</a></li>
                             <li><a href="/KLTN_Benhvien/ThanhToan">Thanh toán</a></li>
                             <li><a href="/KLTN_Benhvien/BN/TTBN">Hồ sơ cá nhân</a></li>
-                            <li ><a href="/KLTN_Benhvien/XemPhieuKham">Hồ sơ phiếu khám</a></li>
+                            <li ><a href="/KLTN_Benhvien/BN/Hosophieukham">Hồ sơ phiếu khám</a></li>
                             <li><a href="/KLTN_Benhvien/BN/changePass">Đổi mật khẩu</a></li>
                         </ul>
                     </div>
