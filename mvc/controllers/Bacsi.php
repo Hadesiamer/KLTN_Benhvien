@@ -233,52 +233,99 @@ class Bacsi extends Controller
     function Lapphieukham()
     {
         $bs = $this->model("mBacSi");
+
+        // Bước 1: Bấm nút "Lập phiếu khám" từ danh sách khám
         if (isset($_POST["btnLPK"])) {
-            $mabn = $_POST["MaBN"];
-            $malk = $_POST["MaLK"];
-            $manv = $_SESSION["idnv"];
-            $model = $this->model("mBacsi");
+            $mabn  = $_POST["MaBN"];
+            $malk  = $_POST["MaLK"];
+            $manv  = $_SESSION["idnv"];
+
+            $model        = $this->model("mBacsi");
             $benhNhanInfo = $model->GetThongTinBenhNhan1($mabn, $malk);
-            $bacSiInfo = $model->getBacSiInfo($manv);
-            $thuocList = $model->getThuocList();
+            $bacSiInfo    = $model->getBacSiInfo($manv);
+            $thuocList    = $model->getThuocList();
+
             $this->view("LayoutLapPhieuKham", [
-                "Page" => "Lapphieukham",
+                "Page"         => "Lapphieukham",
                 "BenhNhanInfo" => $benhNhanInfo,
-                "BacSiInfo" => $bacSiInfo,
-                "ThuocList" => $thuocList
+                "BacSiInfo"    => $bacSiInfo,
+                "ThuocList"    => $thuocList
             ]);
         }
+
+        // Bước 2: Submit form lập phiếu khám
         if (isset($_POST["lap"])) {
-            $mabn = $_POST["maBN"];
-            $malk = $_POST["maLK"];
-            $ngaytao = $_POST["ngayTao"];
-            $bsi = $_SESSION["idnv"];
-            $trieuchung = $_POST["trieuChung"];
-            $kq = $_POST["ketQua"];
-            $chuandoan = $_POST["chuanDoan"];
-            $loidan = $_POST["loiDan"];
+            $mabn        = $_POST["maBN"];
+            $malk        = $_POST["maLK"];
+            $ngaytao     = $_POST["ngayTao"];
+            $bsi         = $_SESSION["idnv"];
+            $trieuchung  = $_POST["trieuChung"];
+            $kq          = $_POST["ketQua"];
+            $chuandoan   = $_POST["chuanDoan"];
+            $loidan      = $_POST["loiDan"];
             $ngaytaikham = $_POST["ngayTaiKham"];
+
             $model = $this->model("mBacsi");
 
-            $thuoc = $_POST["thuoc"];
-            $key = array_keys($thuoc);
-            $l = count($key);
-            if ($model->TaoDT($ngaytao, $chuandoan, $bsi, $mabn)) {
-                for ($k = 0; $k < $l; $k++) {
-                    $t = $key[$k];
-                    $mathuoc = $thuoc[$t]["MaThuoc"];
-                    $soluong = $thuoc[$t]["SoLuong"];
-                    $lieudung = $thuoc[$t]["LieuDung"];
-                    $cachdung = $thuoc[$t]["CachDung"];
+            // --- Lấy và lọc danh sách thuốc hợp lệ ---
+            $thuocPost = isset($_POST["thuoc"]) && is_array($_POST["thuoc"])
+                ? $_POST["thuoc"]
+                : [];
 
-                    $rs3 = $model->TaoCTDT($mathuoc, $soluong, $lieudung, $cachdung);
+            $thuocValid = [];
+            foreach ($thuocPost as $idx => $item) {
+                $maThuoc  = isset($item["MaThuoc"]) ? trim($item["MaThuoc"]) : "";
+                $soLuong  = isset($item["SoLuong"]) ? (int)$item["SoLuong"] : 0;
+                $lieuDung = isset($item["LieuDung"]) ? trim($item["LieuDung"]) : "";
+                $cachDung = isset($item["CachDung"]) ? trim($item["CachDung"]) : "";
+
+                // Điều kiện 1 dòng thuốc hợp lệ: có mã thuốc, số lượng >0, có liều dùng
+                if ($maThuoc !== "" && $soLuong > 0 && $lieuDung !== "") {
+                    $thuocValid[] = [
+                        "MaThuoc"  => $maThuoc,
+                        "SoLuong"  => $soLuong,
+                        "LieuDung" => $lieuDung,
+                        "CachDung" => $cachDung
+                    ];
                 }
             }
-            $rs = $model->AddPK($ngaytao, $trieuchung, $kq, $chuandoan, $loidan, $ngaytaikham, $malk, $bsi, $mabn);
 
-            // NhatCuong: quay lại danh sách khám theo BÁC SĨ + NGÀY HIỆN TẠI + đã thanh toán
-            $ngayHienTai = date('Y-m-d');
-            $danhSachSauLap = $model->GetDanhSachKhamTheoBSAll($bsi, $ngayHienTai);
+            // 1) Chỉ tạo đơn thuốc (don_thuoc + ct_don_thuoc) nếu có ít nhất 1 thuốc hợp lệ
+            if (count($thuocValid) > 0) {
+                // Không truyền chẩn đoán vào GhiChuChung của don_thuoc nữa -> truyền chuỗi rỗng ""
+                if ($model->TaoDT($ngaytao, "", $bsi, $mabn, $malk)) {
+                    // Tạo chi tiết đơn thuốc (ct_don_thuoc) cho từng dòng thuốc
+                    foreach ($thuocValid as $t) {
+                        $mathuoc  = $t["MaThuoc"];
+                        $soluong  = $t["SoLuong"];
+                        $lieudung = $t["LieuDung"];
+                        $cachdung = $t["CachDung"];
+
+                        // Lưu từng dòng chi tiết; map sang ct_don_thuoc
+                        // TaoCTDT vẫn dùng MaDon mới nhất trong don_thuoc
+                        $rs3 = $model->TaoCTDT($mathuoc, $soluong, $lieudung, $cachdung);
+                    }
+                }
+            }
+
+            // 2) Tạo phiếu khám
+            // AddPK sẽ tự tìm MaDon tương ứng với MaLK + MaBN + MaBS
+            // Nếu không có đơn thuốc -> MaDon trong phieukham sẽ là NULL
+            $rs = $model->AddPK(
+                $ngaytao,
+                $trieuchung,
+                $kq,
+                $chuandoan,
+                $loidan,
+                $ngaytaikham,
+                $malk,
+                $bsi,
+                $mabn
+            );
+
+            // 3) Tạm thời: quay lại danh sách khám như cũ
+            $ngayHienTai     = date('Y-m-d');
+            $danhSachSauLap  = $model->GetDanhSachKhamTheoBSAll($bsi, $ngayHienTai);
 
             $this->view("layoutBacsi", [
                 "Page"         => "Danhsachkham",

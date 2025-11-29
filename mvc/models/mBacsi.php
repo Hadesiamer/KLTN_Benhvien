@@ -208,10 +208,20 @@ class MBacsi extends DB
 
     public function GetThongTinBenhNhan1($maBN, $malk)
     {
-        $str = "SELECT bn.MaBN, bn.HovaTen, bn.NgaySinh, bn.GioiTinh, bn.BHYT, bn.DiaChi, bn.SoDT,lk.MaLK
-            FROM benhnhan bn JOIN lichkham lk
-            on bn.MaBN=lk.MaBN
-            WHERE bn.MaBN = '$maBN' AND lk.MaLK ='$malk'";
+        // NhatCuong: thêm lk.TrieuChung để đổ sẵn vào form Lập phiếu khám
+        $str = "SELECT 
+                    bn.MaBN, 
+                    bn.HovaTen, 
+                    bn.NgaySinh, 
+                    bn.GioiTinh, 
+                    bn.BHYT, 
+                    bn.DiaChi, 
+                    bn.SoDT,
+                    lk.MaLK,
+                    lk.TrieuChung
+                FROM benhnhan bn JOIN lichkham lk
+                  ON bn.MaBN = lk.MaBN
+                WHERE bn.MaBN = '$maBN' AND lk.MaLK ='$malk'";
         $result = mysqli_query($this->con, $str);
         $mang = array();
         while ($row = mysqli_fetch_array($result)) {
@@ -231,7 +241,7 @@ class MBacsi extends DB
         return $row['SoLanKham'];
     }
 
-    //NhatCuong: Lapphieukham 1/6
+    //NhatCuong: Lapphieukham 1/6 (chưa dùng trong Lapphieukham hiện tại)
     public function getBenhNhanInfo($maLK)
     {
         $query = "SELECT bn.MaBN, bn.HovaTen, bn.NgaySinh, bn.GioiTinh, bn.BHYT, bn.DiaChi, bn.SoDT
@@ -256,91 +266,151 @@ class MBacsi extends DB
         return json_encode($mang);
     }
 
+    // Lấy danh mục thuốc theo bảng thuoc mới
     public function getThuocList()
     {
-        $query = "SELECT MaThuoc, TenThuoc FROM thuoc";
+        $query = "SELECT 
+                    MaThuoc,
+                    TenThuoc,
+                    TenHoatChat,
+                    HamLuong,
+                    DangBaoChe,
+                    DonViTinh,
+                    DuongDung,
+                    NhomThuoc,
+                    DonGiaBan,
+                    TrangThai
+                  FROM thuoc
+                  WHERE TrangThai = 1
+                  ORDER BY TenThuoc ASC";
+
         $result = $this->con->query($query);
         $thuocList = array();
-        while ($row = $result->fetch_assoc()) {
-            $thuocList[] = $row;
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $thuocList[] = $row;
+            }
         }
         return $thuocList;
     }
 
+    // ===========================
+    // PHIẾU KHÁM + ĐƠN THUỐC
+    // ===========================
+
+    // AddPK: thêm phiếu khám, gán với MaDon tương ứng với MaLK + MaBN + MaBS (nếu có)
     public function AddPK($ntao, $tchung, $kq, $cdoan, $ldan, $ngaytaikham, $malk, $mabs, $mabn)
     {
-        $str = "SELECT MaDT FROM `donthuoc` ORDER BY MaDT DESC LIMIT 1";
-        $result = mysqli_query($this->con, $str);
-        
-        // Kiểm tra nếu có dữ liệu trả về
-        if ($result && $row = mysqli_fetch_assoc($result)) {
-            $madt_moi = $row['MaDT']; // Lấy giá trị MaDT
-        } else {
-            // Xử lý khi không tìm thấy MaDT
-            return false; // Hoặc throw lỗi nếu cần
+        // Ép kiểu cho khóa ngoại
+        $malk = intval($malk);
+        $mabs = intval($mabs);
+        $mabn = intval($mabn);
+
+        // Tìm MaDon gắn với cuộc khám này (nếu đã tạo đơn thuốc)
+        $madon_moi = null;
+        $sqlDon = "SELECT MaDon 
+                   FROM don_thuoc 
+                   WHERE MaLK = '$malk' AND MaBN = '$mabn' AND MaBS = '$mabs'
+                   ORDER BY MaDon DESC
+                   LIMIT 1";
+        $resultDon = mysqli_query($this->con, $sqlDon);
+        if ($resultDon && $rowDon = mysqli_fetch_assoc($resultDon)) {
+            $madon_moi = $rowDon['MaDon'];
         }
-    
-        $str = "INSERT INTO phieukham (`MaPK`, `NgayTao`, `TrieuChung`, `KetQua`, `ChuanDoan`, `LoiDan`, `NgayTaikham`, `MaXN`, `MaLK`, `MaHD`, `MaDT`, `MaBN`, `MaBS`)
-        VALUES (NULL, '$ntao', '$tchung', '$kq', '$cdoan', '$ldan', '$ngaytaikham', NULL, '$malk', NULL, '$madt_moi', '$mabn', '$mabs');";
+
+        // Chuẩn bị giá trị cho cột MaDon (cho phép NULL nếu không có đơn thuốc)
+        if ($madon_moi !== null) {
+            $maDonValue = "'" . intval($madon_moi) . "'";
+        } else {
+            $maDonValue = "NULL";
+        }
+
+        // CHÚ Ý: cột trong phieukham đã đổi từ MaDT -> MaDon theo cập nhật của bạn
+        $str = "INSERT INTO phieukham 
+                (`MaPK`, `NgayTao`, `TrieuChung`, `KetQua`, `ChuanDoan`, `LoiDan`, `NgayTaikham`, 
+                 `MaXN`, `MaLK`, `MaHD`, `MaDon`, `MaBN`, `MaBS`)
+        VALUES (NULL, '$ntao', '$tchung', '$kq', '$cdoan', '$ldan', '$ngaytaikham',
+                NULL, '$malk', NULL, $maDonValue, '$mabn', '$mabs')";
         $result = mysqli_query($this->con, $str);
         return $result;
     }
 
+    // Hàm generic: tạo 1 đơn thuốc (dùng cho nơi khác, nếu có)
     public function createDonThuoc($data)
     {
-        $query = "INSERT INTO donthuoc (NgayTao, MaBS, MaBN, TrangThai) VALUES (?, ?, ?, 'Pending')";
+        // Map: NgayTao -> NgayKe, GhiChuChung = NULL, LoaiDon = KE_DON, MaLK/MaPK tạm NULL
+        $query = "INSERT INTO don_thuoc 
+                    (MaLK, MaPK, MaBN, MaBS, MaNhanVien, LoaiDon, NgayKe, GhiChuChung)
+                  VALUES (NULL, NULL, ?, ?, NULL, 'KE_DON', ?, NULL)";
         $stmt = $this->con->prepare($query);
-        $stmt->bind_param("sii", $data['NgayTao'], $data['MaBS'], $data['MaBN']);
+        if (!$stmt) return false;
+
+        $maBN   = isset($data['MaBN']) ? (int)$data['MaBN'] : 0;
+        $maBS   = isset($data['MaBS']) ? (int)$data['MaBS'] : 0;
+        $ngayKe = isset($data['NgayTao']) ? $data['NgayTao'] : date('Y-m-d H:i:s');
+
+        $stmt->bind_param("iis", $maBN, $maBS, $ngayKe);
         if ($stmt->execute()) {
-            return $this->con->insert_id;
+            return $this->con->insert_id; // MaDon
         }
         return false;
     }
 
-    public function createChiTietDonThuoc($maDT, $thuocData)
+    // Hàm generic: tạo chi tiết đơn thuốc cho MaDon (dùng cho nơi khác, nếu có)
+    public function createChiTietDonThuoc($maDon, $thuocData)
     {
-        $query = "INSERT INTO chitietdonthuoc (MaDT, MaThuoc, SoLuong, LieuDung, CachDung) VALUES (?, ?, ?, ?, ?)";
+        $query = "INSERT INTO ct_don_thuoc (MaDon, MaThuoc, SoLuong, LieuDung, GhiChu) 
+                  VALUES (?, ?, ?, ?, ?)";
         $stmt = $this->con->prepare($query);
+        if (!$stmt) return false;
+
         foreach ($thuocData as $thuoc) {
-            $stmt->bind_param("iiiss", $maDT, $thuoc['MaThuoc'], $thuoc['SoLuong'], $thuoc['LieuDung'], $thuoc['CachDung']);
+            $maThuoc = (int)$thuoc['MaThuoc'];
+            $soLuong = (int)$thuoc['SoLuong'];
+            $lieuDung = $thuoc['LieuDung'];
+            $ghiChu   = isset($thuoc['CachDung']) ? $thuoc['CachDung'] : '';
+
+            $stmt->bind_param("iiiss", $maDon, $maThuoc, $soLuong, $lieuDung, $ghiChu);
             $stmt->execute();
         }
         return true;
     }
 
+    // Lấy phiếu khám + thuốc
     public function GetPhieuKham($maBN)
     {
+        // Map sang bảng mới: don_thuoc, ct_don_thuoc, MaDon
         $str = "SELECT
-                pk2.NgayTao,
-                nv.HoVaTen AS BacSi,
-                pk2.TrieuChung,
-                pk2.ChuanDoan,
-                pk2.KetQua,
-                pk2.LoiDan,
-                pk2.NgayTaiKham,
-                xn.NgayXetNghiem,
-                xn.KetQua as KetQuaXN,
-                xn.LoaiXN,
-                t.TenThuoc,
-                dt.SoLuong,
-                dt.LieuDung,
-                dt.CachDung
-            FROM 
-                PhieuKham pk2
-            JOIN 
-                NhanVien nv ON pk2.MaBS = nv.MaNV
-            left JOIN 
-                XetNghiem xn ON pk2.MaXN = xn.MAXN
-            left JOIN
-                donthuoc d on d.MaBN = pk2.MaBN
-            JOIN 
-                chitietdonthuoc dt ON d.MaDT = dt.MaDT
-            JOIN 
-                thuoc as t ON dt.MaThuoc = t.MaThuoc
-            WHERE 
-                pk2.MaBN = '$maBN'
-            ORDER BY 
-                pk2.NgayTao";
+                    pk2.NgayTao,
+                    nv.HoVaTen AS BacSi,
+                    pk2.TrieuChung,
+                    pk2.ChuanDoan,
+                    pk2.KetQua,
+                    pk2.LoiDan,
+                    pk2.NgayTaiKham,
+                    xn.NgayXetNghiem,
+                    xn.KetQua as KetQuaXN,
+                    xn.LoaiXN,
+                    t.TenThuoc,
+                    dt.SoLuong,
+                    dt.LieuDung,
+                    dt.GhiChu AS CachDung
+                FROM 
+                    PhieuKham pk2
+                JOIN 
+                    NhanVien nv ON pk2.MaBS = nv.MaNV
+                LEFT JOIN 
+                    XetNghiem xn ON pk2.MaXN = xn.MAXN
+                LEFT JOIN
+                    don_thuoc d ON pk2.MaDon = d.MaDon
+                LEFT JOIN 
+                    ct_don_thuoc dt ON d.MaDon = dt.MaDon
+                LEFT JOIN 
+                    thuoc AS t ON dt.MaThuoc = t.MaThuoc
+                WHERE 
+                    pk2.MaBN = '$maBN'
+                ORDER BY 
+                    pk2.NgayTao";
         $result = mysqli_query($this->con, $str);
         $mang = array();
         while ($row = mysqli_fetch_array($result)) {
@@ -349,28 +419,45 @@ class MBacsi extends DB
         return json_encode($mang);
     }
 
+    // TaoDT: dùng trong Lapphieukham (bác sĩ lập phiếu khám + đơn kê)
+    // Map sang bảng don_thuoc mới
+    public function TaoDT($date, $mota, $mabs, $mabn, $malk)
+    {
+        // Loại đơn: KE_DON, gán MaLK, MaBN, MaBS.
+        $date  = !empty($date) ? $date : date('Y-m-d H:i:s');
+        $mabn  = intval($mabn);
+        $mabs  = intval($mabs);
+        $malk  = intval($malk);
 
-    public function TaoDT($date, $mota, $mabs, $mabn) {
-        $str = "INSERT INTO donthuoc (NgayTao, MoTa, MaBS, MaBN, TrangThai) VALUES (NOW(),'$mota' , '$mabs', '$mabn', 'Pending')";
+        // Không dùng $mota (chẩn đoán) để lưu vào GhiChuChung nữa, tránh bug logic
+        $ghiChuChung = '';
+
+        $str = "INSERT INTO don_thuoc 
+                    (MaLK, MaPK, MaBN, MaBS, MaNhanVien, LoaiDon, NgayKe, GhiChuChung)
+                VALUES 
+                    ('$malk', NULL, '$mabn', '$mabs', NULL, 'KE_DON', '$date', '$ghiChuChung')";
         return mysqli_query($this->con, $str);
     }
+
+    // TaoCTDT: thêm chi tiết đơn thuốc cho MaDon mới nhất
     public function TaoCTDT($mathuoc, $soluong, $lieudung, $cachdung)
     {
-        // Truy vấn để lấy MaDT mới nhất
-        $str = "SELECT MaDT FROM `donthuoc` ORDER BY MaDT DESC LIMIT 1";
+        // Lấy MaDon mới nhất
+        $str = "SELECT MaDon FROM `don_thuoc` ORDER BY MaDon DESC LIMIT 1";
         $result = mysqli_query($this->con, $str);
         
-        // Kiểm tra nếu có dữ liệu trả về
         if ($result && $row = mysqli_fetch_assoc($result)) {
-            $madt_moi = $row['MaDT']; // Lấy giá trị MaDT
+            $madon_moi = $row['MaDon'];
         } else {
-            // Xử lý khi không tìm thấy MaDT
-            return false; // Hoặc throw lỗi nếu cần
+            return false;
         }
         
-        // Thực hiện câu lệnh INSERT
-        $str2 = "INSERT INTO chitietdonthuoc (MaDT, MaThuoc, SoLuong, LieuDung, CachDung) 
-                 VALUES ('$madt_moi', '$mathuoc', '$soluong', '$lieudung', '$cachdung')";
+        // Thực hiện INSERT vào ct_don_thuoc
+        $mathuoc = intval($mathuoc);
+        $soluong = intval($soluong);
+
+        $str2 = "INSERT INTO ct_don_thuoc (MaDon, MaThuoc, SoLuong, LieuDung, GhiChu) 
+                 VALUES ('$madon_moi', '$mathuoc', '$soluong', '$lieudung', '$cachdung')";
         return mysqli_query($this->con, $str2);
     }
 
