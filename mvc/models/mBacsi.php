@@ -193,10 +193,18 @@ class MBacsi extends DB
     }
 
     //NhatCuong; Usecase 2/3: Xem lịch sử khám bệnh, thông tin bệnh nhân
-    public function GetThongTinBenhNhan($maBN)
+    //NhatCuong; Usecase 2/3: Xem lịch sử khám bệnh, thông tin bệnh nhân
+    public function GetThongTinBenhNhan($tuKhoa)
     {
+        // NhatCuong: cho phép tìm theo MaBN, BHYT hoặc SoDT
+        // Lọc chuỗi đơn giản tránh lỗi câu lệnh SQL
+        $tuKhoa = mysqli_real_escape_string($this->con, $tuKhoa);
+
         $str = "SELECT MaBN, HovaTen, NgaySinh, GioiTinh, BHYT, DiaChi, SoDT, Email
-            FROM benhnhan WHERE MaBN = '$maBN' or BHYT = '$maBN'";
+                FROM benhnhan 
+                WHERE MaBN = '$tuKhoa'
+                OR BHYT = '$tuKhoa'
+                OR SoDT = '$tuKhoa'";
 
         $result = mysqli_query($this->con, $str);
         $mang = array();
@@ -570,5 +578,21 @@ class MBacsi extends DB
         }
 
         return "Đổi mật khẩu thất bại!";
+    }
+    public function checkPhieuKhamTonTai($maLK)
+    {
+        $maLK = intval($maLK);
+        $sql = "SELECT COUNT(*) AS total FROM phieukham WHERE MaLK = $maLK";
+        $res = mysqli_query($this->con, $sql);
+        $row = mysqli_fetch_assoc($res);
+        return $row['total'] > 0;
+    }
+
+// Xóa tất cả phiếu khám có cùng MaLK
+    public function deletePhieuKhamByMaLK($maLK)
+    {
+        $maLK = intval($maLK);
+        $sql = "DELETE FROM phieukham WHERE MaLK = $maLK";
+        return mysqli_query($this->con, $sql);
     }
 }

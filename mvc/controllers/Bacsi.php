@@ -187,17 +187,21 @@ class Bacsi extends Controller
         if (isset($_POST['search'])) {
             $maBN = $_POST['maBN'];
             $model = $this->model("MBacsi");
+
+            // Cho phép tìm theo MaBN / BHYT / SoDT (logic đã sửa trong model)
             $thongTinBenhNhan = $model->GetThongTinBenhNhan($maBN);
+
             $timmaBN = json_decode($thongTinBenhNhan, true);
             if (isset($timmaBN[0]['MaBN'])) {
                 $maBN = $timmaBN[0]['MaBN'];
             }
+
             $phieuKham = $model->GetPhieuKham($maBN);
 
             $this->view("layoutBacsi", [
                 "Page" => "xemthongtinbenhnhan",
-                "ThongTinBenhNhan" => $thongTinBenhNhan,
-                "PhieuKhamBenhNhan" => $phieuKham
+                "ThongTinBenhNhan"   => $thongTinBenhNhan,
+                "PhieuKhamBenhNhan"  => $phieuKham
             ]);
         } else {
             $this->view("layoutBacsi", [
@@ -212,15 +216,15 @@ class Bacsi extends Controller
         if (isset($_POST['search'])) {
             $maBN = $_POST['maBN'];
             $model = $this->model("MBacsi");
-            $thongTinBenhNhan = $model->GetThongTinBenhNhan($maBN);
-            $phieuKhamBenhNhan = $model->GetPhieuKhamBenhNhan($maBN);
-            $soLanKhamBenh = $model->GetSoLanKhamBenh($maBN);
+            $thongTinBenhNhan   = $model->GetThongTinBenhNhan($maBN);
+            $phieuKhamBenhNhan  = $model->GetPhieuKhamBenhNhan($maBN);
+            $soLanKhamBenh      = $model->GetSoLanKhamBenh($maBN);
 
             $this->view("LayoutXemLichSuKhamBenh", [
-                "Page" => "DanhSachLichSuKham",
-                "ThongTinBenhNhan" => $thongTinBenhNhan,
-                "PhieuKhamBenhNhan" => $phieuKhamBenhNhan,
-                "SoLanKhamBenh" => $soLanKhamBenh
+                "Page"               => "DanhSachLichSuKham",
+                "ThongTinBenhNhan"   => $thongTinBenhNhan,
+                "PhieuKhamBenhNhan"  => $phieuKhamBenhNhan,
+                "SoLanKhamBenh"      => $soLanKhamBenh
             ]);
         } else {
             $this->view("LayoutXemLichSuKhamBenh", [
@@ -290,7 +294,75 @@ class Bacsi extends Controller
                 }
             }
 
-            // 1) Chỉ tạo đơn thuốc (don_thuoc + ct_don_thuoc) nếu có ít nhất 1 thuốc hợp lệ
+            // ====================================================
+            // KIỂM TRA + XÁC NHẬN GHI ĐÈ PHIẾU KHÁM THEO MaLK
+            // ====================================================
+            $confirmSave = isset($_POST['confirm_save']) ? $_POST['confirm_save'] : '0';
+            $daTonTai    = $model->checkPhieuKhamTonTai($malk); // hàm trong MBacsi
+
+            if ($daTonTai && $confirmSave !== '1') {
+                // Lần submit đầu tiên: đã có phiếu cũ nhưng chưa confirm -> hiển thị hộp thoại
+                // Render trang tạm với JS confirm, nếu đồng ý thì submit lại form với cờ confirm_save=1
+                echo "<!DOCTYPE html>
+<html lang='vi'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Xác nhận ghi đè phiếu khám</title>
+</head>
+<body>
+    <form id='repostForm' method='POST' action=''>
+        <input type='hidden' name='lap' value='1'>
+        <input type='hidden' name='confirm_save' value='1'>
+        <input type='hidden' name='maBN' value='" . htmlspecialchars($mabn, ENT_QUOTES) . "'>
+        <input type='hidden' name='maLK' value='" . htmlspecialchars($malk, ENT_QUOTES) . "'>
+        <input type='hidden' name='ngayTao' value='" . htmlspecialchars($ngaytao, ENT_QUOTES) . "'>
+        <input type='hidden' name='trieuChung' value='" . htmlspecialchars($trieuchung, ENT_QUOTES) . "'>
+        <input type='hidden' name='ketQua' value='" . htmlspecialchars($kq, ENT_QUOTES) . "'>
+        <input type='hidden' name='chuanDoan' value='" . htmlspecialchars($chuandoan, ENT_QUOTES) . "'>
+        <input type='hidden' name='loiDan' value='" . htmlspecialchars($loidan, ENT_QUOTES) . "'>
+        <input type='hidden' name='ngayTaiKham' value='" . htmlspecialchars($ngaytaikham, ENT_QUOTES) . "'>";
+
+                // Đổ lại dữ liệu mảng thuốc
+                if (!empty($thuocPost)) {
+                    foreach ($thuocPost as $idx => $item) {
+                        $idxSafe = htmlspecialchars($idx, ENT_QUOTES);
+                        $maThuoc  = isset($item['MaThuoc']) ? htmlspecialchars($item['MaThuoc'], ENT_QUOTES) : '';
+                        $soLuong  = isset($item['SoLuong']) ? htmlspecialchars($item['SoLuong'], ENT_QUOTES) : '';
+                        $lieuDung = isset($item['LieuDung']) ? htmlspecialchars($item['LieuDung'], ENT_QUOTES) : '';
+                        $cachDung = isset($item['CachDung']) ? htmlspecialchars($item['CachDung'], ENT_QUOTES) : '';
+
+                        echo "
+        <input type='hidden' name='thuoc[$idxSafe][MaThuoc]' value='$maThuoc'>
+        <input type='hidden' name='thuoc[$idxSafe][SoLuong]' value='$soLuong'>
+        <input type='hidden' name='thuoc[$idxSafe][LieuDung]' value='$lieuDung'>
+        <input type='hidden' name='thuoc[$idxSafe][CachDung]' value='$cachDung'>";
+                    }
+                }
+
+                echo "
+    </form>
+    <script>
+        var c = confirm('Bạn đã lập phiếu khám trước đó, nếu lưu một lần nữa, phiếu khám cũ sẽ mất');
+        if (c) {
+            document.getElementById('repostForm').submit();
+        } else {
+            alert('Đã hủy lưu phiếu khám.');
+            window.history.back();
+        }
+    </script>
+</body>
+</html>";
+                exit; // Dừng tại đây, chờ người dùng confirm
+            }
+
+            // Nếu đã confirm (confirm_save = 1) và có phiếu cũ -> xóa phiếu cũ trước khi thêm mới
+            if ($daTonTai && $confirmSave === '1') {
+                $model->deletePhieuKhamByMaLK($malk);
+            }
+
+            // ====================================================
+            // 1) Chỉ tạo đơn thuốc nếu có ít nhất 1 thuốc hợp lệ
+            // ====================================================
             if (count($thuocValid) > 0) {
                 // Không truyền chẩn đoán vào GhiChuChung của don_thuoc nữa -> truyền chuỗi rỗng ""
                 if ($model->TaoDT($ngaytao, "", $bsi, $mabn, $malk)) {
@@ -308,9 +380,9 @@ class Bacsi extends Controller
                 }
             }
 
-            // 2) Tạo phiếu khám
-            // AddPK sẽ tự tìm MaDon tương ứng với MaLK + MaBN + MaBS
-            // Nếu không có đơn thuốc -> MaDon trong phieukham sẽ là NULL
+            // ====================================================
+            // 2) Tạo phiếu khám (AddPK tự gắn MaDon nếu có)
+            // ====================================================
             $rs = $model->AddPK(
                 $ngaytao,
                 $trieuchung,
@@ -323,7 +395,7 @@ class Bacsi extends Controller
                 $mabn
             );
 
-            // 3) Tạm thời: quay lại danh sách khám như cũ
+            // 3) Quay lại danh sách khám như cũ
             $ngayHienTai     = date('Y-m-d');
             $danhSachSauLap  = $model->GetDanhSachKhamTheoBSAll($bsi, $ngayHienTai);
 

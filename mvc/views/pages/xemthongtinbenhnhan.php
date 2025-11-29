@@ -3,10 +3,16 @@
 <div id="container">
     <!-- Form tìm kiếm bệnh nhân -->
     <form method="POST" class="search-bar">
-        <input type="text" name="maBN" placeholder="Vui lòng nhập mã bệnh nhân hoặc mã BHYT" required>
+        <input 
+            type="text" 
+            name="maBN" 
+            placeholder="Vui lòng nhập mã bệnh nhân, mã BHYT hoặc số điện thoại" 
+            required
+        >
         <button type="submit" name="search">Tìm kiếm</button>
     </form>
 </div>
+
 
 <div id="container">
     <?php
@@ -183,6 +189,43 @@
 <script>
     const phieuKhamBenhNhan = <?php echo isset($data["PhieuKhamBenhNhan"]) ? $data["PhieuKhamBenhNhan"] : '[]'; ?>;
 
+    // Escape HTML để tránh lỗi / XSS nếu dữ liệu có ký tự đặc biệt
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // Chuẩn hóa text: null / rỗng / 0000-00-00 → "Không"
+    function cleanValue(value) {
+        if (value === null || value === undefined) return "Không";
+        const v = String(value).trim();
+        if (
+            v === "" ||
+            v === "0000-00-00" ||
+            v === "0000-00-00 00:00:00"
+        ) {
+            return "Không";
+        }
+        return v;
+    }
+
+    // Chuẩn hóa ngày: nếu không parse được → "Không"
+    function cleanDate(value) {
+        const v = cleanValue(value);
+        if (v === "Không") return v;
+
+        const d = new Date(v);
+        if (Number.isNaN(d.getTime())) {
+            return "Không";
+        }
+        return d.toLocaleDateString("vi-VN");
+    }
+
     function showMedicalDetails(ngayTao) {
         const box = document.getElementById("MedicalDetails");
         if (!ngayTao) {
@@ -196,27 +239,44 @@
             return;
         }
 
+        // Chuẩn hóa từng trường
+        const ngayKham    = escapeHtml(cleanDate(phieu.NgayTao));
+        const trieuChung  = escapeHtml(cleanValue(phieu.TrieuChung));
+        const ketQua      = escapeHtml(cleanValue(phieu.KetQua));
+        const chuanDoan   = escapeHtml(cleanValue(phieu.ChuanDoan));
+        const loiDan      = escapeHtml(cleanValue(phieu.LoiDan));
+        const ngayTaiKham = escapeHtml(cleanDate(phieu.NgayTaiKham));
+
+        const loaiXN      = escapeHtml(cleanValue(phieu.LoaiXN));
+        const ketQuaXN    = escapeHtml(cleanValue(phieu.KetQuaXN));
+
+        const tenThuoc    = escapeHtml(cleanValue(phieu.TenThuoc));
+        const soLuong     = escapeHtml(cleanValue(phieu.SoLuong));
+        const lieuDung    = escapeHtml(cleanValue(phieu.LieuDung));
+        const cachDung    = escapeHtml(cleanValue(phieu.CachDung));
+
         box.innerHTML = `
             <div class="info-grid">
-                <div class="info-item"><span class="info-label">Ngày khám:</span> ${new Date(phieu.NgayTao).toLocaleDateString()}</div>
-                <div class="info-item"><span class="info-label">Triệu chứng:</span> ${phieu.TrieuChung}</div>
-                <div class="info-item"><span class="info-label">Kết quả:</span> ${phieu.KetQua}</div>
-                <div class="info-item"><span class="info-label">Chuẩn đoán:</span> ${phieu.ChuanDoan}</div>
-                <div class="info-item"><span class="info-label">Lời dặn:</span> ${phieu.LoiDan}</div>
-                <div class="info-item"><span class="info-label">Ngày tái khám:</span> ${phieu.NgayTaiKham ? new Date(phieu.NgayTaiKham).toLocaleDateString() : 'Không có'}</div>
+                <div class="info-item"><span class="info-label">Ngày khám:</span> ${ngayKham}</div>
+                <div class="info-item"><span class="info-label">Triệu chứng:</span> ${trieuChung}</div>
+                <div class="info-item"><span class="info-label">Kết quả:</span> ${ketQua}</div>
+                <div class="info-item"><span class="info-label">Chuẩn đoán:</span> ${chuanDoan}</div>
+                <div class="info-item"><span class="info-label">Lời dặn:</span> ${loiDan}</div>
+                <div class="info-item"><span class="info-label">Ngày tái khám:</span> ${ngayTaiKham}</div>
             </div>
 
             <div class="info-grid">
-                <div class="info-item"><span class="info-label">Xét nghiệm:</span> ${phieu.LoaiXN || 'Không có'}</div>
-                <div class="info-item"><span class="info-label">Kết quả xét nghiệm:</span> ${phieu.KetQuaXN || 'Không có'}</div>
+                <div class="info-item"><span class="info-label">Xét nghiệm:</span> ${loaiXN}</div>
+                <div class="info-item"><span class="info-label">Kết quả xét nghiệm:</span> ${ketQuaXN}</div>
             </div>
 
             <div class="info-grid">
-                <div class="info-item"><span class="info-label">Tên thuốc:</span> ${phieu.TenThuoc}</div>
-                <div class="info-item"><span class="info-label">Số lượng:</span> ${phieu.SoLuong}</div>
-                <div class="info-item"><span class="info-label">Liều dùng:</span> ${phieu.LieuDung}</div>
-                <div class="info-item"><span class="info-label">Cách dùng:</span> ${phieu.CachDung}</div>
+                <div class="info-item"><span class="info-label">Tên thuốc:</span> ${tenThuoc}</div>
+                <div class="info-item"><span class="info-label">Số lượng:</span> ${soLuong}</div>
+                <div class="info-item"><span class="info-label">Liều dùng:</span> ${lieuDung}</div>
+                <div class="info-item"><span class="info-label">Cách dùng:</span> ${cachDung}</div>
             </div>
         `;
     }
 </script>
+
