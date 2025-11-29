@@ -106,12 +106,19 @@ echo '<div class="col-md-3 ">';
         echo '</form>';
     echo '</div>';
     // Thêm lịch
-    echo '<div class="col-md-4">';
-        echo '<button class="btn btn-outline-secondary" type="button" name="them" data-bs-toggle="modal" data-bs-target="#addDoctorModal">';
+    echo '<div class="col-md-6">';
+        echo '<button class="btn btn-outline-secondary me-3" type="button" name="them" data-bs-toggle="modal" data-bs-target="#addDoctorModal">';
             echo 'Thêm lịch';
         echo '</button>';
+
+        // ================== NÚT THÊM NHIỀU LỊCH (MỚI) ==================
+        echo '<button class="btn btn-outline-primary me-3" type="button" name="themnhieulich" data-bs-toggle="modal" data-bs-target="#addMultiScheduleModal">';
+            echo 'Thêm nhiều lịch';
+        echo '</button>';
+        // ================== HẾT NÚT THÊM NHIỀU LỊCH ==================
+
         // Xem yêu cầu nghỉ phép
-       echo '<button class="btn btn-outline-warning" style="margin-left: 25px" type="button" data-bs-toggle="modal" data-bs-target="#dsNghiPhep">';
+       echo '<button class="btn btn-outline-warning" type="button" data-bs-toggle="modal" data-bs-target="#dsNghiPhep">';
             echo '<i class="bi bi-envelope"></i> Xem yêu cầu nghỉ phép';
             if($count>0){echo '<span class="badge bg-danger ms-2">' . $count . '</span>';}
             
@@ -357,7 +364,148 @@ echo '
             </script>
             ";
         }
+
+// ======================= MODAL THÊM NHIỀU LỊCH (MỚI) =======================
 ?>
+<div class="modal fade" id="addMultiScheduleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Thêm nhiều lịch theo tuần</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="./LLV" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="form_type" value="add_multi_schedule">
+
+          <div class="row">
+            <!-- Chọn khoa -->
+            <div class="col-md-4 mb-3">
+              <label for="khoaSelectMulti" class="form-label">Chọn khoa</label>
+              <select class="form-select" id="khoaSelectMulti" name="khoaSelect_multi" required>
+                <option value="">-- Chọn khoa --</option>
+                <?php foreach ($K as $k): ?>
+                  <option value="<?php echo $k['MaKhoa']; ?>"><?php echo $k['TenKhoa']; ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+            <!-- Chọn nhân viên -->
+            <div class="col-md-4 mb-3">
+              <label for="doctorSelectMulti" class="form-label">Chọn nhân viên</label>
+              <select class="form-select" id="doctorSelectMulti" name="MaNVien_multi" required>
+                <option value="">-- Chọn nhân viên --</option>
+                <?php foreach ($BS as $b): ?>
+                  <option value="<?php echo $b['MaNV']; ?>" data-khoa="<?php echo $b['MaKhoa']; ?>">
+                    <?php echo $b['HovaTen'] . " - " . $b['TenKhoa']; ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+            <!-- Khoảng thời gian -->
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Khoảng thời gian áp dụng</label>
+              <div class="d-flex gap-2">
+                <input type="date" class="form-control" name="start_date" required>
+                <input type="date" class="form-control" name="end_date" required>
+              </div>
+            </div>
+          </div>
+
+          <hr>
+
+          <!-- Lịch tuần: Thứ 2 - Chủ nhật / Sáng - Chiều -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Cấu hình lịch mẫu theo tuần</label>
+            <div class="table-responsive">
+              <table class="table table-bordered text-center align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Thứ</th>
+                    <th>Ca Sáng</th>
+                    <th>Ca Chiều</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Thứ 2</td>
+                    <td><input type="checkbox" name="week[mon][]" value="Sáng"></td>
+                    <td><input type="checkbox" name="week[mon][]" value="Chiều"></td>
+                  </tr>
+                  <tr>
+                    <td>Thứ 3</td>
+                    <td><input type="checkbox" name="week[tue][]" value="Sáng"></td>
+                    <td><input type="checkbox" name="week[tue][]" value="Chiều"></td>
+                  </tr>
+                  <tr>
+                    <td>Thứ 4</td>
+                    <td><input type="checkbox" name="week[wed][]" value="Sáng"></td>
+                    <td><input type="checkbox" name="week[wed][]" value="Chiều"></td>
+                  </tr>
+                  <tr>
+                    <td>Thứ 5</td>
+                    <td><input type="checkbox" name="week[thu][]" value="Sáng"></td>
+                    <td><input type="checkbox" name="week[thu][]" value="Chiều"></td>
+                  </tr>
+                  <tr>
+                    <td>Thứ 6</td>
+                    <td><input type="checkbox" name="week[fri][]" value="Sáng"></td>
+                    <td><input type="checkbox" name="week[fri][]" value="Chiều"></td>
+                  </tr>
+                  <tr>
+                    <td>Thứ 7</td>
+                    <td><input type="checkbox" name="week[sat][]" value="Sáng"></td>
+                    <td><input type="checkbox" name="week[sat][]" value="Chiều"></td>
+                  </tr>
+                  <tr>
+                    <td>Chủ nhật</td>
+                    <td><input type="checkbox" name="week[sun][]" value="Sáng"></td>
+                    <td><input type="checkbox" name="week[sun][]" value="Chiều"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <hr>
+
+          <!-- Xử lý lịch trùng -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Khi phát hiện lịch trùng</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="conflict_option" id="confOverwrite" value="overwrite">
+              <label class="form-check-label" for="confOverwrite">
+                A. Ghi đè toàn bộ lịch của ngày bị trùng
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="conflict_option" id="confSkip" value="skip" checked>
+              <label class="form-check-label" for="confSkip">
+                B. Bỏ qua ngày đó và tiếp tục tạo lịch cho ngày khác
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="conflict_option" id="confCancel" value="cancel">
+              <label class="form-check-label" for="confCancel">
+                C. Không thêm lịch nếu phát hiện trùng
+              </label>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary" name="btnGenerateSchedule">Tạo lịch hàng loạt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<?php
+// ======================= HẾT MODAL THÊM NHIỀU LỊCH =======================
+?>
+
 <!-- Modal danh sách yêu cầu nghỉ phép -->
 <div class="modal fade" id="dsNghiPhep" tabindex="-1" aria-labelledby="dsNghiPhepLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -484,6 +632,31 @@ if(isset($_REQUEST['reject'])){
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
+    // === Xử lý lọc nhân viên theo khoa trong modal Thêm nhiều lịch ===
+    const khoaSelectMulti = document.getElementById("khoaSelectMulti");
+    const doctorSelectMulti = document.getElementById("doctorSelectMulti");
+    if (khoaSelectMulti && doctorSelectMulti) {
+        khoaSelectMulti.addEventListener("change", function() {
+            const selectedKhoa = this.value;
+            const options = doctorSelectMulti.querySelectorAll("option");
+
+            options.forEach(opt => {
+                if (!opt.value) {
+                    opt.hidden = false;
+                    return;
+                }
+                const khoaOpt = opt.getAttribute("data-khoa");
+                if (!selectedKhoa || selectedKhoa === khoaOpt) {
+                    opt.hidden = false;
+                } else {
+                    opt.hidden = true;
+                }
+            });
+
+            doctorSelectMulti.value = "";
+        });
+    }
+
     // === Xử lý chuyển tuần ===
     const weekButtons = document.querySelectorAll("button[name='changeWeek']");
     weekButtons.forEach(btn => {
@@ -581,7 +754,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // === Xử lý chọn khoa trong modal ===
+    // === Xử lý chọn khoa trong modal thêm 1 lịch ===
     const khoaSelectModal = document.getElementById("khoaSelectModal");
     const doctorTableBody = document.getElementById("doctorTableBody");
     if (khoaSelectModal) {
@@ -671,7 +844,6 @@ document.addEventListener("DOMContentLoaded", function () {
 /* -------------------------------------------------------- */
 
 
-/* Các CSS khác (Giữ nguyên) */
   #dsNghiPhep .modal-content {
     border-radius: 15px;
     overflow: hidden;
@@ -690,7 +862,7 @@ document.addEventListener("DOMContentLoaded", function () {
     border-bottom: 3px solid #ffc107;
   }
 
-    .add-btn, .delete-btn, .edit-btn {
+.add-btn, .delete-btn, .edit-btn {
     border: none;
     background: none;
     cursor: pointer;
@@ -706,5 +878,23 @@ document.addEventListener("DOMContentLoaded", function () {
 .delete-btn:hover i {
     opacity: 0.8;
 }
+
+/* ====== PHÓNG TO Ô CHỌN CA LÀM VIỆC (checkbox + radio) TRONG MODAL THÊM NHIỀU LỊCH ====== */
+#addMultiScheduleModal .table input[type="checkbox"] {
+    transform: scale(2);      /* phóng to ô chọn ca */
+    margin: 4px;
+    cursor: pointer;
+}
+
+#addMultiScheduleModal .form-check-input {
+    transform: scale(1.4);      /* phóng to radio xử lý lịch trùng */
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+#addMultiScheduleModal .form-check-label {
+    cursor: pointer;
+}
+/* ====== HẾT PHẦN PHÓNG TO Ô CHỌN CA ====== */
 
 </style>

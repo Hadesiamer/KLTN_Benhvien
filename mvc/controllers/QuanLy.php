@@ -64,6 +64,103 @@ class QuanLy extends Controller {
     function LLV($date = null) {
         $ql = $this->model("mQuanLy");
 
+        // ================== THÊM NHIỀU LỊCH LÀM VIỆC THEO TUẦN ==================
+        if (isset($_POST['btnGenerateSchedule'])) {
+            date_default_timezone_set('Asia/Ho_Chi_Minh');
+            $today = date('Y-m-d');
+
+            $MaNV = isset($_POST['MaNVien_multi']) ? trim($_POST['MaNVien_multi']) : '';
+            $khoaSelectMulti = isset($_POST['khoaSelect_multi']) ? trim($_POST['khoaSelect_multi']) : '';
+            $startDate = isset($_POST['start_date']) ? $_POST['start_date'] : '';
+            $endDate = isset($_POST['end_date']) ? $_POST['end_date'] : '';
+            $conflictOption = isset($_POST['conflict_option']) ? $_POST['conflict_option'] : 'skip';
+            $weekTemplate = isset($_POST['week']) && is_array($_POST['week']) ? $_POST['week'] : [];
+
+            // E1: Không chọn nhân viên
+            if ($MaNV === '') {
+                $_SESSION['message'] = "Vui lòng chọn nhân viên để tạo lịch.";
+                $_SESSION['message_type'] = "error";
+                header('Location: ' . $_SERVER['REQUEST_URI']);
+                exit();
+            }
+
+            // E2: Không chọn ca nào trong lịch tuần
+            $hasShift = false;
+            if (!empty($weekTemplate)) {
+                foreach ($weekTemplate as $dayKey => $shifts) {
+                    if (is_array($shifts) && count($shifts) > 0) {
+                        $hasShift = true;
+                        break;
+                    }
+                }
+            }
+            if (!$hasShift) {
+                $_SESSION['message'] = "Bạn chưa chọn ca nào trong lịch tuần.";
+                $_SESSION['message_type'] = "error";
+                header('Location: ' . $_SERVER['REQUEST_URI']);
+                exit();
+            }
+
+            // Kiểm tra ngày hợp lệ
+            $startValid = DateTime::createFromFormat('Y-m-d', $startDate);
+            $endValid = DateTime::createFromFormat('Y-m-d', $endDate);
+
+            if (!$startValid || !$endValid) {
+                $_SESSION['message'] = "Khoảng thời gian không hợp lệ.";
+                $_SESSION['message_type'] = "error";
+                header('Location: ' . $_SERVER['REQUEST_URI']);
+                exit();
+            }
+
+            // E3: Ngày bắt đầu > ngày kết thúc
+            if ($startDate > $endDate) {
+                $_SESSION['message'] = "Khoảng thời gian không hợp lệ (Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc).";
+                $_SESSION['message_type'] = "error";
+                header('Location: ' . $_SERVER['REQUEST_URI']);
+                exit();
+            }
+
+            // B6: Chỉ thêm được lịch có ngày bắt đầu lớn hơn ngày hiện tại
+            if ($startDate <= $today) {
+                $_SESSION['message'] = "Ngày bắt đầu phải lớn hơn ngày hiện tại.";
+                $_SESSION['message_type'] = "error";
+                header('Location: ' . $_SERVER['REQUEST_URI']);
+                exit();
+            }
+
+            // Chuẩn hóa option xử lý trùng
+            if (!in_array($conflictOption, ['overwrite', 'skip', 'cancel'])) {
+                $conflictOption = 'skip';
+            }
+
+            // Gọi model sinh lịch
+            $result = $ql->GenerateWeeklySchedule($MaNV, $weekTemplate, $startDate, $endDate, $conflictOption);
+
+            if ($result['success']) {
+                $added = isset($result['added']) ? (int)$result['added'] : 0;
+                $conflicts = isset($result['conflicts']) ? (int)$result['conflicts'] : 0;
+                $skipped = isset($result['skipped']) ? (int)$result['skipped'] : 0;
+
+                $_SESSION['message'] = "Tạo lịch thành công: $added ca được thêm mới. Trùng: $conflicts, bỏ qua: $skipped.";
+                $_SESSION['message_type'] = "success";
+            } else {
+                // E4: Người dùng chọn "Không thêm lịch"
+                if (isset($result['option']) && $result['option'] === 'cancel') {
+                    $conflicts = isset($result['conflicts']) ? (int)$result['conflicts'] : 0;
+                    $_SESSION['message'] = "Phát hiện $conflicts ca trùng. Bạn đã chọn \"Không thêm lịch\" nên không có ca nào được thêm.";
+                    $_SESSION['message_type'] = "error";
+                } else {
+                    // E5: Lỗi database
+                    $_SESSION['message'] = "Tạo lịch thất bại. Vui lòng thử lại.";
+                    $_SESSION['message_type'] = "error";
+                }
+            }
+
+            header('Location: ' . $_SERVER['REQUEST_URI']);
+            exit();
+        }
+        // ================== HẾT PHẦN THÊM NHIỀU LỊCH ==================
+
         if (isset($_POST['btnDKL'])) {
             $MaNV = $_POST['MaNVien'];
             $NgayLamViec = $_POST['NgayLamViec'];
@@ -77,40 +174,39 @@ class QuanLy extends Controller {
                 exit();
             }
     
-        $isEmployeeInShift = $ql->CheckEmployeeInShift($MaNV, $NgayLamViec, $CaLamViec);
+            $isEmployeeInShift = $ql->CheckEmployeeInShift($MaNV, $NgayLamViec, $CaLamViec);
 
-        if ($isEmployeeInShift) {
-            $_SESSION['message'] = "Bác sĩ đã có trong ca làm việc này!";
-            $_SESSION['message_type'] = "error";
-        } else {
-            // Kiểm tra số lượng nhân viên trong ca làm việc
-            $employeeCount = $ql->CountEmployeeInShift($NgayLamViec, $CaLamViec, $chuyenKhoa);
+            if ($isEmployeeInShift) {
+                $_SESSION['message'] = "Bác sĩ đã có trong ca làm việc này!";
+                $_SESSION['message_type'] = "error";
+            } else {
+                // Kiểm tra số lượng nhân viên trong ca làm việc
+                $employeeCount = $ql->CountEmployeeInShift($NgayLamViec, $CaLamViec, $chuyenKhoa);
 
-            if ($employeeCount < 2) {
-                // Nếu số lượng nhân viên trong ca chưa đủ 2, thực hiện thêm lịch làm việc
-                $result = $ql->AddLLV($MaNV, $NgayLamViec, $CaLamViec);
+                if ($employeeCount < 2) {
+                    // Nếu số lượng nhân viên trong ca chưa đủ 2, thực hiện thêm lịch làm việc
+                    $result = $ql->AddLLV($MaNV, $NgayLamViec, $CaLamViec);
 
-                if ($result) {
-                    $_SESSION['message'] = "Thêm lịch làm việc thành công!";
-                    $_SESSION['message_type'] = "success";
-                    header('Location: ./LLV');
-                    exit();
-                    
+                    if ($result) {
+                        $_SESSION['message'] = "Thêm lịch làm việc thành công!";
+                        $_SESSION['message_type'] = "success";
+                        header('Location: ./LLV');
+                        exit();
+                        
+                    } else {
+                        $_SESSION['message'] = "Thêm lịch làm việc thất bại!";
+                        $_SESSION['message_type'] = "error";
+                    }
                 } else {
-                    $_SESSION['message'] = "Thêm lịch làm việc thất bại!";
+                    // Nếu ca làm việc đã đầy (>= 5 người)
+                    $_SESSION['message'] = "Ca làm việc đã đầy, không thể thêm!";
                     $_SESSION['message_type'] = "error";
                 }
-            } else {
-                // Nếu ca làm việc đã đầy (>= 5 người)
-                $_SESSION['message'] = "Ca làm việc đã đầy, không thể thêm!";
-                $_SESSION['message_type'] = "error";
             }
-        }
         
-        header('Location: ' . $_SERVER['REQUEST_URI']);
-        exit();
-    }
-    
+            header('Location: ' . $_SERVER['REQUEST_URI']);
+            exit();
+        }
     
     
         if(isset($_POST['MaNV'])) {
@@ -127,7 +223,7 @@ class QuanLy extends Controller {
                 $_SESSION['message_type'] = "error";
             }
             header('Location: ' . $_SERVER['REQUEST_URI']);
-        exit();
+            exit();
         }
 
         if (!$date) {
@@ -154,12 +250,6 @@ class QuanLy extends Controller {
             "SelectedKhoa" => $maKhoa,
             "BS" => $ql->GetDSBS()
         ]);
-
-        
-
-
-        
-        
     }
     
     function ThongKe() {
@@ -593,52 +683,46 @@ class QuanLy extends Controller {
          }
     }
 
-        // ===================== CHỨC NĂNG ĐỔI MẬT KHẨU CHO QUẢN LÝ =====================
-function DoiMK() {
-    // Kiểm tra đăng nhập và đúng quyền (role = 1 là Quản lý)
-    if (!isset($_SESSION["id"]) || $_SESSION["role"] != 1) {
-        echo "<script>alert('Bạn không có quyền truy cập vào trang này');</script>";
-        header("refresh: 0; url='/KLTN_Benhvien'");
-        exit;
-    }
+    // ===================== CHỨC NĂNG ĐỔI MẬT KHẨU CHO QUẢN LÝ =====================
+    function DoiMK() {
+        // Kiểm tra đăng nhập và đúng quyền (role = 1 là Quản lý)
+        if (!isset($_SESSION["id"]) || $_SESSION["role"] != 1) {
+            echo "<script>alert('Bạn không có quyền truy cập vào trang này');</script>";
+            header("refresh: 0; url='/KLTN_Benhvien'");
+            exit;
+        }
 
-    $model = $this->model("mQuanLy");
+        $model = $this->model("mQuanLy");
 
-    // Nếu có POST từ form
-    if ($_SERVER["REQUEST_METHOD"] === "POST") {
-        $idQL = $_SESSION["id"];
-        $old = $_POST["old_password"] ?? '';
-        $new = $_POST["new_password"] ?? '';
-        $confirm = $_POST["confirm_password"] ?? '';
+        // Nếu có POST từ form
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $idQL = $_SESSION["id"];
+            $old = $_POST["old_password"] ?? '';
+            $new = $_POST["new_password"] ?? '';
+            $confirm = $_POST["confirm_password"] ?? '';
 
-        if ($new !== $confirm) {
-            echo "<script>alert('Mật khẩu xác nhận không khớp!');</script>";
-        } else {
-            $kq = $model->KiemTraMatKhauCu($idQL, $old);
-            if ($kq) {
-                $doi = $model->DoiMatKhau($idQL, $new);
-                if ($doi) {
-                    echo "<script>alert('Đổi mật khẩu thành công!');</script>";
-                    echo "<script>window.location.href='/KLTN_Benhvien/QuanLy/DoiMK';</script>";
-                    exit;
-                } else {
-                    echo "<script>alert('Lỗi hệ thống, không thể đổi mật khẩu!');</script>";
-                }
+            if ($new !== $confirm) {
+                echo "<script>alert('Mật khẩu xác nhận không khớp!');</script>";
             } else {
-                echo "<script>alert('Mật khẩu hiện tại không chính xác!');</script>";
+                $kq = $model->KiemTraMatKhauCu($idQL, $old);
+                if ($kq) {
+                    $doi = $model->DoiMatKhau($idQL, $new);
+                    if ($doi) {
+                        echo "<script>alert('Đổi mật khẩu thành công!');</script>";
+                        echo "<script>window.location.href='/KLTN_Benhvien/QuanLy/DoiMK';</script>";
+                        exit;
+                    } else {
+                        echo "<script>alert('Lỗi hệ thống, không thể đổi mật khẩu!');</script>";
+                    }
+                } else {
+                    echo "<script>alert('Mật khẩu hiện tại không chính xác!');</script>";
+                }
             }
         }
+
+        // Hiển thị giao diện đổi mật khẩu
+        $this->view("LayoutQLdoimatkhau");
     }
 
-    // Hiển thị giao diện đổi mật khẩu
-    $this->view("LayoutQLdoimatkhau");
 }
-
-
-
-
-}
-    
-    
 ?>
-

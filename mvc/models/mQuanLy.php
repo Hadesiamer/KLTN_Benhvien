@@ -1,4 +1,4 @@
-<?php
+<?php 
 class mQuanLy extends DB {
 
     public function Get1BN($MaBN) {
@@ -263,7 +263,152 @@ class mQuanLy extends DB {
         }
         return json_encode($mang);
     }
-        // ===================== CHỨC NĂNG ĐỔI MẬT KHẨU CHO QUẢN LÝ =====================
+
+    // ===================== THÊM NHIỀU LỊCH LÀM VIỆC THEO TUẦN =====================
+    // $weekTemplate: mảng dạng ['mon' => ['Sáng','Chiều'], 'tue' => [...], ...]
+    // $conflictOption: overwrite | skip | cancel
+    public function GenerateWeeklySchedule($MaNV, $weekTemplate, $startDate, $endDate, $conflictOption = 'skip') {
+        // Đảm bảo dữ liệu template là mảng
+        if (!is_array($weekTemplate)) {
+            return [
+                'success' => false,
+                'error' => 'Dữ liệu lịch tuần không hợp lệ.',
+                'added' => 0,
+                'conflicts' => 0,
+                'skipped' => 0
+            ];
+        }
+
+        // Map thứ trong tuần: 1 (Mon) ... 7 (Sun) -> key trong mảng
+        $weekdayMap = [
+            1 => 'mon',
+            2 => 'tue',
+            3 => 'wed',
+            4 => 'thu',
+            5 => 'fri',
+            6 => 'sat',
+            7 => 'sun'
+        ];
+
+        $added = 0;
+        $conflicts = 0;
+        $skipped = 0;
+
+        // Bắt đầu transaction để có thể rollback nếu lỗi lớn
+        mysqli_begin_transaction($this->con);
+        try {
+            $start = new DateTime($startDate);
+            $end = new DateTime($endDate);
+            $end->setTime(0, 0, 0);
+
+            // Chuẩn bị statement kiểm tra trùng
+            $stmtCheck = mysqli_prepare(
+                $this->con,
+                "SELECT MaLLV FROM lichlamviec WHERE MaNV = ? AND NgayLamViec = ? AND CaLamViec = ? LIMIT 1"
+            );
+            // Chuẩn bị statement xóa (ghi đè)
+            $stmtDeleteByDay = mysqli_prepare(
+                $this->con,
+                "DELETE FROM lichlamviec WHERE MaNV = ? AND NgayLamViec = ?"
+            );
+            // Chuẩn bị statement insert
+            $stmtInsert = mysqli_prepare(
+                $this->con,
+                "INSERT INTO lichlamviec (MaNV, NgayLamViec, CaLamViec, TrangThai) VALUES (?, ?, ?, 'Đang làm')"
+            );
+
+            if (!$stmtCheck || !$stmtDeleteByDay || !$stmtInsert) {
+                throw new Exception("Không thể chuẩn bị truy vấn database.");
+            }
+
+            for ($d = clone $start; $d <= $end; $d->modify('+1 day')) {
+                $dow = (int)$d->format('N'); // 1..7
+                if (!isset($weekdayMap[$dow])) continue;
+                $key = $weekdayMap[$dow];
+
+                if (!isset($weekTemplate[$key]) || !is_array($weekTemplate[$key]) || empty($weekTemplate[$key])) {
+                    continue; // Ngày này không chọn ca nào
+                }
+
+                $dateStr = $d->format('Y-m-d');
+
+                foreach ($weekTemplate[$key] as $shift) {
+                    // Chỉ cho phép 2 ca chuẩn
+                    if ($shift !== 'Sáng' && $shift !== 'Chiều') {
+                        continue;
+                    }
+
+                    // Kiểm tra trùng
+                    mysqli_stmt_bind_param($stmtCheck, "iss", $MaNV, $dateStr, $shift);
+                    mysqli_stmt_execute($stmtCheck);
+                    $resCheck = mysqli_stmt_get_result($stmtCheck);
+
+                    if ($resCheck && mysqli_num_rows($resCheck) > 0) {
+                        $conflicts++;
+
+                        if ($conflictOption === 'cancel') {
+                            // Hủy toàn bộ – rollback
+                            mysqli_rollback($this->con);
+                            mysqli_stmt_close($stmtCheck);
+                            mysqli_stmt_close($stmtDeleteByDay);
+                            mysqli_stmt_close($stmtInsert);
+                            return [
+                                'success' => false,
+                                'error' => 'Phát hiện trùng lịch và đã chọn Không thêm lịch.',
+                                'added' => $added,
+                                'conflicts' => $conflicts,
+                                'skipped' => $skipped,
+                                'option' => 'cancel'
+                            ];
+                        } elseif ($conflictOption === 'skip') {
+                            // Bỏ qua ca này
+                            $skipped++;
+                            continue;
+                        } elseif ($conflictOption === 'overwrite') {
+                            // Ghi đè: xóa toàn bộ lịch của ngày đó cho nhân viên này, sau đó sẽ insert lại theo mẫu
+                            mysqli_stmt_bind_param($stmtDeleteByDay, "is", $MaNV, $dateStr);
+                            if (!mysqli_stmt_execute($stmtDeleteByDay)) {
+                                throw new Exception("Lỗi khi xóa lịch ngày $dateStr.");
+                            }
+                            // Sau khi xóa, tiếp tục insert bình thường phía dưới
+                        }
+                    }
+
+                    // Thêm lịch
+                    mysqli_stmt_bind_param($stmtInsert, "iss", $MaNV, $dateStr, $shift);
+                    if (!mysqli_stmt_execute($stmtInsert)) {
+                        throw new Exception("Lỗi khi thêm lịch ngày $dateStr, ca $shift.");
+                    }
+                    $added++;
+                }
+            }
+
+            mysqli_commit($this->con);
+
+            mysqli_stmt_close($stmtCheck);
+            mysqli_stmt_close($stmtDeleteByDay);
+            mysqli_stmt_close($stmtInsert);
+
+            return [
+                'success' => true,
+                'added' => $added,
+                'conflicts' => $conflicts,
+                'skipped' => $skipped,
+                'option' => $conflictOption
+            ];
+        } catch (Exception $e) {
+            mysqli_rollback($this->con);
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'added' => $added,
+                'conflicts' => $conflicts,
+                'skipped' => $skipped
+            ];
+        }
+    }
+
+    // ===================== CHỨC NĂNG ĐỔI MẬT KHẨU CHO QUẢN LÝ =====================
     public function KiemTraMatKhauCu($id, $matkhaucu) {
         $sql = "SELECT * FROM taikhoan WHERE ID = ? AND password = ? AND MaPQ = 1";
         $stmt = mysqli_prepare($this->con, $sql);
