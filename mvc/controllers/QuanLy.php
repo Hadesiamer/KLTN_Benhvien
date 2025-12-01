@@ -64,6 +64,56 @@ class QuanLy extends Controller {
     function LLV($date = null) {
         $ql = $this->model("mQuanLy");
 
+        // ================== XỬ LÝ DUYỆT / TỪ CHỐI NGHỈ PHÉP (MVC) ==================
+        if (
+            $_SERVER['REQUEST_METHOD'] === 'POST'
+            && isset($_POST['action'])
+            && in_array($_POST['action'], ['approve', 'reject'])
+        ) {
+            date_default_timezone_set('Asia/Ho_Chi_Minh');
+            $today = date('Y-m-d');
+
+            $action = $_POST['action'];
+            $maYC   = isset($_POST['MaYC'])  ? (int)$_POST['MaYC']  : 0;
+            $maLLV  = isset($_POST['MaLLV']) ? (int)$_POST['MaLLV'] : 0;
+
+            // Luôn cập nhật yêu cầu nghỉ phép sang "Da xu ly" cho cả duyệt và từ chối
+            if ($maYC > 0) {
+                $ql->MarkLeaveRequestProcessed($maYC);
+            }
+
+            if ($action === 'approve' && $maLLV > 0) {
+                // Lấy ngày làm việc (ngày xin nghỉ) từ POST hoặc DB
+                $ngayLamViec = null;
+
+                if (!empty($_POST['NgayLamViec'])) {
+                    $ngayLamViec = $_POST['NgayLamViec'];
+                } else {
+                    $ngayLamViec = $ql->GetNgayLamViecByMaLLV($maLLV);
+                }
+
+                if ($ngayLamViec && strtotime($ngayLamViec) > strtotime($today)) {
+                    // Ngày xin nghỉ ở tương lai -> cho phép đổi lịch làm việc sang "Nghỉ"
+                    $ql->UpdateWorkScheduleStatusByMaLLV($maLLV, 'Nghỉ');
+
+                    $_SESSION['message'] = "Duyệt nghỉ phép thành công.";
+                    $_SESSION['message_type'] = "success";
+                } else {
+                    // Ngày xin nghỉ là hôm nay hoặc quá khứ -> không đổi trạng thái lịch làm việc
+                    $_SESSION['message'] = "Duyệt không thành công, ngày xin nghỉ phải ở tương lai.";
+                    $_SESSION['message_type'] = "error";
+                }
+            } elseif ($action === 'reject') {
+                // Từ chối: không cần kiểm tra ngày, giữ lịch làm việc như cũ
+                $_SESSION['message'] = "Đã từ chối yêu cầu nghỉ phép.";
+                $_SESSION['message_type'] = "success";
+            }
+
+            header('Location: ' . $_SERVER['REQUEST_URI']);
+            exit();
+        }
+        // ================== HẾT PHẦN NGHỈ PHÉP ==================
+
         // ================== THÊM NHIỀU LỊCH LÀM VIỆC THEO TUẦN ==================
         if (isset($_POST['btnGenerateSchedule'])) {
             date_default_timezone_set('Asia/Ho_Chi_Minh');
@@ -209,7 +259,8 @@ class QuanLy extends Controller {
         }
     
     
-        if(isset($_POST['MaNV'])) {
+        //chỉ xóa ca làm việc khi KHÔNG phải form duyệt / từ chối nghỉ phép
+        if (isset($_POST['MaNV']) && !isset($_POST['action'])) {
             $maNV = $_POST['MaNV'];
             $NgayLamViec = $_POST['NgayLamViec'];
             $CaLamViec = $_POST['CaLamViec'];
@@ -241,6 +292,10 @@ class QuanLy extends Controller {
         } else {
             $listBacSi = $ql->GetLichLamViecTheoKhoa($maKhoa);
         }
+
+        // Lấy danh sách yêu cầu nghỉ phép + số lượng (cho view)
+        $dsNghiPhep = $ql->GetPendingLeaveRequests();
+        $soYeuCau   = $ql->CountPendingLeaveRequests();
     
         $this->view("layoutQly2", [
             "Page" => "qlllv",
@@ -248,7 +303,9 @@ class QuanLy extends Controller {
             "Khoa" => $khoa,
             "SelectedDate" => $date,
             "SelectedKhoa" => $maKhoa,
-            "BS" => $ql->GetDSBS()
+            "BS" => $ql->GetDSBS(),
+            "NghiPhep" => $dsNghiPhep,
+            "SoYCNghiPhep" => $soYeuCau
         ]);
     }
     

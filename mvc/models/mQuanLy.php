@@ -169,6 +169,7 @@ class mQuanLy extends DB {
         }
         return json_encode($mang);
     }
+
     //xoa ca lam viec
     public function DelLLV($maNV, $NgayLamViec, $CaLamViec) {
         $str = "UPDATE lichlamviec
@@ -179,6 +180,7 @@ class mQuanLy extends DB {
         $result = mysqli_query($this->con, $str);
         return json_encode(array("success" => $result));
     }
+
     //thêm ca nhân viên
     public function AddLLV($MaNV, $NgayLamViec, $CaLamViec) {
         $str = "INSERT INTO lichlamviec(MaNV, NgayLamViec, CaLamViec, TrangThai) 
@@ -186,6 +188,7 @@ class mQuanLy extends DB {
         $result = mysqli_query($this->con, $str);
         return $result;
     }    
+
     //đêm số nhân viên trong ca làm việc
     public function CountEmployeeInShift($NgayLamViec, $CaLamViec, $ChuyenKhoa) {
         $str = "SELECT COUNT(*) AS Total FROM lichlamviec inner join nhanvien nv on lichlamviec.MaNV = nv.MaNV
@@ -406,6 +409,81 @@ class mQuanLy extends DB {
                 'skipped' => $skipped
             ];
         }
+    }
+
+    // ===================== NGHỈ PHÉP: HÀM DÙNG CHO MVC =====================
+
+    // Lấy danh sách yêu cầu nghỉ phép đang chờ duyệt
+    public function GetPendingLeaveRequests() {
+        $sql = "SELECT lichnghiphep.*, 
+                       lichlamviec.NgayLamViec, 
+                       lichlamviec.CaLamViec, 
+                       lichlamviec.MaNV, 
+                       lichlamviec.MaLLV, 
+                       nhanvien.HovaTen
+                FROM lichnghiphep 
+                INNER JOIN lichlamviec ON lichnghiphep.MaLLV = lichlamviec.MaLLV 
+                INNER JOIN nhanvien ON lichlamviec.MaNV = nhanvien.MaNV 
+                WHERE lichnghiphep.TrangThai = 'Chờ duyệt' 
+                  AND lichlamviec.TrangThai = 'Đang làm'
+                GROUP BY lichnghiphep.MaYC";
+        $result = mysqli_query($this->con, $sql);
+        $mang = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $mang[] = $row;
+            }
+        }
+        return json_encode($mang);
+    }
+
+    // Đếm số yêu cầu nghỉ phép đang chờ duyệt
+    public function CountPendingLeaveRequests() {
+        $sql = "SELECT COUNT(*) AS total FROM lichnghiphep WHERE TrangThai='Chờ duyệt'";
+        $result = mysqli_query($this->con, $sql);
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            return (int)$row['total'];
+        }
+        return 0;
+    }
+
+    // Đánh dấu yêu cầu nghỉ phép đã xử lý
+    public function MarkLeaveRequestProcessed($maYC) {
+        $sql = "UPDATE lichnghiphep SET TrangThai = 'Da xu ly' WHERE MaYC = ?";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return false;
+        mysqli_stmt_bind_param($stmt, "i", $maYC);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        return $ok;
+    }
+
+    // Lấy ngày làm việc theo MaLLV
+    public function GetNgayLamViecByMaLLV($maLLV) {
+        $sql = "SELECT NgayLamViec FROM lichlamviec WHERE MaLLV = ? LIMIT 1";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return null;
+        mysqli_stmt_bind_param($stmt, "i", $maLLV);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt, $ngay);
+        $ngayLamViec = null;
+        if (mysqli_stmt_fetch($stmt)) {
+            $ngayLamViec = $ngay;
+        }
+        mysqli_stmt_close($stmt);
+        return $ngayLamViec;
+    }
+
+    // Cập nhật trạng thái lịch làm việc theo MaLLV
+    public function UpdateWorkScheduleStatusByMaLLV($maLLV, $status) {
+        $sql = "UPDATE lichlamviec SET TrangThai = ? WHERE MaLLV = ?";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return false;
+        mysqli_stmt_bind_param($stmt, "si", $status, $maLLV);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        return $ok;
     }
 
     // ===================== CHỨC NĂNG ĐỔI MẬT KHẨU CHO QUẢN LÝ =====================
