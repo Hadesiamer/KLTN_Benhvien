@@ -722,4 +722,169 @@ class MBacsi extends DB
         $sql = "DELETE FROM phieukham WHERE MaLK = $maLK";
         return mysqli_query($this->con, $sql);
     }
+
+    // ==========================================
+    // NhatCuong: Thống kê bác sĩ (ca làm việc / lịch khám / phiếu khám)
+    // ==========================================
+    public function getThongKeBacSi($maNV, $filterType = 'today')
+    {
+        $maNV = intval($maNV);
+        $allowed = ['today', '7days', 'month', 'all'];
+        if (!in_array($filterType, $allowed)) {
+            $filterType = 'today';
+        }
+
+        $today = new DateTime('today');
+        $start = null;
+        $end   = null;
+        $label = '';
+
+        switch ($filterType) {
+            case '7days':
+                // 7 ngày gần nhất (bao gồm hôm nay)
+                $end = clone $today;
+                $start = (clone $today)->modify('-6 days');
+                $label = '7 ngày gần nhất';
+                break;
+
+            case 'month':
+                // Tháng hiện tại
+                $start = new DateTime($today->format('Y-m-01'));
+                $end = (clone $start)->modify('last day of this month');
+                $label = 'Tháng này';
+                break;
+
+            case 'all':
+                // Tất cả – không giới hạn thời gian
+                $start = null;
+                $end   = null;
+                $label = 'Tất cả';
+                break;
+
+            case 'today':
+            default:
+                $start = clone $today;
+                $end   = clone $today;
+                $label = 'Hôm nay';
+                break;
+        }
+
+        $startStr = $start ? $start->format('Y-m-d') : null;
+        $endStr   = $end   ? $end->format('Y-m-d')   : null;
+
+        // -----------------------------
+        // 1. Đếm số CA LÀM VIỆC (lichlamviec)
+        // -----------------------------
+        $soCaLamViec = 0;
+
+        if ($startStr && $endStr) {
+            $sql = "SELECT COUNT(*) AS total 
+                    FROM lichlamviec 
+                    WHERE MaNV = ? AND NgayLamViec BETWEEN ? AND ?";
+            $stmt = $this->con->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param("iss", $maNV, $startStr, $endStr);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($row = $res->fetch_assoc()) {
+                    $soCaLamViec = (int)$row['total'];
+                }
+                $stmt->close();
+            }
+        } else {
+            $sql = "SELECT COUNT(*) AS total 
+                    FROM lichlamviec 
+                    WHERE MaNV = ?";
+            $stmt = $this->con->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param("i", $maNV);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($row = $res->fetch_assoc()) {
+                    $soCaLamViec = (int)$row['total'];
+                }
+                $stmt->close();
+            }
+        }
+
+        // -----------------------------
+        // 2. Đếm số LỊCH KHÁM (lichkham)
+        // -----------------------------
+        $soLichKham = 0;
+
+        if ($startStr && $endStr) {
+            $sql = "SELECT COUNT(*) AS total 
+                    FROM lichkham 
+                    WHERE MaBS = ? AND NgayKham BETWEEN ? AND ?";
+            $stmt = $this->con->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param("iss", $maNV, $startStr, $endStr);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($row = $res->fetch_assoc()) {
+                    $soLichKham = (int)$row['total'];
+                }
+                $stmt->close();
+            }
+        } else {
+            $sql = "SELECT COUNT(*) AS total 
+                    FROM lichkham 
+                    WHERE MaBS = ?";
+            $stmt = $this->con->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param("i", $maNV);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($row = $res->fetch_assoc()) {
+                    $soLichKham = (int)$row['total'];
+                }
+                $stmt->close();
+            }
+        }
+
+        // -----------------------------
+        // 3. Đếm số PHIẾU KHÁM đã lập (phieukham)
+        // -----------------------------
+        $soPhieuKham = 0;
+
+        if ($startStr && $endStr) {
+            $sql = "SELECT COUNT(*) AS total 
+                    FROM phieukham 
+                    WHERE MaBS = ? AND DATE(NgayTao) BETWEEN ? AND ?";
+            $stmt = $this->con->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param("iss", $maNV, $startStr, $endStr);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($row = $res->fetch_assoc()) {
+                    $soPhieuKham = (int)$row['total'];
+                }
+                $stmt->close();
+            }
+        } else {
+            $sql = "SELECT COUNT(*) AS total 
+                    FROM phieukham 
+                    WHERE MaBS = ?";
+            $stmt = $this->con->prepare($sql);
+            if ($stmt) {
+                $stmt->bind_param("i", $maNV);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                if ($row = $res->fetch_assoc()) {
+                    $soPhieuKham = (int)$row['total'];
+                }
+                $stmt->close();
+            }
+        }
+
+        return [
+            'filter'        => $filterType,
+            'label'         => $label,
+            'start_date'    => $startStr,
+            'end_date'      => $endStr,
+            'so_ca_lam_viec'=> $soCaLamViec,
+            'so_lich_kham'  => $soLichKham,
+            'so_phieu_kham' => $soPhieuKham
+        ];
+    }
 }

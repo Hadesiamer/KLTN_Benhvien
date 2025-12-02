@@ -7,9 +7,8 @@ class Bacsi extends Controller
     // Hàm mặc định khi vào trang bác sĩ
     function SayHi()
     {
-        $this->view("layoutBacsi", [
-            "Page"
-        ]);
+        // NhatCuong: vào /Bacsi sẽ vào thống kê bác sĩ luôn
+        $this->thongkebs();
     }
 
     function DangKyLichLamViec()
@@ -497,6 +496,41 @@ class Bacsi extends Controller
         $this->view("layoutBacsi", [
             "Page"        => "thongtinbacsi",
             "thongtinbs"  => $model->get1BS($maNV)
+        ]);
+    }
+
+    // ===========================
+    // NhatCuong: Thống kê bác sĩ (hôm nay / 7 ngày / tháng này / tất cả)
+    // ===========================
+    function thongkebs()
+    {
+        // Chỉ cho bác sĩ đã đăng nhập
+        if (!isset($_SESSION["idnv"])) {
+            echo "<script>alert('Vui lòng đăng nhập lại!');</script>";
+            header("refresh:0; url='/KLTN_Benhvien/Login'");
+            return;
+        }
+
+        $maNV = $_SESSION["idnv"];
+        $model = $this->model("MBacsi");
+
+        // NhatCuong: đổi sang lọc bằng POST, KHÔNG dùng query URL nữa
+        $filter = 'today';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['filter'])) {
+            $filter = $_POST['filter'];
+        }
+
+        $allowed = ['today', '7days', 'month', 'all'];
+        if (!in_array($filter, $allowed)) {
+            $filter = 'today';
+        }
+
+        $thongKe = $model->getThongKeBacSi($maNV, $filter);
+
+        $this->view("layoutBacsi", [
+            "Page"    => "thongkebs",
+            "ThongKe" => $thongKe,
+            "Filter"  => $filter
         ]);
     }
 
