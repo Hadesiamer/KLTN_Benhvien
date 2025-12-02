@@ -1,110 +1,29 @@
 <?php
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'request_leave') {
-    $conn = new mysqli("localhost", "root", "", "domdom");
-    $conn->set_charset("utf8");
-
-    $manv = $_POST['MaNV'] ?? $_SESSION['MaNV'] ?? $_SESSION['idnv'] ?? null;
-    $ngaynghi = $_POST['NgayNghi'] ?? '';
-    $calamviec = $_POST['CaLamViec'] ?? '';
-    $lydo = trim($_POST['LyDo'] ?? '');
-    $trangthai = "Chờ duyệt";
-
-    // --- Kiểm tra thiếu thông tin
-    if (!$manv || !$ngaynghi || !$calamviec || !$lydo) {
-        echo '<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-                Thiếu thông tin. Vui lòng thử lại!
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-              </div>';
-        exit;
-    }
-
-    // --- Tìm MaLLV
-    $conn->query("SET NAMES 'utf8'");
-    $find = $conn->prepare("SELECT MaLLV FROM lichlamviec WHERE MaNV = ? AND NgayLamViec = ? AND CaLamViec = ? AND TrangThai='Đang làm' LIMIT 1");
-    $find->bind_param("sss", $manv, $ngaynghi, $calamviec);
-    $find->execute();
-    $res = $find->get_result();
-    $row = $res->fetch_assoc();
-    $mallv = $row['MaLLV'] ?? null;
-    $find->close();
-
-    if (!$mallv) {
-        echo '<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-                Không tìm thấy ca làm việc tương ứng!
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-              </div>';
-        exit;
-    }
-
-    // --- Kiểm tra trùng
-    $check = $conn->prepare("SELECT 1 FROM lichnghiphep WHERE MaNV = ? AND MaLLV = ? LIMIT 1");
-    $check->bind_param("ss", $manv, $mallv);
-    $check->execute();
-    $res = $check->get_result();
-    if ($res->num_rows > 0) {
-        echo '<div class="alert alert-warning alert-dismissible fade show mt-3" role="alert">
-                Bạn đã gửi yêu cầu nghỉ cho ca này rồi!
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-              </div>';
-        $check->close();
-        $conn->close();
-        exit;
-    }
-    $check->close();
-
-    // --- Insert yêu cầu nghỉ
-    $stmt = $conn->prepare("INSERT INTO lichnghiphep (MaNV, MaLLV, LyDo, TrangThai) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $manv, $mallv, $lydo, $trangthai);
-    if ($stmt->execute()) {
-        echo '<div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
-                Gửi yêu cầu nghỉ phép thành công!
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-              </div>';
-    } else {
-        echo '<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-                Gửi yêu cầu nghỉ phép thất bại. Vui lòng thử lại.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-              </div>';
-    }
-
-    $stmt->close();
-    $conn->close();
-    exit;
-}
-
-// ================== LẤY DỮ LIỆU LỊCH LÀM VÀ NGHỈ PHÉP ==================
-$conn = new mysqli("localhost", "root", "", "domdom");
-$conn->set_charset("utf8");
-
-$manv = $_SESSION['MaNV'] ?? $_SESSION['idnv'] ?? null;
-
-// Lịch làm việc
-$sql1 = $conn->prepare("SELECT MaLLV, MaNV, NgayLamViec, CaLamViec FROM lichlamviec WHERE MaNV = ? AND TrangThai = 'Đang làm'");
-$sql1->bind_param("s", $manv);
-$sql1->execute();
-$res1 = $sql1->get_result();
-$data['LichLamViec'] = $res1->fetch_all(MYSQLI_ASSOC);
-$sql1->close();
-
-// Lịch nghỉ phép (đã gửi)
-$sql2 = $conn->prepare("SELECT MaLLV, TrangThai FROM lichnghiphep WHERE MaNV = ?");
-$sql2->bind_param("s", $manv);
-$sql2->execute();
-$res2 = $sql2->get_result();
-$data['LichNghiPhep'] = $res2->fetch_all(MYSQLI_ASSOC);
-$sql2->close();
-$conn->close();
+// Lấy dữ liệu do controller Bacsi::XemLichLamViec truyền sang
+$lichLamViec  = $data['LichLamViec']  ?? [];
+$lichNghiPhep = $data['LichNghiPhep'] ?? [];
+$maNV         = $_SESSION['MaNV'] ?? $_SESSION['idnv'] ?? '';
 ?>
-
 
 <!-- ====== HIỂN THỊ GIAO DIỆN ====== -->
 <div class="container">
     <h2 class="mb-4">Lịch làm việc của bạn</h2>
-    <div class="d-flex justify-content-between mb-4">
-        <button id="prevWeek" class="btn btn-secondary">Tuần trước</button>
-        <button id="currentWeek" class="btn btn-primary">Hiện tại</button>
-        <button id="nextWeek" class="btn btn-secondary">Tuần sau</button>
+    <div class="d-flex justify-content-between align-items-center mb-4 week-nav">
+        <div class="btn-group week-nav-group" role="group" aria-label="Điều hướng tuần">
+            <button id="prevWeek" class="btn btn-light week-nav-btn">
+                <i class="bi bi-chevron-left"></i>
+                <span class="d-none d-sm-inline">Tuần trước</span>
+            </button>
+            <button id="currentWeek" class="btn btn-primary week-nav-btn-current">
+                <i class="bi bi-calendar-event"></i>
+                <span class="d-none d-sm-inline">Hiện tại</span>
+            </button>
+            <button id="nextWeek" class="btn btn-light week-nav-btn">
+                <span class="d-none d-sm-inline">Tuần sau</span>
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+        
     </div>
 
     <div id="weekRange" class="text-center fw-bold mb-4"></div>
@@ -143,7 +62,7 @@ $conn->close();
 
         <form id="leave-form" method="post" action="">
             <input type="hidden" name="action" value="request_leave">
-            <input type="hidden" id="leave-manv" name="MaNV" value="<?= htmlspecialchars($_SESSION['MaNV'] ?? $_SESSION['idnv'] ?? '') ?>">
+            <input type="hidden" id="leave-manv" name="MaNV" value="<?= htmlspecialchars($maNV, ENT_QUOTES, 'UTF-8') ?>">
 
             <div class="mb-3">
                 <label class="form-label">Ngày nghỉ</label>
@@ -169,13 +88,22 @@ $conn->close();
 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
-    const workSchedule = <?= json_encode($data['LichLamViec'] ?? []); ?>;
-    const leaveRequests = <?= json_encode($data['LichNghiPhep'] ?? []); ?>;
+    // Dữ liệu lấy từ controller, không còn truy vấn DB trong view
+    const workSchedule   = <?= json_encode($lichLamViec, JSON_UNESCAPED_UNICODE); ?>;
+    const leaveRequests  = <?= json_encode($lichNghiPhep, JSON_UNESCAPED_UNICODE); ?>;
 
-    const leaveModal = document.getElementById('leave-modal');
-    const closeModal = document.getElementById('close-modal');
+    const leaveModal     = document.getElementById('leave-modal');
+    const closeModal     = document.getElementById('close-modal');
+    const leaveForm      = document.getElementById('leave-form');
 
-    function parseLocalDate(dateStr) { return new Date(dateStr + 'T00:00:00'); }
+    let currentMonday         = null;          // Thứ 2 của tuần đang xem
+    let currentLeaveButton    = null;          // Nút xin nghỉ vừa bấm
+    let currentLeaveMaLLV     = null;          // MaLLV tương ứng (để cập nhật mảng leaveRequests)
+
+    function parseLocalDate(dateStr) {
+        // dateStr dạng "YYYY-mm-dd"
+        return new Date(dateStr + 'T00:00:00');
+    }
 
     function getMonday(d) {
         const date = new Date(d);
@@ -187,13 +115,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatDate(date) {
-        return date.getDate().toString().padStart(2,'0') + '/' + (date.getMonth()+1).toString().padStart(2,'0') + '/' + date.getFullYear();
+        return date.getDate().toString().padStart(2,'0') + '/' +
+               (date.getMonth()+1).toString().padStart(2,'0') + '/' +
+               date.getFullYear();
     }
 
     function updateWeekRange(monday) {
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
-        document.getElementById('weekRange').textContent = `${formatDate(monday)} - ${formatDate(sunday)}`;
+        document.getElementById('weekRange').textContent =
+            `${formatDate(monday)} - ${formatDate(sunday)}`;
 
         const days = ['mon','tue','wed','thu','fri','sat','sun'];
         days.forEach((day, i) => {
@@ -203,37 +134,60 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById(`schedule-${day}`).innerHTML = '';
         });
 
+        // Chuẩn hóa mốc thời gian hôm nay & ngày mai
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
         workSchedule.forEach(s => {
             const date = parseLocalDate(s.NgayLamViec);
             if (date >= monday && date <= sunday) {
                 const dayIndex = (date.getDay() + 6) % 7;
-                const dayKey = days[dayIndex];
+                const daysArr = ['mon','tue','wed','thu','fri','sat','sun'];
+                const dayKey = daysArr[dayIndex];
                 const cell = document.getElementById(`schedule-${dayKey}`);
                 if (!cell) return;
 
-                const box = document.createElement('div');
-                box.className = 'shift-box';
-
-                const shift = document.createElement('span');
-                shift.textContent = s.CaLamViec;
-                shift.className = s.CaLamViec.toLowerCase() === 'sáng'
+                const shiftBadge = document.createElement('span');
+                shiftBadge.textContent = s.CaLamViec;
+                shiftBadge.className = s.CaLamViec.toLowerCase() === 'sáng'
                     ? 'badge bg-primary text-light'
                     : 'badge bg-warning text-dark';
 
                 const leaveBtn = document.createElement('button');
                 leaveBtn.type = 'button';
+                leaveBtn.setAttribute('data-mallv', s.MaLLV);
 
-                const foundLeave = leaveRequests.find(l => l.MaLLV === s.MaLLV);
+                const foundLeave = leaveRequests.find(l => String(l.MaLLV) === String(s.MaLLV));
+
+                // Quy tắc xin nghỉ:
+                // - Nếu đã có yêu cầu nghỉ cho MaLLV => nút xám, disable
+                // - Nếu ngày < ngày mai => không cho xin nghỉ (nút xám, disable)
+                // - Nếu ngày >= ngày mai => nút đỏ, click được mở modal
+                const isFutureAllowed = (date.getTime() >= tomorrow.getTime());
+
                 if (foundLeave) {
                     leaveBtn.innerHTML = `<i class="bi bi-person-dash"></i>`;
                     leaveBtn.className = 'btn btn-secondary btn-sm';
                     leaveBtn.disabled = true;
+                    leaveBtn.title = 'Bạn đã gửi yêu cầu nghỉ cho ca này.';
+                } else if (!isFutureAllowed) {
+                    leaveBtn.innerHTML = '<i class="bi bi-person-dash"></i>';
+                    leaveBtn.className = 'btn btn-secondary btn-sm';
+                    leaveBtn.disabled = true;
+                    leaveBtn.title = 'Chỉ được xin nghỉ cho các ca ở tương lai (trước ít nhất 1 ngày).';
                 } else {
                     leaveBtn.innerHTML = '<i class="bi bi-person-dash"></i>';
                     leaveBtn.className = 'btn btn-outline-danger btn-sm';
+                    leaveBtn.title = 'Xin nghỉ ca làm việc này';
                     leaveBtn.addEventListener('click', (ev) => {
                         ev.stopPropagation();
-                        document.getElementById('leave-date').value = s.NgayLamViec;
+                        // Lưu lại nút & MaLLV đang xin nghỉ để xử lý sau khi gửi thành công
+                        currentLeaveButton = leaveBtn;
+                        currentLeaveMaLLV  = s.MaLLV;
+
+                        document.getElementById('leave-date').value  = s.NgayLamViec;
                         document.getElementById('leave-shift').value = s.CaLamViec;
                         leaveModal.style.display = 'flex';
                         leaveModal.setAttribute('aria-hidden', 'false');
@@ -242,30 +196,47 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 const shiftBox = document.createElement('div');
                 shiftBox.className = 'shift-box';
-                shiftBox.appendChild(shift);
+                shiftBox.appendChild(shiftBadge);
                 shiftBox.appendChild(leaveBtn);
                 cell.appendChild(shiftBox);
             }
         });
     }
 
-    let currentMonday = getMonday(new Date());
+    // Khởi tạo tuần hiện tại
+    currentMonday = getMonday(new Date());
     updateWeekRange(currentMonday);
 
-    document.getElementById('prevWeek').addEventListener('click', () => {
-        currentMonday.setDate(currentMonday.getDate() - 7);
-        updateWeekRange(currentMonday);
-    });
-    document.getElementById('nextWeek').addEventListener('click', () => {
-        currentMonday.setDate(currentMonday.getDate() + 7);
-        updateWeekRange(currentMonday);
-    });
-    document.getElementById('currentWeek').addEventListener('click', () => {
-        currentMonday = getMonday(new Date());
-        updateWeekRange(currentMonday);
-    });
-    document.getElementById('print-schedule').addEventListener('click', () => window.print());
+    // Điều hướng tuần
+    const prevWeekBtn    = document.getElementById('prevWeek');
+    const nextWeekBtn    = document.getElementById('nextWeek');
+    const currentWeekBtn = document.getElementById('currentWeek');
 
+    if (prevWeekBtn) {
+        prevWeekBtn.addEventListener('click', () => {
+            currentMonday.setDate(currentMonday.getDate() - 7);
+            updateWeekRange(currentMonday);
+        });
+    }
+    if (nextWeekBtn) {
+        nextWeekBtn.addEventListener('click', () => {
+            currentMonday.setDate(currentMonday.getDate() + 7);
+            updateWeekRange(currentMonday);
+        });
+    }
+    if (currentWeekBtn) {
+        currentWeekBtn.addEventListener('click', () => {
+            currentMonday = getMonday(new Date());
+            updateWeekRange(currentMonday);
+        });
+    }
+
+    const printBtn = document.getElementById('print-schedule');
+    if (printBtn) {
+        printBtn.addEventListener('click', () => window.print());
+    }
+
+    // Đóng modal
     closeModal.addEventListener('click', () => {
         leaveModal.style.display = 'none';
         leaveModal.setAttribute('aria-hidden','true');
@@ -276,35 +247,92 @@ window.addEventListener('DOMContentLoaded', () => {
             leaveModal.setAttribute('aria-hidden','true');
         }
     });
-});
 
-document.getElementById('leave-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
+    // Submit form nghỉ phép bằng fetch AJAX
+    if (leaveForm) {
+        leaveForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(leaveForm);
 
-    try {
-        const res = await fetch(window.location.href, { method: 'POST', body: formData });
-        const html = await res.text();
-        const alertBox = document.createElement('div');
-        alertBox.innerHTML = html.trim();
-        const alertElement = alertBox.querySelector('.alert');
-        if (alertElement) document.body.insertAdjacentElement('afterbegin', alertElement);
-        const leaveModal = document.getElementById('leave-modal');
-        leaveModal.style.display = 'none';
-        leaveModal.setAttribute('aria-hidden', 'true');
-        setTimeout(() => {
-            const alert = document.querySelector('.alert');
-            if (alert) alert.remove();
-        }, 4000);
-    } catch (err) {
-        console.error(err);
-        alert('Đã xảy ra lỗi khi gửi yêu cầu nghỉ phép.');
+            try {
+                const res = await fetch(window.location.href, { method: 'POST', body: formData });
+                const html = await res.text();
+
+                // Chèn alert từ server trả về (giữ nguyên behavior cũ)
+                const alertBox = document.createElement('div');
+                alertBox.innerHTML = html.trim();
+                const alertElement = alertBox.querySelector('.alert');
+                if (alertElement) document.body.insertAdjacentElement('afterbegin', alertElement);
+
+                // Nếu server trả về thành công hoặc cảnh báo, vẫn đóng modal
+                leaveModal.style.display = 'none';
+                leaveModal.setAttribute('aria-hidden', 'true');
+
+                // Nếu đang có nút xin nghỉ được gắn (click từ một ca cụ thể)
+                if (currentLeaveButton) {
+                    // Đổi nút sang trạng thái "đã gửi yêu cầu": xám + disable
+                    currentLeaveButton.className = 'btn btn-secondary btn-sm';
+                    currentLeaveButton.disabled  = true;
+                    currentLeaveButton.title     = 'Bạn đã gửi yêu cầu nghỉ cho ca này.';
+
+                    // Thêm vào mảng leaveRequests để tránh người dùng chuyển tuần rồi quay lại bị render lại sai
+                    if (currentLeaveMaLLV) {
+                        leaveRequests.push({
+                            MaLLV: String(currentLeaveMaLLV),
+                            TrangThai: 'Chờ duyệt'
+                        });
+                    }
+                }
+
+                // Tự động ẩn alert sau 4 giây
+                setTimeout(() => {
+                    const alert = document.querySelector('.alert');
+                    if (alert) alert.remove();
+                }, 4000);
+            } catch (err) {
+                console.error(err);
+                alert('Đã xảy ra lỗi khi gửi yêu cầu nghỉ phép.');
+            }
+        });
     }
 });
 </script>
 
 <style>
+/* Thanh điều hướng tuần đẹp hơn */
+.week-nav {
+    gap: 12px;
+}
+
+.week-nav-group {
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.week-nav-btn,
+.week-nav-btn-current {
+    border-radius: 0;
+    border: none;
+    padding: 8px 14px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.week-nav-btn {
+    background-color: #ffffff;
+}
+
+.week-nav-btn:hover {
+    background-color: #f1f3f5;
+}
+
+.week-nav-btn-current {
+    font-weight: 600;
+}
+
 /* modal styles */
 #leave-modal {
     display: none;
@@ -336,7 +364,7 @@ document.getElementById('leave-form').addEventListener('submit', async (e) => {
     color: #666;
 }
 #leave-modal .close:hover { color: #000; }
-.leave-day-btn { font-size: 12px; padding: 4px 8px; border-radius: 6px; }
+
 /* Ô ca làm việc */
 #schedule-container td {
     vertical-align: top;
@@ -364,14 +392,14 @@ document.getElementById('leave-form').addEventListener('submit', async (e) => {
     padding: 6px 10px;
 }
 
-/* Nút xin nghỉ nhỏ, ngắn, gọn */
+/* Nút xin nghỉ nhỏ, gọn */
 .shift-box button {
     font-size: 11px;
-    padding: 2px 4px; 
+    padding: 2px 4px;
     border-radius: 4px;
     line-height: 1.2;
-    min-width: auto;    
-    width: auto;         
+    min-width: auto;
+    width: auto;
 }
 
 /* Ca sáng */
@@ -388,6 +416,4 @@ document.getElementById('leave-form').addEventListener('submit', async (e) => {
 .shift-box button:hover {
     opacity: 0.85;
 }
-
-
 </style>

@@ -34,15 +34,142 @@ class MBacsi extends DB
     // Xem lịch làm việc của bác sĩ
     public function XemLichLamViec($maNV)
     {
-        $str = "SELECT NgayLamViec, CaLamViec 
+        // NhatCuong: chuẩn hóa, lấy luôn MaLLV, MaNV để dùng cho chức năng nghỉ phép
+        $maNV = intval($maNV);
+
+        $str = "SELECT MaLLV, MaNV, NgayLamViec, CaLamViec 
                 FROM LichLamViec 
                 WHERE MaNV = '$maNV' AND TrangThai = 'Đang làm'";
         $result = mysqli_query($this->con, $str);
         $mang = [];
-        while ($row = mysqli_fetch_assoc($result)) {
-            $mang[] = $row;
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $mang[] = $row;
+            }
         }
         return json_encode($mang);
+    }
+
+    // NhatCuong: lấy danh sách nghỉ phép của bác sĩ
+    public function GetLichNghiPhepByMaNV($maNV)
+    {
+        $maNV = intval($maNV);
+
+        $str = "SELECT MaLLV, TrangThai 
+                FROM lichnghiphep
+                WHERE MaNV = '$maNV'";
+        $result = mysqli_query($this->con, $str);
+        $mang = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $mang[] = $row;
+            }
+        }
+        return json_encode($mang);
+    }
+
+    // NhatCuong: xử lý nghiệp vụ tạo yêu cầu nghỉ phép cho 1 ca làm việc
+    public function TaoYeuCauNghiPhep($maNV, $ngayNghi, $caLamViec, $lyDo)
+    {
+        $maNV      = intval($maNV);
+        $ngayNghi  = trim($ngayNghi);
+        $caLamViec = trim($caLamViec);
+        $lyDo      = trim($lyDo);
+
+        // 1. Kiểm tra thiếu thông tin
+        if (!$maNV || $ngayNghi === '' || $caLamViec === '' || $lyDo === '') {
+            return [
+                'status'  => 'error',
+                'message' => 'Thiếu thông tin. Vui lòng thử lại!'
+            ];
+        }
+
+        // 1b. Chỉ cho xin nghỉ các ca ở tương lai (ít nhất là ngày mai)
+        //     - ngày nghỉ phải > hôm nay (so sánh theo định dạng Y-m-d)
+        $todayObj     = new DateTime('today'); // ngày hiện tại
+        $ngayNghiObj  = DateTime::createFromFormat('Y-m-d', $ngayNghi);
+
+        if (!$ngayNghiObj || $ngayNghiObj <= $todayObj) {
+            return [
+                'status'  => 'error',
+                'message' => 'Chỉ được xin nghỉ cho ca ở tương lai (trước ít nhất 1 ngày).'
+            ];
+        }
+
+        // 2. Tìm MaLLV tương ứng (ca làm việc đang làm)
+        $sqlFind = "SELECT MaLLV 
+                    FROM lichlamviec 
+                    WHERE MaNV = ? AND NgayLamViec = ? AND CaLamViec = ? AND TrangThai = 'Đang làm'
+                    LIMIT 1";
+        $stmtFind = $this->con->prepare($sqlFind);
+        if (!$stmtFind) {
+            return [
+                'status'  => 'error',
+                'message' => 'Lỗi hệ thống. Không thể kiểm tra ca làm việc.'
+            ];
+        }
+        $stmtFind->bind_param("iss", $maNV, $ngayNghi, $caLamViec);
+        $stmtFind->execute();
+        $resFind = $stmtFind->get_result();
+        $rowFind = $resFind->fetch_assoc();
+        $stmtFind->close();
+
+        $maLLV = $rowFind['MaLLV'] ?? null;
+        if (!$maLLV) {
+            return [
+                'status'  => 'error',
+                'message' => 'Không tìm thấy ca làm việc tương ứng!'
+            ];
+        }
+
+        // 3. Kiểm tra trùng yêu cầu nghỉ cho cùng MaLLV
+        $sqlCheck = "SELECT 1 FROM lichnghiphep WHERE MaNV = ? AND MaLLV = ? LIMIT 1";
+        $stmtCheck = $this->con->prepare($sqlCheck);
+        if (!$stmtCheck) {
+            return [
+                'status'  => 'error',
+                'message' => 'Lỗi hệ thống. Không thể kiểm tra lịch nghỉ phép.'
+            ];
+        }
+        $stmtCheck->bind_param("ii", $maNV, $maLLV);
+        $stmtCheck->execute();
+        $resCheck = $stmtCheck->get_result();
+        $hasRow   = $resCheck->num_rows > 0;
+        $stmtCheck->close();
+
+        if ($hasRow) {
+            return [
+                'status'  => 'warning',
+                'message' => 'Bạn đã gửi yêu cầu nghỉ cho ca này rồi!'
+            ];
+        }
+
+        // 4. Insert yêu cầu nghỉ phép (trạng thái Chờ duyệt)
+        $trangThai = "Chờ duyệt";
+        $sqlInsert = "INSERT INTO lichnghiphep (MaNV, MaLLV, LyDo, TrangThai)
+                      VALUES (?, ?, ?, ?)";
+        $stmtInsert = $this->con->prepare($sqlInsert);
+        if (!$stmtInsert) {
+            return [
+                'status'  => 'error',
+                'message' => 'Lỗi hệ thống. Không thể lưu yêu cầu nghỉ phép.'
+            ];
+        }
+        $stmtInsert->bind_param("iiss", $maNV, $maLLV, $lyDo, $trangThai);
+        $ok = $stmtInsert->execute();
+        $stmtInsert->close();
+
+        if ($ok) {
+            return [
+                'status'  => 'success',
+                'message' => 'Gửi yêu cầu nghỉ phép thành công!'
+            ];
+        }
+
+        return [
+            'status'  => 'error',
+            'message' => 'Gửi yêu cầu nghỉ phép thất bại. Vui lòng thử lại.'
+        ];
     }
 
     // ===========================
@@ -192,7 +319,6 @@ class MBacsi extends DB
         return json_encode($mang);
     }
 
-    //NhatCuong; Usecase 2/3: Xem lịch sử khám bệnh, thông tin bệnh nhân
     //NhatCuong; Usecase 2/3: Xem lịch sử khám bệnh, thông tin bệnh nhân
     public function GetThongTinBenhNhan($tuKhoa)
     {
@@ -579,6 +705,7 @@ class MBacsi extends DB
 
         return "Đổi mật khẩu thất bại!";
     }
+
     public function checkPhieuKhamTonTai($maLK)
     {
         $maLK = intval($maLK);
@@ -588,7 +715,7 @@ class MBacsi extends DB
         return $row['total'] > 0;
     }
 
-// Xóa tất cả phiếu khám có cùng MaLK
+    // Xóa tất cả phiếu khám có cùng MaLK
     public function deletePhieuKhamByMaLK($maLK)
     {
         $maLK = intval($maLK);

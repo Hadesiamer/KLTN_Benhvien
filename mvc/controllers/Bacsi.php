@@ -81,16 +81,77 @@ class Bacsi extends Controller
         }
     }
 
+    // ===========================
+    // NhatCuong: Xem lịch làm việc (chuẩn MVC + xử lý yêu cầu nghỉ phép qua AJAX)
+    // ===========================
     function XemLichLamViec()
     {
         $model = $this->model("MBacsi");
-        $maNV = $_SESSION['idnv'];
-        $lichLamViec = json_decode($model->XemLichLamViec($maNV), true);
+
+        // Chuẩn hóa lấy MaNV của bác sĩ đang đăng nhập
+        $maNV = $_SESSION['MaNV'] ?? $_SESSION['idnv'] ?? null;
+
+        // Bảo vệ: chưa đăng nhập thì quay về trang Login
+        if (!$maNV) {
+            echo "<script>alert('Vui lòng đăng nhập lại!');</script>";
+            header("refresh:0; url='/KLTN_Benhvien/Login'");
+            return;
+        }
+
+        // ========== 1. XỬ LÝ AJAX: Gửi yêu cầu nghỉ phép ==========
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'request_leave') {
+            $ngayNghi   = $_POST['NgayNghi']   ?? '';
+            $caLamViec  = $_POST['CaLamViec']  ?? '';
+            $lyDo       = trim($_POST['LyDo'] ?? '');
+
+            // Gọi Model xử lý nghiệp vụ nghỉ phép
+            $result = $model->TaoYeuCauNghiPhep($maNV, $ngayNghi, $caLamViec, $lyDo);
+
+            // Map sang class Bootstrap
+            $alertClass = 'danger';
+            if (!empty($result['status'])) {
+                if ($result['status'] === 'success') {
+                    $alertClass = 'success';
+                } elseif ($result['status'] === 'warning') {
+                    $alertClass = 'warning';
+                }
+            }
+
+            // Trả về HTML alert giống code cũ để JS phía view tái sử dụng
+            echo '<div class="alert alert-' . $alertClass . ' alert-dismissible fade show mt-3" role="alert">'
+                . htmlspecialchars($result['message'] ?? 'Đã xảy ra lỗi.', ENT_QUOTES, 'UTF-8') .
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>';
+            exit; // rất quan trọng, tránh render cả layout
+        }
+
+        // ========== 2. LOAD LỊCH LÀM VIỆC + LỊCH NGHỈ PHÉP CHO VIEW ==========
+        $lichLamViec   = [];
+        $lichNghiPhep  = [];
+
+        // Lịch làm việc (đang làm) theo bác sĩ
+        $jsonLLV = $model->XemLichLamViec($maNV);
+        if (!empty($jsonLLV)) {
+            $decoded = json_decode($jsonLLV, true);
+            if (is_array($decoded)) {
+                $lichLamViec = $decoded;
+            }
+        }
+
+        // Lịch nghỉ phép đã gửi
+        $jsonLNP = $model->GetLichNghiPhepByMaNV($maNV);
+        if (!empty($jsonLNP)) {
+            $decoded2 = json_decode($jsonLNP, true);
+            if (is_array($decoded2)) {
+                $lichNghiPhep = $decoded2;
+            }
+        }
 
         // Truyền dữ liệu sang view
         $this->view("layoutBacsi", [
-            "Page" => "xemlichlamviec",
-            "LichLamViec" => $lichLamViec
+            "Page"          => "xemlichlamviec",
+            "LichLamViec"   => $lichLamViec,
+            "LichNghiPhep"  => $lichNghiPhep
         ]);
     }
 
@@ -447,7 +508,7 @@ class Bacsi extends Controller
         }
 
         $maNV = $_SESSION["idnv"];
-        $model = $this->model("mBacsi");
+        $model = $this->model("mBacSi");
 
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
 

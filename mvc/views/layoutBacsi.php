@@ -175,6 +175,7 @@ if ($_SESSION["role"] != 2) {
                 <li><a href="/KLTN_Benhvien/Bacsi/XemDanhSachKham">Xem danh sách khám</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/XemThongTinBenhNhan">Xem thông tin bệnh nhân</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/Thongtinbacsi">Thông tin bác sĩ</a></li>
+                <li><a href="/KLTN_Benhvien/Bacsi/thongkebs">Thống kê</a></li>
                 <li><a href="/KLTN_Benhvien/Bacsi/Doimatkhau">Đổi mật khẩu</a></li>
             </ul>
         </div>
