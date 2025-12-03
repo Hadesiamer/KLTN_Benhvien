@@ -22,6 +22,15 @@ if (!empty($headerArr)) {
     $TongTien    = (float)$h["TongTien"];
     $TenNV       = $h["TenNV"];
 }
+
+/* ============================================
+   TẠO NỘI DUNG QR: LINK ĐẦY ĐỦ ĐƠN BÁN LẺ
+   ============================================ */
+$qrContent = "";
+if ($MaDon > 0) {
+    // Link đầy đủ theo yêu cầu: http://localhost/KLTN_Benhvien/NVNT/BanLeChiTiet/{MaDon}
+    $qrContent = "http://localhost/KLTN_Benhvien/NVNT/BanLeChiTiet/" . $MaDon;
+}
 ?>
 
 <style>
@@ -306,6 +315,50 @@ if (!empty($headerArr)) {
         display: none; /* chỉ dùng khi in */
     }
 
+    /* --------- QR CODE CHO PHIẾU IN ---------- */
+    .print-bill-info-layout {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8mm;
+    }
+
+    .print-bill-info-left {
+        flex: 1;
+    }
+
+    .print-bill-qr-wrapper {
+        text-align: center;
+        min-width: 45mm;
+    }
+
+    .print-bill-qr-text {
+        font-size: 10pt;
+        margin-bottom: 2mm;
+    }
+
+    /* container chứa QR do JS vẽ vào */
+    .print-bill-qr-img {
+        width: 40mm;
+        height: 40mm;
+        margin: 0 auto;
+    }
+
+    /* đảm bảo canvas/img bên trong fit khung */
+    .print-bill-qr-img canvas,
+    .print-bill-qr-img img {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+    }
+
+    .print-bill-qr-link {
+        margin-top: 2mm;
+        font-size: 8pt;
+        word-break: break-all;
+    }
+    /* ----------------------------------------- */
+
     @media print {
         /* Ẩn giao diện web, chỉ in bill */
         body {
@@ -369,11 +422,6 @@ if (!empty($headerArr)) {
             font-size: 11pt;
         }
 
-        .print-bill-info-row {
-            display: flex;
-            justify-content: space-between;
-        }
-
         .print-bill-total {
             margin-top: 4mm;
             font-size: 12pt;
@@ -381,7 +429,6 @@ if (!empty($headerArr)) {
             text-align: right;
         }
 
-        /* Ẩn header/footer trình duyệt nếu có thể (Chrome thường vẫn giữ) */
         @page {
             margin: 10mm;
         }
@@ -541,17 +588,38 @@ if ($TongTien <= 0 && $tongTienTinhLai > 0) {
     </div>
 
     <div class="print-bill-info">
-        <div class="print-bill-info-row">
-            <span><strong>Mã đơn:</strong> <?php echo htmlspecialchars($MaDon); ?></span>
-            <span><strong>Ngày kê:</strong> <?php echo $NgayKe; ?></span>
-        </div>
-        <div class="print-bill-info-row" style="margin-top:2mm;">
-            <span><strong>Nhân viên bán thuốc:</strong> <?php echo htmlspecialchars($TenNV); ?></span>
-            <span><strong>Trạng thái:</strong> Đã thanh toán</span>
-        </div>
-        <div style="margin-top:2mm;">
-            <strong>Ghi chú:</strong>
-            <?php echo $GhiChuChung !== "" ? nl2br(htmlspecialchars($GhiChuChung)) : "Không có"; ?>
+        <div class="print-bill-info-layout">
+            <div class="print-bill-info-left">
+                <div class="print-bill-info-row">
+                    <span><strong>Mã đơn:</strong> <?php echo htmlspecialchars($MaDon); ?></span>
+                    <span><strong>Ngày kê:</strong> <?php echo $NgayKe; ?></span>
+                </div>
+                <div class="print-bill-info-row" style="margin-top:2mm;">
+                    <span><strong>Nhân viên bán thuốc:</strong> <?php echo htmlspecialchars($TenNV); ?></span>
+                    <span><strong>Trạng thái:</strong> Đã thanh toán</span>
+                </div>
+                <div style="margin-top:2mm;">
+                    <strong>Ghi chú:</strong>
+                    <?php echo $GhiChuChung !== "" ? nl2br(htmlspecialchars($GhiChuChung)) : "Không có"; ?>
+                </div>
+            </div>
+
+            <!-- QR CODE: hiển thị to, rõ bên phải phiếu in -->
+            <div class="print-bill-qr-wrapper">
+                <div class="print-bill-qr-text">
+                    QR đơn #<?php echo htmlspecialchars($MaDon); ?>
+                </div>
+                <?php if ($qrContent !== ""): ?>
+                    <!-- JS sẽ vẽ QR vào đây -->
+                    <div id="print-bill-qr-js" class="print-bill-qr-img"></div>
+                    <div class="print-bill-qr-link">
+                        <?php echo htmlspecialchars($qrContent); ?>
+                    </div>
+                <?php else: ?>
+                    <div style="font-size:9pt; font-style:italic;">Không tạo được QR</div>
+                <?php endif; ?>
+            </div>
+            <!-- END QR CODE -->
         </div>
     </div>
 
@@ -617,6 +685,29 @@ if ($TongTien <= 0 && $tongTienTinhLai > 0) {
 <script>
 // Dữ liệu danh sách thuốc server gửi sang cho dropdown
 window.BL_THUOC_LIST = <?php echo json_encode($DanhSachThuoc ?: []); ?>;
+</script>
+
+<!-- THƯ VIỆN TẠO QR CODE BẰNG JS (qrcode.js) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// Sinh QR code cho phiếu in, không phụ thuộc server bên ngoài
+(function() {
+    var qrContent = <?php echo json_encode($qrContent); ?>;
+    if (!qrContent) return;
+    var el = document.getElementById('print-bill-qr-js');
+    if (!el) return;
+
+    var size = 220; // px, sẽ được CSS ép fit 40mm khi in
+    try {
+        new QRCode(el, {
+            text: qrContent,
+            width: size,
+            height: size
+        });
+    } catch (e) {
+        console.error('Lỗi tạo QR:', e);
+    }
+})();
 </script>
 
 <script>

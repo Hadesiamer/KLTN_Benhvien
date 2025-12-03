@@ -168,6 +168,8 @@ $to_date   = $data["to_date"];
         font-weight: 600;
         cursor: pointer;
         transition: background 0.2s, color 0.2s;
+        text-decoration: none; /* để trông như nút, không gạch chân */
+        display: inline-block;
     }
 
     .bl-btn-view:hover {
@@ -260,10 +262,8 @@ $to_date   = $data["to_date"];
                                 <td class="bl-col-money">'.number_format($tongTien, 0, ',', '.').' đ</td>
                                 <td class="bl-col-note">'.$ghiChuHtml.'</td>
                                 <td class="bl-col-action">
-                                    <form action="/KLTN_Benhvien/NVNT/BanLeChiTiet" method="POST" style="margin:0;">
-                                        <input type="hidden" name="MaDon" value="'.$maDon.'">
-                                        <button type="submit" class="bl-btn-view">Xem / Sửa</button>
-                                    </form>
+                                    <!-- Đổi từ form POST sang link GET để truyền MaDon lên URL -->
+                                    <a href="/KLTN_Benhvien/NVNT/BanLeChiTiet/'.$maDon.'" class="bl-btn-view">Xem / Sửa</a>
                                 </td>
                               </tr>';
                         $stt++;
