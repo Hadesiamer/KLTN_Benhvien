@@ -23,6 +23,13 @@ $to_date   = $data["to_date"];
         align-items: center;
     }
 
+    /* Nhóm nút bên phải tiêu đề (Thêm mới + Quét QR) */
+    .bl-title-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
     .bl-filter-row {
         display: flex;
         justify-content: space-between;
@@ -81,6 +88,18 @@ $to_date   = $data["to_date"];
     .bl-btn-new:hover {
         background: #e67e22;
         box-shadow: 0 2px 6px rgba(230, 126, 34, 0.4);
+        transform: translateY(-1px);
+    }
+
+    /* Nút mở camera quét QR */
+    .bl-btn-qr {
+        background: #2c3e50;
+        color: #fff;
+    }
+
+    .bl-btn-qr:hover {
+        background: #1a252f;
+        box-shadow: 0 2px 6px rgba(44, 62, 80, 0.4);
         transform: translateY(-1px);
     }
 
@@ -189,6 +208,80 @@ $to_date   = $data["to_date"];
         opacity: 0.7;
     }
 
+    /* ============================
+       MODAL QUÉT QR ĐƠN BÁN LẺ
+       ============================ */
+    .bl-qr-modal {
+        display: none; /* ẩn mặc định */
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+    }
+
+    .bl-qr-dialog {
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 16px 18px;
+        width: 100%;
+        max-width: 520px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+
+    .bl-qr-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .bl-qr-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0c857d;
+    }
+
+    .bl-qr-close {
+        border: none;
+        background: transparent;
+        font-size: 22px;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0 4px;
+    }
+
+    .bl-qr-body {
+        margin-top: 4px;
+    }
+
+    /* Vùng hiển thị camera của thư viện html5-qrcode */
+    #bl-qr-reader {
+        width: 100%;
+        min-height: 260px;
+    }
+
+    .bl-qr-hint {
+        font-size: 13px;
+        color: #555;
+        margin-top: 8px;
+    }
+
+    .bl-qr-status {
+        font-size: 13px;
+        margin-top: 4px;
+        color: #888;
+    }
+
+    .bl-qr-status-success {
+        color: #1e8449;
+    }
+
+    .bl-qr-status-error {
+        color: #c0392b;
+    }
+
     @media (max-width: 768px) {
         .bl-filter-row {
             flex-direction: column;
@@ -206,15 +299,29 @@ $to_date   = $data["to_date"];
         .bl-table {
             min-width: 700px;
         }
+
+        .bl-qr-dialog {
+            max-width: 95%;
+        }
     }
 </style>
 
 <div class="bl-container">
     <div class="bl-title">
         <span>Danh sách đơn bán lẻ</span>
-        <a href="/KLTN_Benhvien/NVNT/BanLeTao">
-            <button type="button" class="bl-btn bl-btn-new">+ Tạo đơn bán lẻ mới</button>
-        </a>
+
+        <!-- Nhóm nút: Quét QR + Tạo đơn mới -->
+        <div class="bl-title-actions">
+            <!-- Nút mở camera quét QR -->
+            <button type="button" class="bl-btn bl-btn-qr" id="bl-btn-open-qr">
+                📷 Quét QR đơn
+            </button>
+
+            <!-- Nút tạo đơn bán lẻ mới -->
+            <a href="/KLTN_Benhvien/NVNT/BanLeTao">
+                <button type="button" class="bl-btn bl-btn-new">+ Tạo đơn bán lẻ mới</button>
+            </a>
+        </div>
     </div>
 
     <div class="bl-filter-row">
@@ -281,3 +388,168 @@ $to_date   = $data["to_date"];
         </table>
     </div>
 </div>
+
+<!-- ============================
+     MODAL QUÉT QR ĐƠN BÁN LẺ
+     ============================ -->
+<div class="bl-qr-modal" id="bl-qr-modal">
+    <div class="bl-qr-dialog">
+        <div class="bl-qr-header">
+            <span class="bl-qr-title">Quét QR đơn bán lẻ</span>
+            <button type="button" class="bl-qr-close" id="bl-qr-close">&times;</button>
+        </div>
+        <div class="bl-qr-body">
+            <!-- Vùng camera của thư viện html5-qrcode -->
+            <div id="bl-qr-reader"></div>
+            <p class="bl-qr-hint">
+                Đưa mã QR trên phiếu bán thuốc lại gần camera. Khi đọc được, hệ thống sẽ tự mở chi tiết đơn tương ứng.
+            </p>
+            <p class="bl-qr-status" id="bl-qr-status"></p>
+        </div>
+    </div>
+</div>
+
+<!-- Thư viện JS html5-qrcode dùng để quét QR bằng camera -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+// JS quét QR bằng camera laptop cho danh sách đơn bán lẻ
+(function() {
+    const btnOpenQr = document.getElementById('bl-btn-open-qr');
+    const modalQr   = document.getElementById('bl-qr-modal');
+    const btnClose  = document.getElementById('bl-qr-close');
+    const statusEl  = document.getElementById('bl-qr-status');
+
+    let qrInstance = null;
+    let isScanning = false;
+
+    // Mở modal quét QR
+    function openQrModal() {
+        if (!modalQr) return;
+        modalQr.style.display = 'flex';
+        statusEl.textContent = 'Đang khởi động camera...';
+        statusEl.className = 'bl-qr-status';
+
+        // Khởi tạo và start camera nếu chưa chạy
+        if (typeof Html5Qrcode !== 'undefined' && !isScanning) {
+            const qrRegionId = 'bl-qr-reader';
+            qrInstance = new Html5Qrcode(qrRegionId);
+            const config = {
+                fps: 10,
+                qrbox: 250
+            };
+
+            qrInstance.start(
+                { facingMode: "environment" }, // cố gắng dùng camera sau nếu có
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                isScanning = true;
+                statusEl.textContent = 'Camera đã bật, vui lòng đưa mã QR vào khung.';
+            }).catch(err => {
+                statusEl.textContent = 'Không thể bật camera: ' + err;
+                statusEl.className = 'bl-qr-status bl-qr-status-error';
+            });
+        }
+    }
+
+    // Đóng modal, dừng camera
+    function closeQrModal() {
+        if (modalQr) {
+            modalQr.style.display = 'none';
+        }
+        if (qrInstance && isScanning) {
+            qrInstance.stop().then(() => {
+                qrInstance.clear();
+                isScanning = false;
+            }).catch(err => {
+                console.error('Lỗi dừng camera:', err);
+            });
+        }
+    }
+
+    // Khi quét QR thành công
+    function onScanSuccess(decodedText, decodedResult) {
+        // decodedText là nội dung QR (VD: http://localhost/KLTN_Benhvien/NVNT/BanLeChiTiet/10)
+        if (!decodedText) {
+            return;
+        }
+
+        statusEl.textContent = 'Đã đọc được mã: ' + decodedText;
+        statusEl.className = 'bl-qr-status bl-qr-status-success';
+
+        // Dừng scanner để tránh đọc nhiều lần
+        if (qrInstance && isScanning) {
+            qrInstance.stop().then(() => {
+                qrInstance.clear();
+                isScanning = false;
+            }).catch(err => {
+                console.error('Lỗi dừng sau khi scan:', err);
+            });
+        }
+
+        // Xử lý điều hướng:
+        // 1. Nếu nội dung là URL (bắt đầu bằng http), chuyển thẳng tới URL đó
+        if (decodedText.indexOf('http://') === 0 || decodedText.indexOf('https://') === 0) {
+            window.location.href = decodedText;
+            return;
+        }
+
+        // 2. Nếu nội dung là chuỗi giống dạng /KLTN_Benhvien/NVNT/BanLeChiTiet/10
+        if (decodedText.indexOf('/KLTN_Benhvien/NVNT/BanLeChiTiet/') === 0) {
+            window.location.href = decodedText;
+            return;
+        }
+
+        // 3. Nếu nội dung chỉ là số (MaDon), tự ghép URL chi tiết
+        const onlyDigits = decodedText.replace(/\D/g, '');
+        if (onlyDigits.length > 0 && /^\d+$/.test(onlyDigits)) {
+            var target = '/KLTN_Benhvien/NVNT/BanLeChiTiet/' + onlyDigits;
+            window.location.href = target;
+            return;
+        }
+
+        // Nếu không nhận dạng được định dạng
+        statusEl.textContent = 'Đã đọc được mã nhưng không đúng định dạng đường dẫn đơn bán lẻ: ' + decodedText;
+        statusEl.className = 'bl-qr-status bl-qr-status-error';
+    }
+
+    // Khi fail (không đọc được trong một frame) - chỉ log, không báo lỗi liên tục
+    function onScanFailure(error) {
+        // Có thể bỏ trống để tránh spam status
+        // console.log('Scan failed:', error);
+    }
+
+    if (btnOpenQr) {
+        btnOpenQr.addEventListener('click', function() {
+            openQrModal();
+        });
+    }
+
+    if (btnClose) {
+        btnClose.addEventListener('click', function() {
+            closeQrModal();
+        });
+    }
+
+    // Đóng modal khi bấm ra ngoài (click vùng tối)
+    if (modalQr) {
+        modalQr.addEventListener('click', function(e) {
+            if (e.target === modalQr) {
+                closeQrModal();
+            }
+        });
+    }
+
+    // Đảm bảo dừng camera khi rời trang (phòng hờ)
+    window.addEventListener('beforeunload', function() {
+        if (qrInstance && isScanning) {
+            qrInstance.stop().then(() => {
+                qrInstance.clear();
+                isScanning = false;
+            }).catch(() => {});
+        }
+    });
+})();
+</script>

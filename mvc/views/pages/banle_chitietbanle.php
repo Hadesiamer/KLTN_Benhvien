@@ -1,4 +1,4 @@
-<?php
+<?php 
 $headerArr = json_decode($data["Header"], true);
 $thuocArr  = json_decode($data["Thuoc"], true);
 $editable  = !empty($data["editable"]);
@@ -226,10 +226,24 @@ if ($MaDon > 0) {
         font-weight: 700;
     }
 
+    /* Ô tổng cộng (base) */
     .bl-total-cell {
-        text-align: right;
-        padding-right: 10px;
+        padding: 8px 10px;
         font-size: 14px;
+        vertical-align: middle;
+    }
+
+    /* Label bên trái: cho phép xuống dòng thoải mái */
+    .bl-total-label {
+        text-align: left;
+        white-space: normal;
+    }
+
+    /* Số tiền bên phải: luôn 1 dòng, ép cột co lại */
+    .bl-total-amount {
+        text-align: right;
+        white-space: nowrap;
+        width: 1%;
     }
 
     .bl-actions {
@@ -360,7 +374,7 @@ if ($MaDon > 0) {
     /* ----------------------------------------- */
 
     @media print {
-        /* Ẩn giao diện web, chỉ in bill */
+        /* Ẩn tất cả mọi thứ, CHỈ hiển thị khối .print-bill */
         body {
             margin: 0;
             font-family: "Times New Roman", serif;
@@ -369,13 +383,30 @@ if ($MaDon > 0) {
             background: #fff;
         }
 
-        .bl-detail-container {
-            display: none !important;
+        /* Ẩn toàn bộ nội dung trang */
+        body * {
+            visibility: hidden;
         }
 
+        /* Chỉ cho phép khối phiếu in hiển thị và chiếm trang */
+        .print-bill,
+        .print-bill * {
+            visibility: visible;
+        }
+
+        /* Đưa phiếu in lên đầu trang in */
         .print-bill {
             display: block;
+            position: absolute;
+            left: 0;
+            top: 0;
             padding: 10mm 12mm;
+            width: 100%;
+        }
+
+        /* Ẩn giao diện chi tiết web (cho chắc) */
+        .bl-detail-container {
+            display: none !important;
         }
 
         .print-bill h1,
@@ -553,10 +584,10 @@ if ($TongTien <= 0 && $tongTienTinhLai > 0) {
                 </tbody>
                 <tfoot>
                     <tr class="bl-total-row">
-                        <td colspan="<?php echo $editable ? 7 : 7; ?>" class="bl-total-cell">
+                        <td colspan="<?php echo $editable ? 7 : 7; ?>" class="bl-total-cell bl-total-label">
                             Tổng cộng (tính lại theo Danh mục thuốc):
                         </td>
-                        <td class="bl-total-cell" colspan="<?php echo $editable ? 1 : 1; ?>" id="bl-total-display">
+                        <td class="bl-total-cell bl-total-amount" colspan="<?php echo $editable ? 1 : 1; ?>" id="bl-total-display">
                             <?php echo number_format($tongTienTinhLai, 0, ',', '.'); ?> đ
                         </td>
                     </tr>
