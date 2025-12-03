@@ -10,14 +10,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="./public/css/nvyt.css">
-    <link rel="stylesheet" href="./public/css/main.css">
-    <link rel="stylesheet" href="../public/css/nvyt.css">
-    <link rel="stylesheet" href="../public/css/main.css">
-    <link rel="stylesheet" href="../public/css/main.css">
-    <link rel="stylesheet" href="./public/css/bn.css">
-    <title>Document</title>
+    <title>Nhân viên nhà thuốc</title>
+
+    <!-- CSS thuần chỉ đổi UI nút "Xử lý đơn thuốc" -->
+    <style>
+        .list-group a {
+            text-decoration: none;
+        }
+
+        .tab_btn {
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: none;
+            outline: none;
+            cursor: pointer;
+
+            /* Màu chủ đạo giống y tế / nhà thuốc */
+            background: linear-gradient(135deg, #0c857d, #12b3a5);
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+
+            box-shadow: 0 3px 8px rgba(12, 133, 125, 0.35);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        }
+
+        .tab_btn::before {
+            content: "💊";
+            font-size: 16px;
+        }
+
+        .tab_btn:hover {
+            background: linear-gradient(135deg, #0a6d67, #0fa293);
+            box-shadow: 0 4px 10px rgba(12, 133, 125, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .tab_btn.active {
+            background: linear-gradient(135deg, #055a54, #0a8b7f);
+        }
+    </style>
 </head>
 
 <body>
@@ -32,7 +71,9 @@
                         <div class="card-body">
                             <h5 class="card-title mb-3" >Chức năng</h5>
                             <div class="list-group">
-                                <a href="/KLTN_Benhvien/NVNT"><button class="tab_btn active" id="a">Xử lý đơn thuốc</button></a>
+                                <a href="/KLTN_Benhvien/NVNT">
+                                    <button class="tab_btn active" id="a">Xử lý đơn thuốc</button>
+                                </a>
                                 <!-- <button class="tab_btn" id="a">Chi tiết đơn thuốc</button> -->
                             </div>
                         </div>
@@ -51,9 +92,6 @@
         </div>
     </div>
     </div>
-
-
-
 
     <script>
     function initializeTabs(tabClass, contentClass) {
