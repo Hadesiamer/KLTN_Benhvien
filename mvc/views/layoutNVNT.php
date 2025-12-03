@@ -3,6 +3,9 @@
         echo "<script>alert('Bạn không có quyền truy cập')</script>";
         header("refresh: 0; url='/KLTN_Benhvien'");
     }
+
+    // Xác định trang hiện tại để set active cho menu
+    $currentPage = isset($data["Page"]) ? $data["Page"] : "";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,10 +15,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nhân viên nhà thuốc</title>
 
-    <!-- CSS thuần chỉ đổi UI nút "Xử lý đơn thuốc" -->
+    <!-- CSS thuần cho menu chức năng -->
     <style>
         .list-group a {
             text-decoration: none;
+            display: block;
+            margin-bottom: 8px;
         }
 
         .tab_btn {
@@ -26,7 +31,6 @@
             outline: none;
             cursor: pointer;
 
-            /* Màu chủ đạo giống y tế / nhà thuốc */
             background: linear-gradient(135deg, #0c857d, #12b3a5);
             color: #ffffff;
             font-size: 14px;
@@ -69,21 +73,31 @@
                 <div class="col-md-3 p-3 border-end">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title mb-3" >Chức năng</h5>
+                            <h5 class="card-title mb-3">Chức năng</h5>
                             <div class="list-group">
+                                <!-- Xử lý đơn thuốc KE_DON -->
                                 <a href="/KLTN_Benhvien/NVNT">
-                                    <button class="tab_btn active" id="a">Xử lý đơn thuốc</button>
+                                    <button class="tab_btn <?php echo ($currentPage === 'donthuoc' || $currentPage === 'chitietdonthuoc') ? 'active' : ''; ?>">
+                                        Xử lý đơn thuốc
+                                    </button>
                                 </a>
-                                <!-- <button class="tab_btn" id="a">Chi tiết đơn thuốc</button> -->
+
+                                <!-- Bán lẻ thuốc BAN_LE -->
+                                <a href="/KLTN_Benhvien/NVNT/BanLe">
+                                    <button class="tab_btn <?php echo (strpos($currentPage, 'banle') === 0) ? 'active' : ''; ?>">
+                                        Bán lẻ thuốc
+                                    </button>
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
+
                 <div class="col-md-9 p-3">
                     <div class="card mb-4">
                         <div class="table-panel">
                             <div class="content active" id="a1">
-                            <?php include "./mvc/views/pages/".$data["Page"].".php" ?>
+                                <?php include "./mvc/views/pages/".$data["Page"].".php" ?>
                             </div>
                         </div>
                     </div>
@@ -91,27 +105,7 @@
             </div>
         </div>
     </div>
-    </div>
 
-    <script>
-    function initializeTabs(tabClass, contentClass) {
-        const tabs = document.querySelectorAll(tabClass);
-        const allContent = document.querySelectorAll(contentClass);
-
-        tabs.forEach((tab, index) => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                allContent.forEach(content => content.classList.remove('active'));
-                allContent[index].classList.add('active');
-            });
-        });
-    }
-
-    // Initialize tabs for each section
-    initializeTabs('#a', '#a1');
-    </script>
 </body>
 
 </html>
