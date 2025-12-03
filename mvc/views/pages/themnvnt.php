@@ -1,13 +1,13 @@
 <div class="card">
     <div class="card-header">
-        <h3>Thêm Nhân viên y tế mới</h3>
+        <h3>Thêm Nhân viên nhà thuốc mới</h3>
     </div>
     <div class="card-body">
         <?php if (isset($data["Error"])): ?>
             <div class="alert alert-danger"><?= $data["Error"] ?></div>
         <?php endif; ?>
 
-        <form action="./ThemNVYT" method="POST">
+        <form action="./ThemNVNT" method="POST">
             <div class="mb-3">
                 <label for="HovaTen" class="form-label">Họ và Tên</label>
                 <input type="text" class="form-control" id="HovaTen" name="HovaTen" required pattern="^[a-zA-ZÀ-ỹ\s]+$">
@@ -50,7 +50,7 @@
             </div>
 
             <div class="text-center mt-3">
-                <button type="submit" class="btn btn-success" name="btnThemNVYT">Thêm Nhân viên</button>
+                <button type="submit" class="btn btn-success" name="btnThemNVNT">Thêm Nhân viên</button>
             </div>
         </form>
     </div>
@@ -59,7 +59,7 @@
 <!-- JS ràng buộc ngày sinh: [1930 – 2003], hiển thị lỗi màu đỏ ngay dưới trường -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const form = document.querySelector('form[action="./ThemNVYT"]');
+        const form = document.querySelector('form[action="./ThemNVNT"]');
         const ngaySinhInput = document.getElementById('NgaySinh');
         const ngaySinhError = document.getElementById('NgaySinhError');
 

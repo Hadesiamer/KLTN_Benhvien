@@ -136,7 +136,6 @@ function tkbs_format_date_vn($d) {
     <div class="tkbs-footer-note">
         <i class="bi bi-info-circle"></i>
         <span>
-            Số liệu chỉ tính cho <strong>bác sĩ đang đăng nhập</strong>.  
             Bạn có thể đổi bộ lọc thời gian ở phía trên để xem xu hướng làm việc.
         </span>
     </div>

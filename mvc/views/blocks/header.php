@@ -204,9 +204,7 @@
                     } else if (isset($_SESSION['role']) && $_SESSION['role'] == 3) { // Nhân viên y tế
                         $tennvyt = $_SESSION['ten'];
                         echo '<div class="navbar-nav ms-auto">
-                                <a class="nav-link" href="/KLTN_Benhvien">Trang chủ</a>
-                                <a class="nav-link" href="/KLTN_Benhvien/NVYT">Chức năng</a>
-                                <li><a href="/KLTN_Benhvien/Logout" onclick="return confirm(\'Bạn có muốn đăng xuất?\')">Đăng xuất</a></li>
+                               <!-- <a class="nav-link" href="/KLTN_Benhvien">Trang chủ</a> -->
                             </div>
                             <nav>
                                 <ul class="menu">
