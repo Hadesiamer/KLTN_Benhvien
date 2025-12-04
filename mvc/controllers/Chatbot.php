@@ -6,10 +6,22 @@ class Chatbot extends Controller
     // Endpoint của Gemini Developer API (generateContent)
     private $apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
+    /** @var mChatbotLK */
+    private $bookingModel;
+
+    // Các khung giờ mặc định
+    private $defaultTimeSlots = [
+        "08:00", "09:00", "10:00", "11:00", // Buổi sáng
+        "13:00", "14:00", "15:00", "16:00"  // Buổi chiều
+    ];
+
     public function __construct()
     {
         // Nạp file cấu hình Gemini
         require_once "./mvc/core/config_gemini.php";
+
+        // Nạp model đặt lịch qua chatbot
+        $this->bookingModel = $this->model("mChatbotLK");
     }
 
     // Action nhận câu hỏi và trả lời JSON: /KLTN_Benhvien/Chatbot/Ask
@@ -28,9 +40,19 @@ class Chatbot extends Controller
             return;
         }
 
+        // Đảm bảo session tồn tại (đa phần index đã session_start, nhưng thêm cho chắc)
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
         // --- Khởi tạo lịch sử chat trong session (nếu chưa có) ---
         if (!isset($_SESSION['chat_history']) || !is_array($_SESSION['chat_history'])) {
             $_SESSION['chat_history'] = [];
+        }
+
+        // --- Khởi tạo state đặt lịch trong session ---
+        if (!isset($_SESSION['booking_flow']) || !is_array($_SESSION['booking_flow'])) {
+            $_SESSION['booking_flow'] = null; // null = chưa ở mode đặt lịch
         }
 
         // Đọc dữ liệu gửi lên
@@ -65,6 +87,641 @@ class Chatbot extends Controller
             $message = mb_substr($message, 0, 500, 'UTF-8');
         }
 
+        // --- Nếu user muốn HỦY / THOÁT đặt lịch, xử lý ngay ---
+        if ($this->isCancelIntent($message)) {
+            $_SESSION['booking_flow'] = null;
+            $answer = "Tôi đã hủy quy trình đặt lịch hiện tại.\n\n"
+                    . "Bạn có thể gõ: \"Đặt lịch khám\" bất kỳ lúc nào nếu muốn bắt đầu lại.";
+            $this->appendHistory($message, $answer);
+            echo json_encode([
+                'success' => true,
+                'answer'  => $answer
+            ]);
+            return;
+        }
+
+        // --- Kiểm tra xem đã ở chế độ đặt lịch hay chưa ---
+        $bookingFlow = $_SESSION['booking_flow'];
+
+        // Nếu hiện đang ở trong flow đặt lịch: xử lý bằng state machine, không gọi Gemini
+        if (is_array($bookingFlow)) {
+            $answer = $this->handleBookingFlow($message);
+            $this->appendHistory($message, $answer);
+
+            echo json_encode([
+                'success' => true,
+                'answer'  => $answer
+            ]);
+            return;
+        }
+
+        // Nếu chưa ở flow đặt lịch, kiểm tra xem đây có phải ý định bắt đầu đặt lịch không
+        if ($this->isBookingIntent($message)) {
+            // Chỉ cho phép bệnh nhân đã đăng nhập
+            if (!isset($_SESSION['id']) || empty($_SESSION['id'])) {
+                $answer = "Để đặt lịch khám qua chat, bạn cần đăng nhập tài khoản bệnh nhân trước.\n\n"
+                        . "Bạn vui lòng sử dụng menu Đăng nhập trên website, sau đó quay lại đây gõ: \"Đặt lịch khám\".";
+                $this->appendHistory($message, $answer);
+                echo json_encode([
+                    'success' => true,
+                    'answer'  => $answer
+                ]);
+                return;
+            }
+
+            // Kiểm tra xem tài khoản đã có hồ sơ bệnh nhân (MaBN) chưa
+            $userId          = (int)$_SESSION['id'];
+            $benhNhanRow     = $this->bookingModel->getBenhNhanByUserId($userId);
+            $hasCompleteInfo = $benhNhanRow && !empty($benhNhanRow['MaBN']) && (int)$benhNhanRow['MaBN'] > 0;
+
+            if (!$hasCompleteInfo) {
+                $answer = "Tài khoản của bạn chưa có hồ sơ bệnh nhân đầy đủ (MaBN, thông tin cá nhân).\n\n"
+                        . "Bạn vui lòng vào chức năng tạo/cập nhật hồ sơ bệnh nhân trên website trước, "
+                        . "sau đó quay lại đây và gõ: \"Đặt lịch khám\".";
+                $this->appendHistory($message, $answer);
+                echo json_encode([
+                    'success' => true,
+                    'answer'  => $answer
+                ]);
+                return;
+            }
+
+            // Khởi tạo flow đặt lịch
+            $_SESSION['booking_flow'] = [
+                'step' => 'choose_khoa',
+                'data' => [
+                    'MaBN'          =>(int)$benhNhanRow['MaBN'],
+                    'HovaTenBN'     =>$benhNhanRow['HovaTen'],
+                    'SoDTBN'        =>$benhNhanRow['SoDT'],
+                    'selectedKhoa'  => null,
+                    'selectedDV'    => null,
+                    'datMode'       => null, // theoBacSi / theoGio (giai đoạn 1 chủ yếu theo bác sĩ)
+                    'selectedBS'    => null,
+                    'selectedDate'  => null,
+                    'selectedTime'  => null,
+                    'trieuChung'    => null,
+                    'preview'       => []
+                ]
+            ];
+
+            // Hỏi bước 1: chọn chuyên khoa
+            $answer = $this->promptChuyenKhoa();
+            $this->appendHistory($message, $answer);
+
+            echo json_encode([
+                'success' => true,
+                'answer'  => $answer
+            ]);
+            return;
+        }
+
+        // --- Nếu không liên quan đặt lịch → gọi Gemini như cũ ---
+
+        $answer = $this->callGeminiWithHistory($message);
+        $this->appendHistory($message, $answer);
+
+        echo json_encode([
+            'success' => true,
+            'answer'  => $answer
+        ]);
+    }
+
+    // ==========================
+    //  CÁC HÀM PHỤ TRỢ ĐẶT LỊCH
+    // ==========================
+
+    // Intent bắt đầu đặt lịch
+    private function isBookingIntent(string $message): bool
+    {
+        $m = mb_strtolower($message, 'UTF-8');
+        $keywords = [
+            'đặt lịch khám',
+            'đăng ký khám',
+            'đặt khám',
+            'đặt lịch bác sĩ',
+            'muốn khám',
+            'muon kham',
+            'dat lich',
+            'muốn gặp bác sĩ',
+            'gặp bác sĩ',
+        ];
+        foreach ($keywords as $kw) {
+            if (mb_strpos($m, $kw, 0, 'UTF-8') !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Intent hủy flow đặt lịch
+    private function isCancelIntent(string $message): bool
+    {
+        $m = mb_strtolower($message, 'UTF-8');
+        $keywords = ['hủy lịch', 'huy lich', 'thoát', 'thoat', 'dừng lại', 'dung lai', 'hủy đặt', 'huy dat'];
+        foreach ($keywords as $kw) {
+            if (mb_strpos($m, $kw, 0, 'UTF-8') !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Lưu hỏi & đáp vào lịch sử chat session
+    private function appendHistory(string $userMsg, string $botMsg): void
+    {
+        $_SESSION['chat_history'][] = [
+            'role' => 'user',
+            'text' => $userMsg
+        ];
+        $_SESSION['chat_history'][] = [
+            'role' => 'assistant',
+            'text' => $botMsg
+        ];
+
+        // Giới hạn tối đa 20 message gần nhất
+        if (count($_SESSION['chat_history']) > 20) {
+            $_SESSION['chat_history'] = array_slice($_SESSION['chat_history'], -20);
+        }
+    }
+
+    // Hỏi danh sách chuyên khoa
+    private function promptChuyenKhoa(): string
+    {
+        $khoaList = $this->bookingModel->getAllChuyenKhoa();
+
+        if (empty($khoaList)) {
+            // Nếu không load được khoa → không thể đặt lịch qua chatbot
+            $_SESSION['booking_flow'] = null;
+            return "Hiện tại hệ thống không tải được danh sách chuyên khoa, nên tôi chưa hỗ trợ đặt lịch qua chat được.\n\n"
+                 . "Bạn vui lòng dùng form Đặt lịch khám trên website giúp tôi.";
+        }
+
+        $msg = "Bạn muốn khám ở chuyên khoa nào?\n";
+
+        $i = 1;
+        $map = [];
+        foreach ($khoaList as $row) {
+            $msg .= $i . ". " . $row['TenKhoa'] . "\n";
+            $map[$i] = $row;
+            $i++;
+        }
+
+        // Lưu map vào booking_flow
+        $_SESSION['booking_flow']['step'] = 'choose_khoa';
+        $_SESSION['booking_flow']['data']['khoa_options'] = $map;
+
+        $msg .= "\nBạn có thể trả lời bằng **số thứ tự** (ví dụ: 1, 2, 3) hoặc gõ tên chuyên khoa.";
+        $msg .= "\n\n(Để hủy quy trình đặt lịch, bạn có thể gõ: \"Hủy lịch\".)";
+
+        return $msg;
+    }
+
+    // Hỏi loại dịch vụ
+    private function promptLoaiDichVu(): string
+    {
+        $dvList = $this->bookingModel->getAllLoaiDichVu();
+        if (empty($dvList)) {
+            $_SESSION['booking_flow'] = null;
+            return "Hiện tại hệ thống không tải được danh sách loại dịch vụ (Khám trong giờ / ngoài giờ / online), "
+                 . "nên chưa thể tiếp tục đặt lịch qua chat.\n\n"
+                 . "Bạn vui lòng dùng form Đặt lịch khám trên website.";
+        }
+
+        $msg = "Bạn muốn đặt loại dịch vụ nào?\n";
+
+        $i = 1;
+        $map = [];
+        foreach ($dvList as $row) {
+            $msg .= $i . ". " . $row['LoaiDichVu'] . "\n";
+            $map[$i] = $row;
+            $i++;
+        }
+
+        $_SESSION['booking_flow']['step'] = 'choose_loaidv';
+        $_SESSION['booking_flow']['data']['dv_options'] = $map;
+
+        $msg .= "\nBạn chọn số 1 / 2 / 3.";
+
+        return $msg;
+    }
+
+    // Hỏi chọn kiểu đặt lịch (theo bác sĩ / theo giờ) – hiện tại chỉ hỗ trợ Theo Bác sĩ
+    private function promptDatMode(): string
+    {
+        $_SESSION['booking_flow']['step'] = 'choose_mode';
+
+        $msg = "Bạn muốn đặt lịch theo cách nào?\n"
+             . "1. Chọn **theo Bác sĩ** (giống trên website)\n"
+             . "2. Chọn **theo giờ khám**\n\n"
+             . "Hiện tại phiên bản chatbot mới hỗ trợ tốt nhất chế độ **1 – Theo Bác sĩ**.\n"
+             . "Bạn vui lòng chọn 1 giúp tôi nhé.";
+
+        return $msg;
+    }
+
+    // Hỏi danh sách bác sĩ trong khoa đã chọn
+    private function promptBacSi(): string
+    {
+        $data = $_SESSION['booking_flow']['data'];
+        $maKhoa = (int)$data['selectedKhoa']['MaKhoa'];
+
+        // Lấy danh sách bác sĩ theo Khoa có lịch làm việc trong tương lai
+        $doctors = $this->bookingModel->getDoctorsByKhoaWithFutureSchedule($maKhoa);
+
+        if (empty($doctors)) {
+            $_SESSION['booking_flow'] = null;
+            return "Trong chuyên khoa \"" . $data['selectedKhoa']['TenKhoa'] . "\" hiện chưa có Bác sĩ nào có lịch làm việc trong thời gian tới.\n\n"
+                 . "Bạn vui lòng thử chọn chuyên khoa khác, hoặc sử dụng form Đặt lịch khám trên website.";
+        }
+
+        $msg = "Các Bác sĩ đang làm việc ở chuyên khoa " . $data['selectedKhoa']['TenKhoa'] . ":\n";
+
+        $i = 1;
+        $map = [];
+        foreach ($doctors as $row) {
+            $msg .= $i . ". " . $row['HovaTen'] . " (Mã NV: " . $row['MaNV'] . ")\n";
+            $map[$i] = $row;
+            $i++;
+        }
+
+        $_SESSION['booking_flow']['step'] = 'choose_doctor';
+        $_SESSION['booking_flow']['data']['bs_options'] = $map;
+
+        $msg .= "\nBạn muốn chọn Bác sĩ số mấy? (trả lời bằng số: 1, 2, 3, ...)";
+
+        return $msg;
+    }
+
+    // Hỏi ngày khám cho bác sĩ đã chọn
+    private function promptNgayKham(): string
+    {
+        $data   = $_SESSION['booking_flow']['data'];
+        $maBS   = (int)$data['selectedBS']['MaNV'];
+        $dates  = $this->bookingModel->getFutureWorkingDates($maBS);
+
+        if (empty($dates)) {
+            $_SESSION['booking_flow'] = null;
+            return "Bác sĩ " . $data['selectedBS']['HovaTen'] . " hiện chưa có lịch làm việc trong thời gian tới.\n\n"
+                 . "Bạn vui lòng thử chọn lại Bác sĩ khác hoặc sử dụng form Đặt lịch khám trên website.";
+        }
+
+        $msg = "Bác sĩ " . $data['selectedBS']['HovaTen'] . " có lịch làm việc vào các ngày:\n";
+
+        $i   = 1;
+        $map = [];
+        foreach ($dates as $d) {
+            $msg .= $i . ". " . $d . "\n"; // d dạng Y-m-d
+            $map[$i] = $d;
+            $i++;
+        }
+
+        $_SESSION['booking_flow']['step'] = 'choose_date';
+        $_SESSION['booking_flow']['data']['date_options'] = $map;
+
+        $msg .= "\nBạn chọn ngày số mấy? (ví dụ: 1, 2, 3)";
+
+        return $msg;
+    }
+
+    // Hỏi khung giờ khám cho BS + ngày đã chọn
+    private function promptGioKham(): string
+    {
+        $data  = $_SESSION['booking_flow']['data'];
+        $maBS  = (int)$data['selectedBS']['MaNV'];
+        $date  = $data['selectedDate']; // Y-m-d
+        $slots = $this->bookingModel->getAvailableTimeSlotsForDoctor(
+            $maBS,
+            $date,
+            $this->defaultTimeSlots
+        );
+
+        if (empty($slots)) {
+            $_SESSION['booking_flow']['step'] = 'choose_date';
+            return "Xin lỗi, trong ngày " . $date . " Bác sĩ hiện không còn khung giờ trống phù hợp.\n\n"
+                 . "Bạn vui lòng chọn lại một ngày khác.";
+        }
+
+        $msg = "Ngày " . $date . " Bác sĩ còn các khung giờ sau:\n";
+
+        $i   = 1;
+        $map = [];
+        foreach ($slots as $time) {
+            $msg .= $i . ". " . $time . "\n";
+            $map[$i] = $time;
+            $i++;
+        }
+
+        $_SESSION['booking_flow']['step'] = 'choose_time';
+        $_SESSION['booking_flow']['data']['time_options'] = $map;
+
+        $msg .= "\nBạn chọn khung giờ số mấy?";
+
+        return $msg;
+    }
+
+    // Hỏi mô tả triệu chứng
+    private function promptTrieuChung(): string
+    {
+        $_SESSION['booking_flow']['step'] = 'enter_trieuchung';
+
+        return "Bạn vui lòng mô tả ngắn gọn triệu chứng chính (tối đa khoảng 60 ký tự) để bác sĩ tiện theo dõi.";
+    }
+
+    // Gửi tóm tắt và hỏi xác nhận
+    private function promptXacNhan(): string
+    {
+        $data = $_SESSION['booking_flow']['data'];
+
+        $dvText = $this->bookingModel->getLoaiDichVuTextById(
+            (int)$data['selectedDV']['MaLoai']
+        );
+
+        $msg = "Bạn xác nhận đặt lịch khám với thông tin sau:\n\n"
+             . "- Bệnh nhân: " . $data['HovaTenBN'] . " (Mã BN: " . $data['MaBN'] . ")\n"
+             . "- Chuyên khoa: " . $data['selectedKhoa']['TenKhoa'] . "\n"
+             . "- Dịch vụ: " . $dvText . " (Mã loại: " . $data['selectedDV']['MaLoai'] . ")\n"
+             . "- Bác sĩ: " . $data['selectedBS']['HovaTen'] . " (Mã NV: " . $data['selectedBS']['MaNV'] . ")\n"
+             . "- Ngày khám: " . $data['selectedDate'] . "\n"
+             . "- Giờ khám: " . $data['selectedTime'] . "\n"
+             . "- Triệu chứng: " . $data['trieuChung'] . "\n\n"
+             . "Bạn có muốn đặt lịch với thông tin trên không? (trả lời: \"có\" hoặc \"không\")";
+
+        $_SESSION['booking_flow']['step'] = 'confirm';
+
+        return $msg;
+    }
+
+    // Xử lý state machine đặt lịch
+    private function handleBookingFlow(string $message): string
+    {
+        $messageTrim = trim($message);
+        $lower       = mb_strtolower($messageTrim, 'UTF-8');
+
+        $flow = $_SESSION['booking_flow'];
+        if (!is_array($flow) || !isset($flow['step'])) {
+            $_SESSION['booking_flow'] = null;
+            return "Quy trình đặt lịch hiện tại đã bị lỗi trạng thái, tôi sẽ khởi động lại.\n\n"
+                 . "Bạn vui lòng gõ: \"Đặt lịch khám\" để bắt đầu lại giúp tôi.";
+        }
+
+        $step = $flow['step'];
+
+        // =========================
+        //  BƯỚC: CHỌN CHUYÊN KHOA
+        // =========================
+        if ($step === 'choose_khoa') {
+            $options = $_SESSION['booking_flow']['data']['khoa_options'] ?? [];
+
+            if (empty($options)) {
+                // Nếu mất dữ liệu options → hỏi lại từ đầu
+                return $this->promptChuyenKhoa();
+            }
+
+            $chosen = null;
+
+            // Nếu user nhập số
+            if (ctype_digit($messageTrim)) {
+                $idx = (int)$messageTrim;
+                if (isset($options[$idx])) {
+                    $chosen = $options[$idx];
+                }
+            }
+
+            // Hoặc user nhập tên
+            if (!$chosen) {
+                foreach ($options as $opt) {
+                    if (isset($opt['TenKhoa'])) {
+                        if (mb_stripos($opt['TenKhoa'], $messageTrim, 0, 'UTF-8') !== false) {
+                            $chosen = $opt;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!$chosen) {
+                return "Xin lỗi, tôi chưa nhận diện được chuyên khoa bạn chọn.\n"
+                     . "Bạn vui lòng trả lời lại bằng **số thứ tự** trong danh sách, "
+                     . "ví dụ: 1, 2 hoặc 3.";
+            }
+
+            // Lưu lại khoa đã chọn
+            $_SESSION['booking_flow']['data']['selectedKhoa'] = $chosen;
+
+            // Chuyển sang bước chọn loại dịch vụ
+            $msg = "Bạn đã chọn chuyên khoa: " . $chosen['TenKhoa'] . ".\n\n";
+            $msg .= $this->promptLoaiDichVu();
+            return $msg;
+        }
+
+        // =========================
+        //  BƯỚC: CHỌN LOẠI DỊCH VỤ
+        // =========================
+        if ($step === 'choose_loaidv') {
+            $options = $_SESSION['booking_flow']['data']['dv_options'] ?? [];
+            if (empty($options)) {
+                return $this->promptLoaiDichVu();
+            }
+
+            $chosen = null;
+            if (ctype_digit($messageTrim)) {
+                $idx = (int)$messageTrim;
+                if (isset($options[$idx])) {
+                    $chosen = $options[$idx];
+                }
+            }
+
+            if (!$chosen) {
+                return "Xin lỗi, tôi chưa nhận diện được loại dịch vụ bạn chọn.\n"
+                     . "Bạn vui lòng trả lời bằng số 1 / 2 / 3 tương ứng với danh sách vừa rồi.";
+            }
+
+            $_SESSION['booking_flow']['data']['selectedDV'] = $chosen;
+
+            $msg = "Bạn đã chọn dịch vụ: " . $chosen['LoaiDichVu'] . ".\n\n";
+            // Tiếp theo: chọn mode (theo bác sĩ / theo giờ)
+            $msg .= $this->promptDatMode();
+            return $msg;
+        }
+
+        // =========================
+        //  BƯỚC: CHỌN MODE ĐẶT LỊCH
+        // =========================
+        if ($step === 'choose_mode') {
+            // Giai đoạn này CHỈ hỗ trợ 1 (theo Bác sĩ)
+            if ($messageTrim === '1') {
+                $_SESSION['booking_flow']['data']['datMode'] = 'theoBacSi';
+                return $this->promptBacSi();
+            }
+
+            if ($messageTrim === '2') {
+                return "Hiện tại phiên bản chatbot mới chưa hỗ trợ đầy đủ chế độ \"Đặt theo giờ khám\".\n"
+                     . "Bạn vui lòng chọn **1 – Đặt theo Bác sĩ** giúp tôi.";
+            }
+
+            return "Bạn vui lòng chọn **1** (Theo Bác sĩ) hoặc **2** (Theo giờ khám).\n"
+                 . "Khuyến khích chọn 1 để hệ thống xử lý được đầy đủ.";
+        }
+
+        // =========================
+        //  BƯỚC: CHỌN BÁC SĨ
+        // =========================
+        if ($step === 'choose_doctor') {
+            $options = $_SESSION['booking_flow']['data']['bs_options'] ?? [];
+            if (empty($options)) {
+                return $this->promptBacSi();
+            }
+
+            $chosen = null;
+            if (ctype_digit($messageTrim)) {
+                $idx = (int)$messageTrim;
+                if (isset($options[$idx])) {
+                    $chosen = $options[$idx];
+                }
+            }
+
+            if (!$chosen) {
+                return "Xin lỗi, tôi chưa nhận được lựa chọn Bác sĩ hợp lệ.\n"
+                     . "Bạn vui lòng trả lời lại bằng số thứ tự trong danh sách.";
+            }
+
+            $_SESSION['booking_flow']['data']['selectedBS'] = $chosen;
+
+            $msg = "Bạn đã chọn Bác sĩ: " . $chosen['HovaTen'] . " (Mã NV: " . $chosen['MaNV'] . ").\n\n";
+            $msg .= $this->promptNgayKham();
+            return $msg;
+        }
+
+        // =========================
+        //  BƯỚC: CHỌN NGÀY KHÁM
+        // =========================
+        if ($step === 'choose_date') {
+            $options = $_SESSION['booking_flow']['data']['date_options'] ?? [];
+            if (empty($options)) {
+                return $this->promptNgayKham();
+            }
+
+            $chosenDate = null;
+            if (ctype_digit($messageTrim)) {
+                $idx = (int)$messageTrim;
+                if (isset($options[$idx])) {
+                    $chosenDate = $options[$idx];
+                }
+            }
+
+            if (!$chosenDate) {
+                return "Xin lỗi, tôi chưa xác định được ngày bạn chọn.\n"
+                     . "Bạn vui lòng trả lời lại bằng số thứ tự trong danh sách.";
+            }
+
+            $_SESSION['booking_flow']['data']['selectedDate'] = $chosenDate;
+
+            $msg = "Bạn đã chọn ngày khám: " . $chosenDate . ".\n\n";
+            $msg .= $this->promptGioKham();
+            return $msg;
+        }
+
+        // =========================
+        //  BƯỚC: CHỌN GIỜ KHÁM
+        // =========================
+        if ($step === 'choose_time') {
+            $options = $_SESSION['booking_flow']['data']['time_options'] ?? [];
+            if (empty($options)) {
+                return $this->promptGioKham();
+            }
+
+            $chosenTime = null;
+            if (ctype_digit($messageTrim)) {
+                $idx = (int)$messageTrim;
+                if (isset($options[$idx])) {
+                    $chosenTime = $options[$idx];
+                }
+            }
+
+            if (!$chosenTime) {
+                return "Xin lỗi, tôi chưa xác định được khung giờ bạn chọn.\n"
+                     . "Bạn vui lòng chọn lại bằng số thứ tự trong danh sách.";
+            }
+
+            $_SESSION['booking_flow']['data']['selectedTime'] = $chosenTime;
+
+            $msg = "Bạn đã chọn giờ khám: " . $chosenTime . ".\n\n";
+            $msg .= $this->promptTrieuChung();
+            return $msg;
+        }
+
+        // =========================
+        //  BƯỚC: NHẬP TRIỆU CHỨNG
+        // =========================
+        if ($step === 'enter_trieuchung') {
+            $trieuChung = mb_substr($messageTrim, 0, 60, 'UTF-8'); // phù hợp cột VARCHAR(60)
+            if ($trieuChung === '') {
+                return "Bạn vui lòng mô tả ngắn triệu chứng (ví dụ: \"Ho, sốt nhẹ 2 ngày\").";
+            }
+
+            $_SESSION['booking_flow']['data']['trieuChung'] = $trieuChung;
+
+            return $this->promptXacNhan();
+        }
+
+        // =========================
+        //  BƯỚC: XÁC NHẬN CUỐI
+        // =========================
+        if ($step === 'confirm') {
+            if ($lower === 'có' || $lower === 'co' || $lower === 'yes' || $lower === 'ok') {
+                // Thực hiện INSERT lịch khám
+                $data = $_SESSION['booking_flow']['data'];
+
+                $insertResult = $this->bookingModel->createLichKham([
+                    'MaBN'             => (int)$data['MaBN'],
+                    'MaBS'             => (int)$data['selectedBS']['MaNV'],
+                    'MaKhoa'           => (int)$data['selectedKhoa']['MaKhoa'],
+                    'LoaiDichVu'       => (string)$data['selectedDV']['MaLoai'], // lưu đúng 1/2/3
+                    'NgayKham'         => $data['selectedDate'],
+                    'GioKham'          => $data['selectedTime'],
+                    'TrieuChung'       => $data['trieuChung'],
+                    'TrangThaiThanhToan' => 'Chua thanh toan'
+                ]);
+
+                if ($insertResult['success']) {
+                    // Xóa flow sau khi tạo lịch thành công
+                    $_SESSION['booking_flow'] = null;
+
+                    $msg = "Tôi đã tạo lịch khám cho bạn thành công.\n\n"
+                         . "Mã lịch khám: " . $insertResult['MaLK'] . "\n"
+                         . "Bạn vui lòng đến quầy tiếp nhận để hoàn tất thanh toán trước khi khám.\n\n"
+                         . "(Sau này khi tích hợp thanh toán Sepay, lịch này sẽ tự động chuyển sang trạng thái \"Đã thanh toán\" nếu bạn thanh toán online.)";
+
+                    return $msg;
+                } else {
+                    // Có thể bị lỗi trùng slot hoặc lỗi SQL
+                    $errorMsg = $insertResult['error'] ?? 'Không xác định';
+                    return "Xin lỗi, đã xảy ra lỗi khi tạo lịch khám: " . $errorMsg . "\n\n"
+                         . "Có thể khung giờ vừa chọn đã được bệnh nhân khác đặt trước. "
+                         . "Bạn vui lòng chọn lại giờ khác hoặc tạo lịch lại giúp tôi.";
+                }
+
+            } elseif ($lower === 'không' || $lower === 'khong' || $lower === 'no') {
+                $_SESSION['booking_flow'] = null;
+                return "Tôi đã không tạo lịch khám nào.\n\n"
+                     . "Nếu bạn muốn đặt lại, chỉ cần gõ: \"Đặt lịch khám\".";
+            } else {
+                return "Bạn vui lòng trả lời \"có\" nếu muốn tạo lịch, hoặc \"không\" nếu muốn hủy.";
+            }
+        }
+
+        // Nếu rơi vào case không xác định
+        $_SESSION['booking_flow'] = null;
+        return "Trạng thái đặt lịch hiện tại không hợp lệ. Tôi sẽ kết thúc phiên đặt lịch.\n\n"
+             . "Bạn có thể gõ \"Đặt lịch khám\" để bắt đầu lại.";
+    }
+
+    // ==========================
+    //  HÀM GỌI GEMINI (GIỮ NGUYÊN Ý)
+    // ==========================
+
+    private function callGeminiWithHistory(string $message): string
+    {
         // Persona cố định cho chatbot bệnh viện
         $persona = "Bạn là trợ lý ảo của Hệ thống Bệnh viện Đức Tâm. "
             . "Bạn trả lời bằng tiếng Việt thân thiện, xưng 'tôi' là bệnh viện và gọi người dùng là 'bạn'. "
@@ -72,15 +729,15 @@ class Chatbot extends Controller
             . "Nhiệm vụ chính của bạn là giải thích thông tin về bệnh viện, các khoa, quy trình đăng ký khám"
             . "thanh toán và các câu hỏi chung. "
             . "Bạn không tự tạo lịch khám hay thay đổi dữ liệu trong hệ thống. "
-            . "Nếu người dùng hỏi về đặt lịch khám, hãy hướng dẫn họ sử dụng chức năng Đặt lịch khám trên website."
-            . "Nếu câu hỏi vượt quá phạm vi bệnh viện, hãy lịch sự từ chối và khuyên họ liên hệ trực tiếp bệnh viện."
-            . "Nếu người dùng bị bệnh bất kỳ, hãy tư vấn triệu chứng đó là bệnh gì, và khuyên họ đến gặp bác sĩ chuyên môn bệnh viện Đức Tâm để được tư vấn."
-            . "Khi tư vấn, hãy thường xuyên ngắt đoạn để dễ đọc."
-        ;
+            . "Nếu người dùng hỏi về đặt lịch khám, hãy hướng dẫn họ sử dụng chức năng Đặt lịch khám trên website "
+            . "hoặc quy trình đặt lịch qua chat nếu đã được mô tả. "
+            . "Nếu câu hỏi vượt quá phạm vi bệnh viện, hãy lịch sự từ chối và khuyên họ liên hệ trực tiếp bệnh viện. "
+            . "Nếu người dùng bị bệnh bất kỳ, hãy tư vấn triệu chứng đó là bệnh gì, và khuyên họ đến gặp bác sĩ chuyên môn bệnh viện Đức Tâm để được tư vấn. "
+            . "Khi tư vấn, hãy thường xuyên ngắt đoạn để dễ đọc.";
 
-        // --- Chuẩn bị lịch sử hội thoại để gửi lên Gemini (lưu trong session) ---
+        // Chuẩn bị lịch sử hội thoại để gửi lên Gemini (lưu trong session)
         $historyText = "";
-        $history = $_SESSION['chat_history'];
+        $history     = $_SESSION['chat_history'] ?? [];
 
         // Chỉ lấy tối đa 10 message gần nhất (5 lượt hỏi–đáp) cho gọn
         $maxMessages = 10;
@@ -89,7 +746,6 @@ class Chatbot extends Controller
         }
 
         foreach ($history as $turn) {
-            // Mỗi turn: ['role' => 'user'|'assistant', 'text' => '...']
             if (!isset($turn['role'], $turn['text'])) {
                 continue;
             }
@@ -119,7 +775,6 @@ class Chatbot extends Controller
                     ]
                 ]
             ],
-            // Cấu hình sinh nội dung (có thể chỉnh tuỳ ý)
             "generationConfig" => [
                 "temperature"     => 0.7,
                 "maxOutputTokens" => 512
@@ -147,39 +802,24 @@ class Chatbot extends Controller
             $error = curl_error($ch);
             curl_close($ch);
 
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'error'   => 'Lỗi khi gọi Gemini: ' . $error
-            ]);
-            return;
+            return "Xin lỗi, hệ thống tư vấn tự động đang gặp sự cố kỹ thuật (lỗi kết nối). "
+                 . "Bạn vui lòng thử lại sau hoặc liên hệ trực tiếp bệnh viện.";
         }
 
-        $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $httpStatus   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $responseData = json_decode($result, true);
         curl_close($ch);
 
-        $responseData = json_decode($result, true);
-
-        // Handle lỗi HTTP từ Gemini
         if ($httpStatus >= 400) {
             $msg = isset($responseData['error']['message'])
                 ? $responseData['error']['message']
                 : 'Không nhận được phản hồi hợp lệ từ Gemini.';
-
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'error'   => 'Lỗi từ Gemini: ' . $msg
-            ]);
-            return;
+            return "Xin lỗi, hệ thống tư vấn tự động đang gặp sự cố: " . $msg;
         }
 
-        // Lấy text trả về
         $answer = '';
 
-        if (
-            isset($responseData['candidates'][0]['content']['parts'][0]['text'])
-        ) {
+        if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
             $answer = $responseData['candidates'][0]['content']['parts'][0]['text'];
         } elseif (isset($responseData['candidates'][0]['content']['parts'])) {
             foreach ($responseData['candidates'][0]['content']['parts'] as $part) {
@@ -194,26 +834,6 @@ class Chatbot extends Controller
                 . "Bạn vui lòng thử lại sau hoặc liên hệ trực tiếp bệnh viện để được hỗ trợ.";
         }
 
-        // --- Lưu câu hỏi & câu trả lời vào lịch sử session ---
-        $_SESSION['chat_history'][] = [
-            'role' => 'user',
-            'text' => $message
-        ];
-
-        $_SESSION['chat_history'][] = [
-            'role' => 'assistant',
-            'text' => $answer
-        ];
-
-        // Giới hạn tổng lịch sử còn tối đa 20 message để tránh phình session
-        if (count($_SESSION['chat_history']) > 20) {
-            $_SESSION['chat_history'] = array_slice($_SESSION['chat_history'], -20);
-        }
-        // --- Kết thúc lưu lịch sử chat ---
-
-        echo json_encode([
-            'success' => true,
-            'answer'  => $answer
-        ]);
+        return $answer;
     }
 }
