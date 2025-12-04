@@ -640,5 +640,179 @@ HTML;
         echo $html;
         exit;
     }
+
+        // ================== CHAT: DANH SÁCH BÁC SĨ CÓ THỂ CHAT ==================
+    public function DanhSachBacSiChat()
+    {
+        if (!isset($_SESSION['idbn'])) {
+            header("Location: /KLTN_Benhvien");
+            exit;
+        }
+
+        $maBN     = $_SESSION['idbn'];
+        $chat     = $this->model("mChat");
+        $dsBacSi  = $chat->getDanhSachBacSiChoBN($maBN);
+
+        $this->view("layoutBN", [
+            "Page"          => "bn_danhsach_chat",
+            "DanhSachBacSi" => $dsBacSi
+        ]);
+    }
+
+    // ================== CHAT: MÀN HÌNH CHAT VỚI 1 BÁC SĨ ==================
+    public function ChatVoiBacSi($maBS = null)
+    {
+        if (!isset($_SESSION['idbn'])) {
+            header("Location: /KLTN_Benhvien");
+            exit;
+        }
+
+        $maBN = (int)$_SESSION['idbn'];
+        $maBS = (int)$maBS;
+
+        if ($maBS <= 0) {
+            echo "Mã bác sĩ không hợp lệ.";
+            exit;
+        }
+
+        $chatModel = $this->model("mChat");
+
+        // Bảo vệ: chỉ cho chat nếu BN có lịch khám online đã thanh toán với BS này
+        if (!$chatModel->patientCanChatWithDoctor($maBN, $maBS)) {
+            echo "Bạn không có quyền chat với bác sĩ này (chỉ áp dụng cho lịch khám online đã thanh toán).";
+            exit;
+        }
+
+        // Lấy hoặc tạo cuộc trò chuyện
+        $maCuocTrove = $chatModel->getOrCreateConversation($maBN, $maBS);
+        if (!$maCuocTrove) {
+            echo "Không thể khởi tạo cuộc trò chuyện. Vui lòng thử lại sau.";
+            exit;
+        }
+
+        // Lấy danh sách tin nhắn ban đầu (từ đầu, lastId = 0)
+        $messages = $chatModel->getMessages($maCuocTrove, 0);
+
+        // Đánh dấu tin đã xem phía BN
+        $chatModel->markAsReadForPatient($maCuocTrove, $maBN);
+
+        // Lấy thông tin bác sĩ để hiển thị (dùng model MBacsi đã có)
+        $mbs       = $this->model("MBacsi");
+        $bsJson    = $mbs->get1BS($maBS);
+        $bsArr     = json_decode($bsJson, true);
+        $bacSiInfo = isset($bsArr[0]) ? $bsArr[0] : null;
+
+        $this->view("layoutBN", [
+            "Page"        => "bn_chat_bacsi",
+            "MaCuocTrove" => $maCuocTrove,
+            "MaBS"        => $maBS,
+            "Messages"    => $messages,
+            "BacSi"       => $bacSiInfo
+        ]);
+    }
+
+    // ================== AJAX: BN GỬI TIN NHẮN ==================
+    public function AjaxGuiTinNhanBN()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo "Method Not Allowed";
+            return;
+        }
+
+        if (!isset($_SESSION['idbn'])) {
+            http_response_code(401);
+            echo "Not authenticated";
+            return;
+        }
+
+        // TODO: nếu bạn có hệ thống CSRF token chung, hãy kiểm tra tại đây
+
+        $maBN        = (int)$_SESSION['idbn'];
+        $maCuocTrove = isset($_POST['MaCuocTrove']) ? (int)$_POST['MaCuocTrove'] : 0;
+        $noiDung     = isset($_POST['NoiDung']) ? trim($_POST['NoiDung']) : '';
+
+        if ($maCuocTrove <= 0 || $noiDung === '') {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                "success" => false,
+                "message" => "Thiếu dữ liệu hoặc nội dung trống."
+            ]);
+            return;
+        }
+
+        $chatModel = $this->model("mChat");
+
+        // Bảo vệ: kiểm tra BN có sở hữu cuộc trò chuyện này không
+        if (!$chatModel->patientOwnsConversation($maBN, $maCuocTrove)) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                "success" => false,
+                "message" => "Bạn không có quyền gửi tin trong cuộc trò chuyện này."
+            ]);
+            return;
+        }
+
+        $ok = $chatModel->addMessage($maCuocTrove, 'BN', $maBN, $noiDung);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            "success" => $ok,
+            "message" => $ok ? "Gửi tin nhắn thành công." : "Gửi tin nhắn thất bại, vui lòng thử lại."
+        ]);
+    }
+
+    // ================== AJAX: BN LẤY TIN NHẮN MỚI (POLLING) ==================
+    public function AjaxFetchTinNhanBN()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo "Method Not Allowed";
+            return;
+        }
+
+        if (!isset($_SESSION['idbn'])) {
+            http_response_code(401);
+            echo "Not authenticated";
+            return;
+        }
+
+        $maBN        = (int)$_SESSION['idbn'];
+        $maCuocTrove = isset($_POST['MaCuocTrove']) ? (int)$_POST['MaCuocTrove'] : 0;
+        $lastId      = isset($_POST['LastId']) ? (int)$_POST['LastId'] : 0;
+
+        if ($maCuocTrove <= 0) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                "success" => false,
+                "message" => "Thiếu MaCuocTrove."
+            ]);
+            return;
+        }
+
+        $chatModel = $this->model("mChat");
+
+        // Bảo vệ: kiểm tra quyền sở hữu
+        if (!$chatModel->patientOwnsConversation($maBN, $maCuocTrove)) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                "success" => false,
+                "message" => "Bạn không có quyền xem cuộc trò chuyện này."
+            ]);
+            return;
+        }
+
+        $messages = $chatModel->getMessages($maCuocTrove, $lastId);
+
+        // Đánh dấu đã xem phía BN
+        $chatModel->markAsReadForPatient($maCuocTrove, $maBN);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            "success"  => true,
+            "messages" => $messages
+        ]);
+    }
+
 }
 ?>
