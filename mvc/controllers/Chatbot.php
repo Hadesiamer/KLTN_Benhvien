@@ -28,6 +28,11 @@ class Chatbot extends Controller
             return;
         }
 
+        // --- Khởi tạo lịch sử chat trong session (nếu chưa có) ---
+        if (!isset($_SESSION['chat_history']) || !is_array($_SESSION['chat_history'])) {
+            $_SESSION['chat_history'] = [];
+        }
+
         // Đọc dữ liệu gửi lên
         $rawBody = file_get_contents('php://input');
         $message = '';
@@ -71,10 +76,39 @@ class Chatbot extends Controller
             . "Nếu câu hỏi vượt quá phạm vi bệnh viện, hãy lịch sự từ chối và khuyên họ liên hệ trực tiếp bệnh viện."
             . "Nếu người dùng bị bệnh bất kỳ, hãy tư vấn triệu chứng đó là bệnh gì, và khuyên họ đến gặp bác sĩ chuyên môn bệnh viện Đức Tâm để được tư vấn."
             . "Khi tư vấn, hãy thường xuyên ngắt đoạn để dễ đọc."
-            ;
+        ;
 
-        // Gộp persona + câu hỏi của người dùng
-        $promptText = $persona . "\n\nCâu hỏi của bệnh nhân: " . $message;
+        // --- Chuẩn bị lịch sử hội thoại để gửi lên Gemini (lưu trong session) ---
+        $historyText = "";
+        $history = $_SESSION['chat_history'];
+
+        // Chỉ lấy tối đa 10 message gần nhất (5 lượt hỏi–đáp) cho gọn
+        $maxMessages = 10;
+        if (count($history) > $maxMessages) {
+            $history = array_slice($history, -$maxMessages);
+        }
+
+        foreach ($history as $turn) {
+            // Mỗi turn: ['role' => 'user'|'assistant', 'text' => '...']
+            if (!isset($turn['role'], $turn['text'])) {
+                continue;
+            }
+
+            if ($turn['role'] === 'user') {
+                $historyText .= "Bệnh nhân: " . $turn['text'] . "\n";
+            } else {
+                $historyText .= "Trợ lý: " . $turn['text'] . "\n";
+            }
+        }
+
+        // Gộp persona + lịch sử + câu hỏi mới
+        $promptText = $persona . "\n\n";
+        if ($historyText !== "") {
+            $promptText .= "Dưới đây là một phần cuộc hội thoại trước giữa bạn và bệnh nhân:\n"
+                . $historyText . "\n";
+        }
+        $promptText .= "Câu hỏi mới nhất của bệnh nhân: " . $message
+            . "\n\nHãy trả lời ngắn gọn, dễ đọc, chia đoạn rõ ràng.";
 
         // Payload gửi lên Gemini Developer API
         $payload = [
@@ -159,6 +193,23 @@ class Chatbot extends Controller
             $answer = "Xin lỗi, hiện tại tôi chưa thể trả lời câu hỏi này. "
                 . "Bạn vui lòng thử lại sau hoặc liên hệ trực tiếp bệnh viện để được hỗ trợ.";
         }
+
+        // --- Lưu câu hỏi & câu trả lời vào lịch sử session ---
+        $_SESSION['chat_history'][] = [
+            'role' => 'user',
+            'text' => $message
+        ];
+
+        $_SESSION['chat_history'][] = [
+            'role' => 'assistant',
+            'text' => $answer
+        ];
+
+        // Giới hạn tổng lịch sử còn tối đa 20 message để tránh phình session
+        if (count($_SESSION['chat_history']) > 20) {
+            $_SESSION['chat_history'] = array_slice($_SESSION['chat_history'], -20);
+        }
+        // --- Kết thúc lưu lịch sử chat ---
 
         echo json_encode([
             'success' => true,

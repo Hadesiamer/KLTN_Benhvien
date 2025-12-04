@@ -1,4 +1,4 @@
-<?php
+<?php 
 // Widget Chatbot AI bệnh viện - dùng trên trang chủ (và có thể tái sử dụng ở layout khác)
 ?>
 <!-- ==== CHATBOT AI BỆNH VIỆN - WIDGET ==== -->
@@ -130,6 +130,16 @@
         opacity: 0.6;
         cursor: default;
     }
+
+    /* Chế độ phóng to: cửa sổ chiếm 1/2 màn hình laptop */
+    .bvchat_window.expanded {
+        width: 50vw !important;
+        height: 70vh !important;
+        max-height: none !important;
+        right: 5vw !important;
+        bottom: 5vh !important;
+        border-radius: 12px;
+    }
 </style>
 
 <div class="bvchat_window" id="bvchat_window">
@@ -138,7 +148,13 @@
             <div class="bvchat_header_title">Trợ lý ảo Bệnh viện</div>
             <div class="bvchat_header_sub">Hỏi đáp, hướng dẫn đặt khám</div>
         </div>
-        <div class="bvchat_close" id="bvchat_close">&times;</div>
+        <!-- Nhóm nút phóng to / đóng -->
+        <div style="display:flex; gap:10px; align-items:center;">
+            <div class="bvchat_expand" id="bvchat_expand" title="Phóng to" style="cursor:pointer; font-size:16px;">
+                ⛶
+            </div>
+            <div class="bvchat_close" id="bvchat_close">&times;</div>
+        </div>
     </div>
     <div class="bvchat_messages" id="bvchat_messages">
         <div class="bvchat_msg bvchat_msg_bot">
@@ -168,6 +184,9 @@
         const input = document.getElementById("bvchat_input");
         const btnSend = document.getElementById("bvchat_send");
         const messagesBox = document.getElementById("bvchat_messages");
+        const btnExpand = document.getElementById("bvchat_expand");
+
+        let isExpanded = false; // trạng thái phóng to / thu nhỏ
 
         function appendMessage(text, type) {
             const div = document.createElement("div");
@@ -191,13 +210,30 @@
             }
         }
 
+        // Nút mở / đóng widget
         btnToggle.addEventListener("click", function () {
             const isVisible = chatWindow.style.display === "flex";
             toggleWindow(!isVisible);
         });
 
+        // Nút đóng (x)
         btnClose.addEventListener("click", function () {
             toggleWindow(false);
+        });
+
+        // Nút phóng to / thu nhỏ
+        btnExpand.addEventListener("click", function () {
+            isExpanded = !isExpanded;
+
+            if (isExpanded) {
+                chatWindow.classList.add("expanded");
+                btnExpand.textContent = "🗗"; // biểu tượng thu nhỏ
+                btnExpand.title = "Thu nhỏ";
+            } else {
+                chatWindow.classList.remove("expanded");
+                btnExpand.textContent = "⛶"; // biểu tượng phóng to
+                btnExpand.title = "Phóng to";
+            }
         });
 
         function sendMessage() {
