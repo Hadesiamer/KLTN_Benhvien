@@ -215,7 +215,7 @@
             <!-- <img src="./public/img/logo.png" alt="Logo"> -->
             <ul>
                 <li><a class="ftx_link_x912a" href="https://zalo.me/0346021604">Zalo: 0764418902</a></li>
-                <li>Địa chỉ: F4/9C tổ 14 ấp 6C, xã Vĩnh Lộc A, huyện Bình Chánh, TP.HCM</li>
+                <li>Địa chỉ: Số 12 Nguyễn Văn Bảo, P. Hạnh Thông, Thành phố Hồ Chí Minh</li>
                 <li>Giờ mở cửa: 8:00 am – 9:00 pm</li>
             </ul>
         </div>

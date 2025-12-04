@@ -90,5 +90,9 @@
     setupScroll('pkList','scrollLeftPK','scrollRightPK');
     // hh
     </script>
+    <?php
+        // Gọi widget chatbot AI bệnh viện
+        require_once "./mvc/views/blocks/chatbot_widget.php";
+    ?>
 </body>
 </html>
