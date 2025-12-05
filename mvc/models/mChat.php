@@ -162,15 +162,30 @@ class mChat extends DB
         return $count > 0;
     }
 
-    // Thêm tin nhắn mới (dùng chung cho BN & BS)
-    public function addMessage($maCuocTrove, $nguoiGuiLoai, $maNguoiGui, $noiDung)
+    /**
+     * Thêm tin nhắn mới (dùng chung cho BN & BS)
+     * $fileMeta: mảng optional [
+     *   'original_name' => string,
+     *   'public_path'   => string,  // VD: /KLTN_Benhvien/public/uploads/chat/abc.png
+     *   'mime_type'     => string|null,
+     *   'size'          => int,
+     *   'is_image'      => 0|1
+     * ]
+     */
+    public function addMessage($maCuocTrove, $nguoiGuiLoai, $maNguoiGui, $noiDung, $fileMeta = null)
     {
-        $maCuocTrove = intval($maCuocTrove);
-        $maNguoiGui  = intval($maNguoiGui);
+        $maCuocTrove  = intval($maCuocTrove);
+        $maNguoiGui   = intval($maNguoiGui);
         $nguoiGuiLoai = ($nguoiGuiLoai === 'BS') ? 'BS' : 'BN'; // chuẩn hóa
-        $noiDung     = trim($noiDung);
+        $noiDung      = trim((string)$noiDung);
 
-        if ($maCuocTrove <= 0 || $maNguoiGui <= 0 || $noiDung === '') {
+        // Yêu cầu: phải có hoặc nội dung text, hoặc file đính kèm
+        $hasFile = (is_array($fileMeta) && !empty($fileMeta['public_path']));
+        if ($maCuocTrove <= 0 || $maNguoiGui <= 0) {
+            return false;
+        }
+        if ($noiDung === '' && !$hasFile) {
+            // không có gì để gửi
             return false;
         }
 
@@ -201,9 +216,15 @@ class mChat extends DB
                 $daXemBS
             );
             $ok = $stmt->execute();
+            $insertId = $ok ? $this->con->insert_id : 0;
             $stmt->close();
 
             if ($ok) {
+                // Nếu có file đính kèm, lưu vào bảng chat_files
+                if ($hasFile && $insertId > 0) {
+                    $this->insertChatFileForMessage($insertId, $fileMeta);
+                }
+
                 // Cập nhật trạng thái trong cuoc_tro_chuyen
                 if ($nguoiGuiLoai === 'BN') {
                     $this->updateConversationStatusForBN($maCuocTrove);
@@ -218,7 +239,48 @@ class mChat extends DB
         return false;
     }
 
+    /**
+     * Lưu bản ghi file đính kèm cho 1 tin nhắn
+     */
+    protected function insertChatFileForMessage($maTinNhan, array $fileMeta)
+    {
+        $maTinNhan    = intval($maTinNhan);
+        $fileNameGoc  = isset($fileMeta['original_name']) ? (string)$fileMeta['original_name'] : '';
+        $filePath     = isset($fileMeta['public_path'])   ? (string)$fileMeta['public_path']   : '';
+        $fileType     = isset($fileMeta['mime_type'])     ? (string)$fileMeta['mime_type']     : null;
+        $fileSize     = isset($fileMeta['size'])          ? (int)$fileMeta['size']             : 0;
+        $isImage      = !empty($fileMeta['is_image']) ? 1 : 0;
+
+        if ($maTinNhan <= 0 || $fileNameGoc === '' || $filePath === '') {
+            return false;
+        }
+
+        $sql = "
+            INSERT INTO chat_files
+                (MaTinNhan, FileNameGoc, FilePath, FileType, FileSize, IsImage)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ";
+
+        if ($stmt = $this->con->prepare($sql)) {
+            $stmt->bind_param(
+                "isssii",
+                $maTinNhan,
+                $fileNameGoc,
+                $filePath,
+                $fileType,
+                $fileSize,
+                $isImage
+            );
+            $ok = $stmt->execute();
+            $stmt->close();
+            return $ok;
+        }
+
+        return false;
+    }
+
     // Lấy danh sách tin nhắn mới hơn lastId
+    // KÈM THEO THÔNG TIN FILE (nếu có)
     public function getMessages($maCuocTrove, $lastId = 0)
     {
         $maCuocTrove = intval($maCuocTrove);
@@ -226,17 +288,32 @@ class mChat extends DB
         $ds          = [];
 
         $sql = "
-            SELECT MaTinNhan, MaCuocTrove, NguoiGuiLoai, MaNguoiGui, NoiDung, ThoiGianGui
-            FROM tin_nhan
-            WHERE MaCuocTrove = ?
-              AND MaTinNhan > ?
-            ORDER BY MaTinNhan ASC
+            SELECT 
+                tn.MaTinNhan,
+                tn.MaCuocTrove,
+                tn.NguoiGuiLoai,
+                tn.MaNguoiGui,
+                tn.NoiDung,
+                tn.ThoiGianGui,
+                f.MaFile,
+                f.FileNameGoc,
+                f.FilePath,
+                f.FileType,
+                f.FileSize,
+                f.IsImage
+            FROM tin_nhan tn
+            LEFT JOIN chat_files f ON f.MaTinNhan = tn.MaTinNhan
+            WHERE tn.MaCuocTrove = ?
+              AND tn.MaTinNhan > ?
+            ORDER BY tn.MaTinNhan ASC
         ";
         if ($stmt = $this->con->prepare($sql)) {
             $stmt->bind_param("ii", $maCuocTrove, $lastId);
             if ($stmt->execute()) {
                 $res = $stmt->get_result();
                 while ($row = $res->fetch_assoc()) {
+                    // Đảm bảo kiểu bool nhỏ gọn khi trả JSON
+                    $row['IsImage'] = isset($row['IsImage']) ? (int)$row['IsImage'] : 0;
                     $ds[] = $row;
                 }
             }

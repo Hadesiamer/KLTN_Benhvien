@@ -574,7 +574,7 @@ class Bacsi extends Controller
         }
     }
 
-        // ================== CHAT: DANH SÁCH CUỘC TRÒ CHUYỆN CỦA BÁC SĨ ==================
+    // ================== CHAT: DANH SÁCH CUỘC TRÒ CHUYỆN CỦA BÁC SĨ ==================
     public function DanhSachCuocTroChuyen()
     {
         if (!isset($_SESSION['idnv'])) {
@@ -663,11 +663,23 @@ class Bacsi extends Controller
         $maCuocTrove = isset($_POST['MaCuocTrove']) ? (int)$_POST['MaCuocTrove'] : 0;
         $noiDung     = isset($_POST['NoiDung']) ? trim($_POST['NoiDung']) : '';
 
-        if ($maCuocTrove <= 0 || $noiDung === '') {
+        // Kiểm tra file đính kèm (nếu có)
+        $hasFile = isset($_FILES['FileDinhKem']) && $_FILES['FileDinhKem']['error'] !== UPLOAD_ERR_NO_FILE;
+
+        if ($maCuocTrove <= 0) {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 "success" => false,
-                "message" => "Thiếu dữ liệu hoặc nội dung trống."
+                "message" => "Thiếu MaCuocTrove."
+            ]);
+            return;
+        }
+
+        if ($noiDung === '' && !$hasFile) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                "success" => false,
+                "message" => "Vui lòng nhập nội dung hoặc chọn file đính kèm."
             ]);
             return;
         }
@@ -683,7 +695,80 @@ class Bacsi extends Controller
             return;
         }
 
-        $ok = $chatModel->addMessage($maCuocTrove, 'BS', $maBS, $noiDung);
+        // Chuẩn bị meta file (nếu có)
+        $fileMeta = null;
+        if ($hasFile) {
+            $fileInfo = $_FILES['FileDinhKem'];
+
+            if ($fileInfo['error'] !== UPLOAD_ERR_OK) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Lỗi upload file (mã lỗi: " . $fileInfo['error'] . ")."
+                ]);
+                return;
+            }
+
+            $maxSize = 5 * 1024 * 1024; // 5MB
+            if ($fileInfo['size'] > $maxSize) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    "success" => false,
+                    "message" => "File quá lớn, vui lòng chọn file <= 5MB."
+                ]);
+                return;
+            }
+
+            $origName = basename($fileInfo['name']);
+            $ext      = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+
+            $allowedExt = [
+                'jpg','jpeg','png','gif','webp',
+                'pdf','doc','docx','xls','xlsx','txt'
+            ];
+            if (!in_array($ext, $allowedExt)) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Định dạng file không được hỗ trợ."
+                ]);
+                return;
+            }
+
+            $rootPath   = dirname(__DIR__, 2); // tới KLTN_Benhvien
+            $uploadDir  = $rootPath . '/public/uploads/chat/';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0775, true);
+            }
+
+            $randomPart = bin2hex(random_bytes(4));
+            $newName    = date('Ymd_His') . '_' . $randomPart . '.' . $ext;
+            $destPath   = $uploadDir . $newName;
+
+            if (!move_uploaded_file($fileInfo['tmp_name'], $destPath)) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    "success" => false,
+                    "message" => "Không thể lưu file lên server."
+                ]);
+                return;
+            }
+
+            $mimeType = !empty($fileInfo['type']) ? $fileInfo['type'] : null;
+            $isImage  = in_array($ext, ['jpg','jpeg','png','gif','webp']) ? 1 : 0;
+
+            $publicPath = '/KLTN_Benhvien/public/uploads/chat/' . $newName;
+
+            $fileMeta = [
+                'original_name' => $origName,
+                'public_path'   => $publicPath,
+                'mime_type'     => $mimeType,
+                'size'          => (int)$fileInfo['size'],
+                'is_image'      => $isImage
+            ];
+        }
+
+        $ok = $chatModel->addMessage($maCuocTrove, 'BS', $maBS, $noiDung, $fileMeta);
 
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([

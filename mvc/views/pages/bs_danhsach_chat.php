@@ -1,4 +1,5 @@
 <?php
+//Đây là file C:\xampp\htdocs\KLTN_Benhvien\mvc\views\pages\bs_danhsach_chat.php
 $dsCuoc = isset($data["DanhSachCuocTroChuyen"]) ? $data["DanhSachCuocTroChuyen"] : [];
 ?>
 <div class="container mt-3">

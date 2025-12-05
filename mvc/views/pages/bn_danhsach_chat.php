@@ -1,4 +1,6 @@
+
 <?php
+//Đây là file C:\xampp\htdocs\KLTN_Benhvien\mvc\views\pages\bn_danhsach_chat.php
 // $data["DanhSachBacSi"] là mảng các bác sĩ BN có thể chat
 $dsBacSi = isset($data["DanhSachBacSi"]) ? $data["DanhSachBacSi"] : [];
 ?>

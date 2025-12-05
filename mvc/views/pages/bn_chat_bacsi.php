@@ -1,4 +1,5 @@
 <?php
+//Đây là file C:\xampp\htdocs\KLTN_Benhvien\mvc\views\pages\bn_chat_bacsi.php
 $maCuocTrove = isset($data["MaCuocTrove"]) ? (int)$data["MaCuocTrove"] : 0;
 $maBS        = isset($data["MaBS"]) ? (int)$data["MaBS"] : 0;
 $messages    = isset($data["Messages"]) ? $data["Messages"] : [];
@@ -41,7 +42,7 @@ foreach ($messages as $msg) {
         border: 1px solid #dddddd;
         border-radius: 6px;
         padding: 10px;
-        height: 350px;
+        height: 420px; /* cao hơn 1 chút cho dễ kéo */
         overflow-y: auto;
         background-color: #fafafa;
         box-sizing: border-box;
@@ -55,7 +56,7 @@ foreach ($messages as $msg) {
     }
 
     .bnx_chat_message_x7a9 {
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         clear: both;
     }
 
@@ -107,6 +108,31 @@ foreach ($messages as $msg) {
         background-color: #e3f2fd;
     }
 
+    .bnx_chat_file_x7a9 {
+        margin-top: 4px;
+        display: inline-block;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+
+    .bnx_chat_file_link_x7a9 {
+        font-size: 13px;
+        color: #0d6efd;
+        text-decoration: none;
+    }
+
+    .bnx_chat_file_link_x7a9:hover {
+        text-decoration: underline;
+    }
+
+    .bnx_chat_img_preview_x7a9 {
+        max-width: 200px;
+        max-height: 200px;
+        margin-top: 4px;
+        border-radius: 4px;
+        display: block;
+    }
+
     .bnx_chat_form_x7a9 {
         margin-top: 12px;
     }
@@ -123,8 +149,13 @@ foreach ($messages as $msg) {
         font-family: inherit;
     }
 
-    .bnx_chat_btn_send_x7a9 {
+    .bnx_chat_file_input_x7a9 {
         margin-top: 6px;
+        font-size: 13px;
+    }
+
+    .bnx_chat_btn_send_x7a9 {
+        margin-top: 8px;
         padding: 8px 18px;
         border: none;
         border-radius: 4px;
@@ -158,6 +189,10 @@ foreach ($messages as $msg) {
                 $isBN   = ($msg["NguoiGuiLoai"] === 'BN');
                 $rowCls = $isBN ? "bnx_me_x7a9" : "bnx_other_x7a9";
                 $badge  = $isBN ? "Bạn" : "Bác sĩ";
+
+                $filePath  = isset($msg["FilePath"]) ? $msg["FilePath"] : null;
+                $fileName  = isset($msg["FileNameGoc"]) ? $msg["FileNameGoc"] : null;
+                $isImage   = isset($msg["IsImage"]) ? (int)$msg["IsImage"] : 0;
                 ?>
                 <div class="bnx_chat_message_x7a9 <?php echo $rowCls; ?>">
                     <span class="bnx_chat_badge_x7a9 <?php echo $rowCls; ?>">
@@ -166,21 +201,45 @@ foreach ($messages as $msg) {
                     <span class="bnx_chat_time_x7a9">
                         <?php echo htmlspecialchars($msg["ThoiGianGui"]); ?>
                     </span>
-                    <div class="bnx_chat_text_x7a9">
-                        <?php echo nl2br(htmlspecialchars($msg["NoiDung"])); ?>
-                    </div>
+                    <?php if (!empty($msg["NoiDung"])): ?>
+                        <div class="bnx_chat_text_x7a9">
+                            <?php echo nl2br(htmlspecialchars($msg["NoiDung"])); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($filePath) && !empty($fileName)): ?>
+                        <div class="bnx_chat_file_x7a9">
+                            <?php if ($isImage === 1): ?>
+                                <a href="<?php echo htmlspecialchars($filePath); ?>" target="_blank" class="bnx_chat_file_link_x7a9">
+                                    Xem ảnh: <?php echo htmlspecialchars($fileName); ?>
+                                </a>
+                                <img src="<?php echo htmlspecialchars($filePath); ?>"
+                                     alt="<?php echo htmlspecialchars($fileName); ?>"
+                                     class="bnx_chat_img_preview_x7a9">
+                            <?php else: ?>
+                                <a href="<?php echo htmlspecialchars($filePath); ?>" target="_blank" class="bnx_chat_file_link_x7a9">
+                                    Tải file: <?php echo htmlspecialchars($fileName); ?>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
 
-    <form id="formSendBN" class="bnx_chat_form_x7a9" onsubmit="return false;">
+    <form id="formSendBN" class="bnx_chat_form_x7a9" onsubmit="return false;" enctype="multipart/form-data">
         <input type="hidden" id="MaCuocTrove" value="<?php echo $maCuocTrove; ?>">
         <input type="hidden" id="LastId" value="<?php echo $lastId; ?>">
 
         <textarea id="NoiDung"
                   class="bnx_chat_textarea_x7a9"
                   placeholder="Nhập nội dung tin nhắn..."></textarea>
+
+        <div class="bnx_chat_file_input_x7a9">
+            <input type="file" id="ChatFileBN" name="FileDinhKem">
+        </div>
+
         <button type="button"
                 class="bnx_chat_btn_send_x7a9"
                 onclick="sendMessageBN();">Gửi</button>
@@ -188,19 +247,24 @@ foreach ($messages as $msg) {
 </div>
 
 <script>
-// Gửi tin nhắn từ BN
+// Gửi tin nhắn từ BN (có thể kèm file)
 function sendMessageBN() {
     var maCuoc = document.getElementById('MaCuocTrove').value;
     var noiDung = document.getElementById('NoiDung').value.trim();
+    var fileInput = document.getElementById('ChatFileBN');
 
-    if (!noiDung) {
-        alert('Vui lòng nhập nội dung.');
+    // Cho phép gửi TRỐNG nội dung nếu có file
+    if (!noiDung && (!fileInput.files || fileInput.files.length === 0)) {
+        alert('Vui lòng nhập nội dung hoặc chọn file.');
         return;
     }
 
     var formData = new FormData();
     formData.append('MaCuocTrove', maCuoc);
     formData.append('NoiDung', noiDung);
+    if (fileInput.files && fileInput.files.length > 0) {
+        formData.append('FileDinhKem', fileInput.files[0]);
+    }
 
     fetch('/KLTN_Benhvien/BN/AjaxGuiTinNhanBN', {
         method: 'POST',
@@ -212,6 +276,9 @@ function sendMessageBN() {
             alert(json.message || 'Gửi tin nhắn thất bại.');
         } else {
             document.getElementById('NoiDung').value = '';
+            if (fileInput) {
+                fileInput.value = '';
+            }
             // Không cần tự append, để polling 1s tự tải tin mới
         }
     })
@@ -263,17 +330,45 @@ function fetchNewMessagesBN() {
             spanTime.textContent = ' ' + (msg.ThoiGianGui || '');
             wrapper.appendChild(spanTime);
 
-            var divMsg = document.createElement('div');
-            divMsg.className = 'bnx_chat_text_x7a9';
-            var safeContent = msg.NoiDung
-                ? msg.NoiDung
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/\n/g, "<br>")
-                : '';
-            divMsg.innerHTML = safeContent;
-            wrapper.appendChild(divMsg);
+            if (msg.NoiDung) {
+                var divMsg = document.createElement('div');
+                divMsg.className = 'bnx_chat_text_x7a9';
+                var safeContent = msg.NoiDung
+                    ? msg.NoiDung
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/\n/g, "<br>")
+                    : '';
+                divMsg.innerHTML = safeContent;
+                wrapper.appendChild(divMsg);
+            }
+
+            // Xử lý file đính kèm (nếu có)
+            if (msg.FilePath && msg.FileNameGoc) {
+                var fileWrap = document.createElement('div');
+                fileWrap.className = 'bnx_chat_file_x7a9';
+
+                var link = document.createElement('a');
+                link.href = msg.FilePath;
+                link.target = '_blank';
+                link.className = 'bnx_chat_file_link_x7a9';
+                var fileText = (msg.IsImage && parseInt(msg.IsImage, 10) === 1)
+                    ? ('Xem ảnh: ' + msg.FileNameGoc)
+                    : ('Tải file: ' + msg.FileNameGoc);
+                link.textContent = fileText;
+                fileWrap.appendChild(link);
+
+                if (msg.IsImage && parseInt(msg.IsImage, 10) === 1) {
+                    var img = document.createElement('img');
+                    img.src = msg.FilePath;
+                    img.alt = msg.FileNameGoc;
+                    img.className = 'bnx_chat_img_preview_x7a9';
+                    fileWrap.appendChild(img);
+                }
+
+                wrapper.appendChild(fileWrap);
+            }
 
             chatBox.appendChild(wrapper);
 
