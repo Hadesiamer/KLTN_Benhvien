@@ -1,4 +1,4 @@
-<?php
+<?php 
 $lichKhamData = json_decode($data["LK"], true);
 ?>
 
@@ -103,7 +103,14 @@ $lichKhamData = json_decode($data["LK"], true);
             <div class="card mb-3 shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><strong>Lịch khám cần thanh toán</strong></span>
-                    <span class="badge bg-primary">Mã LK: <?= htmlspecialchars($ct['MaLK']); ?></span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary">
+                            Mã LK: <?= htmlspecialchars($ct['MaLK']); ?>
+                        </span>
+                        <span class="badge <?= ($trangThaiDisplay === 'Đã thanh toán') ? 'bg-success' : 'bg-warning text-dark'; ?>">
+                            <?= htmlspecialchars($trangThaiDisplay); ?>
+                        </span>
+                    </div>
                 </div>
                 <div class="card-body p-3">
                     <!-- THÔNG TIN ĐẶT KHÁM NGẮN GỌN -->
@@ -119,17 +126,6 @@ $lichKhamData = json_decode($data["LK"], true);
                                     <strong>Chuyên khoa:</strong> <?= htmlspecialchars($ct['TenKhoa']); ?>
                                 </div>
                             </div>
-                            <div class="text-end">
-                                <div style="font-size:14px;">
-                                    <!-- <strong>STT:</strong> <?= htmlspecialchars($ct['STT']); ?> -->
-                                </div>
-                                <div style="font-size:14px;">
-                                    <strong>Trạng thái:</strong> 
-                                    <span class="badge bg-warning text-dark">
-                                        <?= htmlspecialchars($trangThaiDisplay); ?>
-                                    </span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                     <hr class="my-2">
@@ -137,7 +133,7 @@ $lichKhamData = json_decode($data["LK"], true);
                     <!-- THÔNG TIN BỆNH NHÂN GỌN -->
                     <div class="row mb-2" style="font-size:14px;">
                         <div class="col-6">
-                            <p class="mb-1"><strong=Bệnh nhân:</strong> <?= htmlspecialchars($ct['HovaTen']); ?></p>
+                            <p class="mb-1"><strong>Bệnh nhân:</strong> <?= htmlspecialchars($ct['HovaTen']); ?></p>
                             <p class="mb-1"><strong>Mã Bệnh Nhân:</strong> <?= htmlspecialchars($ct['MaBN']); ?></p>
                             <p class="mb-1"><strong>SĐT:</strong> <?= htmlspecialchars($ct['SoDT']); ?></p>
                         </div>
@@ -150,35 +146,41 @@ $lichKhamData = json_decode($data["LK"], true);
 
                     <hr class="my-2">
 
-                    <!-- PHƯƠNG THỨC THANH TOÁN -->
+                    <!-- HƯỚNG DẪN THANH TOÁN SEPAY -->
                     <div class="mb-2">
-                        <label for="paymentMethod" class="form-label mb-1"><strong>Phương thức thanh toán</strong></label>
-                        <select id="paymentMethod" class="form-control form-control-sm">
-                            <option value="" selected>--Chọn phương thức thanh toán tại đây--</option>
-                            <option value="cash">Tiền mặt</option>
-                            <option value="bank">Ngân hàng</option> 
-                        </select>
+                        <h5 class="mb-2">Thông tin thanh toán qua SePay</h5>
+                        <p class="mb-1"><strong>Số tài khoản:</strong> 010401304888</p>
+                        <p class="mb-1"><strong>Chủ tài khoản:</strong> TRAN NHAT CUONG</p>
+                        <p class="mb-1"><strong>Ngân hàng:</strong> MBBank</p>
+                        <p class="mb-1"><strong>Số tiền:</strong> 10.000 VND / 1 lịch khám</p>
+                        <p class="mb-1">
+                            <strong>Nội dung chuyển khoản (Code thanh toán):</strong> 
+                            <span style="color:#d63384; font-weight:bold;">
+                                LK<?= htmlspecialchars($ct['MaLK']); ?>
+                            </span>
+                        </p>
+                        <p class="mt-2" style="font-size: 0.9em; color:#555;">
+                            * Hệ thống sẽ tự động ghi nhận thanh toán khi SePay gửi Webhook có chứa mã 
+                            <strong> LK<?= htmlspecialchars($ct['MaLK']); ?> </strong> trong nội dung giao dịch.
+                        </p>
+                        <!-- ===== GHI CHÚ BẮT BUỘC: NỘI DUNG PHẢI CÓ LK{MaLK} ===== -->
+                        <p style="font-size: 0.9em; color:#d63384; font-weight:bold;">
+                            ➤ Lưu ý: <u>Nội dung chuyển khoản BẮT BUỘC phải chứa chính xác chuỗi 
+                            "LK<?= htmlspecialchars($ct['MaLK']); ?>"</u>. 
+                            Nếu thiếu hoặc gõ sai mã (ví dụ gõ nhầm số), hệ thống sẽ không thể tự động
+                            xác nhận thanh toán cho lịch khám này.
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <!-- GHI CHÚ + NÚT HÀNH ĐỘNG -->
+            <!-- GHI CHÚ + NÚT HỦY LỊCH -->
             <div class="button-area">
                 <p style="color: #007bff; font-size: 0.9em; margin-top: 5px;">
                     * Nếu bạn muốn thay đổi lịch khám, vui lòng hủy lịch này và đăng ký lại lịch mới.<br>
-                    * Lệ phí thanh toán là 10,000 VND cho mỗi lần khám. (Demo) <br>
-                    * Sau 5 phút, nếu không thanh toán, lịch khám sẽ tự động bị hủy.
+                    * Lệ phí thanh toán là 10,000 VND cho mỗi lần khám. (Demo)
                 </p>
                 <div class="d-flex gap-2 mt-2">
-                    <button type="button" 
-                            class="btn btn-primary btn-sm"  
-                            id="btnPay" 
-                            disabled 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#paymentModal">
-                        Thanh toán lịch khám
-                    </button>
-                    
                     <form method="POST" action="" style="display: inline-block;" id="cancelForm"> 
                         <input type="hidden" name="MaLK_Huy" value="<?= htmlspecialchars($ct['MaLK']); ?>" id="MaLK_Huy_Input">
                         <button type="button" 
@@ -193,32 +195,6 @@ $lichKhamData = json_decode($data["LK"], true);
         <?php else: ?>
             <p>Vui lòng chọn lịch khám bạn muốn thanh toán!</p>
         <?php endif; ?>
-    </div>
-</div>
-
-<!-- MODAL HƯỚNG DẪN THANH TOÁN -->
-<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="paymentModalLabel">Hướng dẫn thanh toán</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="paymentInstructions">
-            
-            </div>
-            <div class="modal-footer">
-            <?php if (!empty($chiTietData)): ?>
-                <?php $ctFooter = $chiTietData[0]; ?>
-                <form action="/KLTN_Benhvien/ThanhToan" method="POST">
-                    <input type="hidden" name="MaBN1" value="<?= htmlspecialchars($ctFooter['MaBN']); ?>">
-                    <input type="hidden" name="ThanhToanLK" value="<?= htmlspecialchars($ctFooter['MaLK']); ?>"> 
-                    <button type="submit" class="btn btn-success" name="thanhtoan">Xác nhận thanh toán</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                </form>
-            <?php endif; ?>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -243,41 +219,11 @@ $lichKhamData = json_decode($data["LK"], true);
                 }
             }, 2000); 
         <?php endif; ?>
-
-        const paymentMethod = document.getElementById("paymentMethod");
-        const btnPay = document.getElementById("btnPay");
-        const paymentInstructions = document.getElementById("paymentInstructions");
-
-        if (paymentMethod) {
-            paymentMethod.addEventListener("change", function () {
-                if (this.value) {
-                    btnPay.disabled = false; 
-                } else {
-                    btnPay.disabled = true; 
-                }
-            });
-        }
-
-        if (btnPay) {
-            btnPay.addEventListener("click", function () {
-                const selectedMethod = paymentMethod.value;
-                if (selectedMethod === "cash") {
-                    paymentInstructions.innerHTML = `
-                        <p>Vui lòng đến quầy để được hướng dẫn thực hiện thanh toán. Sau khi nhận thanh toán, nhân viên sẽ tiến hành xác nhận lịch hẹn trên hệ thống.</p>
-                    `;
-                } else if (selectedMethod === "bank") {
-                    paymentInstructions.innerHTML = `
-                        <p>Vui lòng quét mã QR sau để thực hiện thanh toán:</p>
-                        <img src="./public/img/DOMDOM_qrcode.png" alt="QR Code" style="width: 100%; max-width: 300px; display: block; margin: 0 auto;">
-                        <p style="text-align: center; margin-top: 10px; font-weight: bold;">Sau khi thanh toán qua Ngân hàng, vui lòng nhấn 'Xác nhận thanh toán' bên dưới.</p>
-                    `;
-                }
-            });
-        }
     });
 </script>
 
 <?php
+// Đoạn alert cũ giữ nguyên để có thể dùng cho các case khác sau này
 if (isset($data['rs'])) {
     if ($data["rs"] == 'true') {
         echo '<script language="javascript">
