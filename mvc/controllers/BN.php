@@ -1,5 +1,6 @@
 <?php
 class BN extends Controller{
+    //Đây là file mvc/controllers/BN.php
     public $HSModel;
 
     public function __construct(){
@@ -41,40 +42,56 @@ class BN extends Controller{
     }
 
     function UDTT(){
+        // [NEW trước đây] Đồng bộ theo flow:
+        // - GET hoặc btnUDTT: hiển thị form chỉnh sửa
+        // - POST btn-updatebn: cập nhật, set flash, redirect về /BN/TTBN
+
         $udbn = $this->model("mBN");
-        if(isset($_POST["btnUDTT"])){
-            // Call models
-            $udbn = $this->model("mBN");
-            $mabn = $_SESSION['idbn'];
-            // Call Views
-            
-            $this->view("layoutBN",[
-                "Page"=>"udthongtinbn",
-                "UD"=>$udbn->get1BN($mabn)
-            ]);
-            
-        }
+
+        // Nếu submit form cập nhật
         if (isset($_POST["btn-updatebn"])) {
-            $mabn = $_SESSION["idbn"];
-            $tenbn = $_POST["hovaten"];
+            $mabn     = $_SESSION["idbn"];
+            $tenbn    = $_POST["hovaten"];
             $gioitinh = $_POST["gt"];
             $ngaysinh = $_POST["ngaysinh"];
-            $diachi = $_POST["diachi"];
-            $email = $_POST["email"];
-            $bhyt = $_POST["bhyt"];
-        
-            $result = $udbn->UpdateBN($mabn, $tenbn, $gioitinh, $ngaysinh, $diachi, $email, $bhyt);
-            $resultData = json_decode($result, true); 
-        
-            if ($resultData['success']) {
+            $diachi   = $_POST["diachi"];
+            $email    = $_POST["email"];
+            $bhyt     = $_POST["bhyt"];
+
+            // Gọi model cập nhật
+            $result     = $udbn->UpdateBN($mabn, $tenbn, $gioitinh, $ngaysinh, $diachi, $email, $bhyt);
+            $resultData = json_decode($result, true);
+
+            // Nếu thành công -> cập nhật tên lên session (header hiển thị)
+            if (!empty($resultData['success']) && $resultData['success']) {
                 $_SESSION["ten"] = $tenbn;
             }
-            $this->view("layoutBN", [
-                "Page" => "udthongtinbn",
-                "UD" => $udbn->get1BN($mabn),
-                "XL" => $resultData
-            ]);
+
+            // Flash message cho trang hồ sơ BN (thongtinbn.php)
+            $_SESSION["bn_flash"] = [
+                "success" => !empty($resultData['success']) && $resultData['success'],
+                "message" => isset($resultData['message'])
+                    ? $resultData['message']
+                    : (
+                        (!empty($resultData['success']) && $resultData['success'])
+                            ? "Cập nhật thông tin thành công."
+                            : "Cập nhật thông tin thất bại, vui lòng thử lại."
+                    )
+            ];
+
+            // Redirect về trang hồ sơ cá nhân để hiển thị toast
+            header("Location: /KLTN_Benhvien/BN/TTBN");
+            exit;
         }
+
+        // Trường hợp GET /BN/UDTT hoặc bấm nút "Thay đổi thông tin" từ trang hồ sơ:
+        // luôn load form chỉnh sửa với thông tin hiện tại
+        $mabn = $_SESSION['idbn'];
+
+        $this->view("layoutBN",[
+            "Page"=>"udthongtinbn",
+            "UD"  =>$udbn->get1BN($mabn)
+        ]);
     }
   
 
@@ -137,6 +154,11 @@ class BN extends Controller{
 
         // Lấy MaLK từ POST khi người dùng click list bên trái
         $MaLK = isset($_POST["MaLK"]) ? $_POST["MaLK"] : "";
+
+        // [NEW] Nếu không chọn từ form, ưu tiên MaLK từ query (redirect sau khi thanh toán)
+        if ($MaLK === "" && isset($_GET['MaLK']) && $_GET['MaLK'] !== "") {
+            $MaLK = $_GET['MaLK'];
+        }
 
         // Nếu chưa chọn MaLK, tự động chọn lịch mới nhất (MaLK lớn nhất)
         if ($MaLK === "" && !empty($lichKhamArray)) {

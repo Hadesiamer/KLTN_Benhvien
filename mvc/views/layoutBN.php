@@ -1,4 +1,5 @@
 <?php
+//Đây là file \KLTN_Benhvien\mvc\views\layoutBN.php
     if($_SESSION["role"] != 5){
         echo "<script>alert('Bạn không có quyền truy cập')</script>";
         header("refresh: 0; url='/KLTN_Benhvien'");
@@ -18,8 +19,7 @@
     <title>Khu vực bệnh nhân</title>
     <link rel="stylesheet" href="./public/css/main.css">
     <link rel="stylesheet" href="../public/css/main.css">
-    <link rel="stylesheet" href="../public/css/bn.css">
-    <link rel="stylesheet" href="./public/css/bn.css"> 
+   
 
     <style>
         body {
@@ -139,6 +139,12 @@
                         <a href="/KLTN_Benhvien/BN/Hosophieukham"
                            class="<?php echo (strpos($currentUrl, 'BN/Hosophieukham') !== false) ? 'active' : ''; ?>">
                            Hồ sơ phiếu khám
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/KLTN_Benhvien/BN/LichSuThanhToan"
+                           class="<?php echo (strpos($currentUrl, 'BN/LichSuThanhToan') !== false) ? 'active' : ''; ?>">
+                           Lịch sử thanh toán
                         </a>
                     </li>
 

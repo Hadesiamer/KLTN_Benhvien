@@ -1,6 +1,7 @@
 <?php
 class mSepay extends DB
 {
+    //Đây là file mvc/models/mSePay.php
     // Lưu một giao dịch mới vào bảng sepay_transactions
     public function insertTransaction($amount, $bank, $accountNumber, $transactionCode, $description, $rawContent)
     {

@@ -195,6 +195,7 @@ class Chatbot extends Controller
     {
         $m = mb_strtolower($message, 'UTF-8');
         $keywords = [
+            'có, tôi muốn đặt lịch khám',
             'đặt lịch khám',
             'đăng ký khám',
             'đặt khám',
@@ -261,7 +262,7 @@ class Chatbot extends Controller
         $i = 1;
         $map = [];
         foreach ($khoaList as $row) {
-            $msg .= $i . ". " . $row['TenKhoa'] . "\n";
+            $msg .= $i . ". " . $row['TenKhoa'] . " \n\n";
             $map[$i] = $row;
             $i++;
         }
