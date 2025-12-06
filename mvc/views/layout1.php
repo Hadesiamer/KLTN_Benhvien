@@ -13,44 +13,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- Thông báo đồ án: chỉ là sản phẩm khóa luận -->
-    <div id="alert-doan" class="alert alert-warning alert-dismissible fade show text-center"
-         role="alert"
-         style="font-size: 16px; font-weight: 500; margin-bottom: 0;">
-        ⚠️ Đây chỉ là sản phẩm đồ án. Hệ thống không chịu trách nhiệm cho bất kỳ mục đích sử dụng nào khác.
-        <button type="button" class="btn-close" id="btnCloseAlert" aria-label="Close"></button>
-    </div>
-
     <!-- header -->
     <?php include_once "./mvc/views/blocks/header.php" ?>
     <!-- content -->
     <?php include_once "./mvc/views/blocks/content.php" ?>
     <!-- footer -->
     <?php include_once "./mvc/views/blocks/footer.php" ?>
-
-    <!-- Script xử lý đóng/thả thông báo đồ án (dùng localStorage) -->
-    <!-- <script>
-        // Khi DOM sẵn sàng
-        window.addEventListener("DOMContentLoaded", function () {
-            var alertBox = document.getElementById("alert-doan");
-            var closeBtn = document.getElementById("btnCloseAlert");
-
-            if (!alertBox || !closeBtn) {
-                return; // Phòng trường hợp sau này layout thay đổi
-            }
-
-            // Nếu trước đó người dùng đã tắt, thì không hiển thị nữa
-            if (localStorage.getItem("hide_doan_alert") === "1") {
-                alertBox.style.display = "none";
-            }
-
-            // Bấm (x) để tắt và ghi nhớ
-            closeBtn.addEventListener("click", function () {
-                alertBox.style.display = "none";
-                localStorage.setItem("hide_doan_alert", "1");
-            });
-        });
-    </script> -->
 
     <!-- Script cuộn danh sách bác sĩ / bệnh viện / phòng khám -->
     <script>

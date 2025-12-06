@@ -4,7 +4,7 @@
 class Chatbot extends Controller
 {
     // Endpoint của Gemini Developer API (generateContent)
-    private $apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    private $apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
     /** @var mChatbotLK */
     private $bookingModel;
@@ -720,13 +720,31 @@ class Chatbot extends Controller
     //  HÀM GỌI GEMINI (GIỮ NGUYÊN Ý)
     // ==========================
 
+        // ==========================
+    //  HÀM GỌI GEMINI (TỐI ƯU + DEBUG)
+    // ==========================
+
     private function callGeminiWithHistory(string $message): string
     {
         // Persona cố định cho chatbot bệnh viện
         $persona = "Bạn là trợ lý ảo của Hệ thống Bệnh viện Đức Tâm. "
+            . "Trả lời ngắn gọn, tối đa 100 từ."
             . "Bạn trả lời bằng tiếng Việt thân thiện, xưng 'tôi' là bệnh viện và gọi người dùng là 'bạn'. "
             . "Bạn không nhắc đến việc mình là mô hình AI, Gemini hay ChatGPT. "
-            . "Nhiệm vụ chính của bạn là trả lời tất cả câu hỏi";
+            . "Ngắt đoạn 2 lần khoảng trắng để dễ đọc. ";
+
+        
+        //Thông tin bệnh viện
+        $hospitalInfo = "Thông tin Bệnh viện Đức Tâm:
+        Địa chỉ: Số 12 Nguyễn Văn Bảo, P. Hạnh Thông, Thành phố Hồ Chí Minh
+        Hotline: 115
+        Giờ làm việc: 8 giờ sáng - 5 giờ chiều tất cả ngày trong tuần
+        Khoa chính: Thần kinh, Tim mạch, Nội tiết, ngoại khoa, sản phụ, nhi khoa, mắt, răng hàm mặt, tai mũi họng, da liễu, dinh dưỡng.
+        Khi bệnh nhân hỏi các thông tin về địa chỉ, giờ làm, hotline, dịch vụ, hãy trả lời đúng theo dữ liệu trên và không tự bịa.";
+
+        //Xác thực bệnh viện:
+        $fictionRule = "Bệnh viện Đức Tâm trong hệ thống này là mô hình giả lập thuộc đồ án tốt nghiệp của Nhật Cường và Kim Nhàn. 
+        Nếu bệnh nhân hỏi 'bệnh viện có thật không', hoặc hỏi về tính pháp lý, hãy trả lời rõ ràng rằng đây là mô hình học tập, không phải bệnh viện có thật.";
 
         // Chuẩn bị lịch sử hội thoại để gửi lên Gemini (lưu trong session)
         $historyText = "";
@@ -752,6 +770,12 @@ class Chatbot extends Controller
 
         // Gộp persona + lịch sử + câu hỏi mới
         $promptText = $persona . "\n\n";
+        //Thông tin cố định về bệnh viện
+        $promptText .= "Thông tin cố định về bệnh viện:\n"
+                    .  $hospitalInfo . "\n\n";
+        //Tính chân thật
+        $promptText .= "bệnh viện có tồn tại thật không:\n"
+                    .  $fictionRule . "\n\n";
         if ($historyText !== "") {
             $promptText .= "Dưới đây là một phần cuộc hội thoại trước giữa bạn và bệnh nhân:\n"
                 . $historyText . "\n";
@@ -791,42 +815,90 @@ class Chatbot extends Controller
 
         $result = curl_exec($ch);
 
+        // [DEBUG] Lỗi cURL (không gọi được API)
         if ($result === false) {
             $error = curl_error($ch);
+            error_log('[Gemini] cURL error: ' . $error);
             curl_close($ch);
 
             return "Xin lỗi, hệ thống tư vấn tự động đang gặp sự cố kỹ thuật (lỗi kết nối). "
                  . "Bạn vui lòng thử lại sau hoặc liên hệ trực tiếp bệnh viện.";
         }
 
-        $httpStatus   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $responseData = json_decode($result, true);
+        $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
+        // [DEBUG] Thử parse JSON
+        $responseData = json_decode($result, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log('[Gemini] JSON decode error: ' . json_last_error_msg()
+                . ' | RAW: ' . substr($result, 0, 1000));
+            return "Xin lỗi, hệ thống tư vấn tự động đang gặp sự cố (lỗi dữ liệu trả về). "
+                 . "Bạn vui lòng thử lại sau hoặc liên hệ trực tiếp bệnh viện.";
+        }
+
+        // [DEBUG] HTTP status lỗi (4xx, 5xx)
         if ($httpStatus >= 400) {
             $msg = isset($responseData['error']['message'])
                 ? $responseData['error']['message']
                 : 'Không nhận được phản hồi hợp lệ từ Gemini.';
+            error_log('[Gemini] HTTP ' . $httpStatus . ' - ' . $msg
+                . ' | RAW: ' . substr($result, 0, 1000));
+
             return "Xin lỗi, hệ thống tư vấn tự động đang gặp sự cố: " . $msg;
         }
 
+        // [DEBUG] Không có candidates (thường là bị safety chặn)
+        if (!isset($responseData['candidates']) || empty($responseData['candidates'])) {
+            // Nếu có thông tin safety thì log lại
+            if (isset($responseData['promptFeedback']['safetyRatings'])) {
+                error_log('[Gemini] No candidates - blocked by safety. Feedback: '
+                    . json_encode($responseData['promptFeedback']));
+                return "Xin lỗi, nội dung câu hỏi của bạn có thể liên quan đến chủ đề nhạy cảm, "
+                     . "nên tôi không thể trả lời chi tiết qua chatbot.\n"
+                     . "Bạn vui lòng liên hệ trực tiếp bệnh viện để được tư vấn thêm.";
+            }
+
+            error_log('[Gemini] No candidates and no safety feedback. RAW: '
+                . substr(json_encode($responseData), 0, 1000));
+
+            return "Xin lỗi, hiện tại tôi chưa thể trả lời câu hỏi này. "
+                 . "Bạn vui lòng thử lại sau hoặc liên hệ trực tiếp bệnh viện để được hỗ trợ.";
+        }
+
+        $candidate    = $responseData['candidates'][0];
+        $finishReason = $candidate['finishReason'] ?? null;
+
+        // [DEBUG] Nếu bị chặn bởi safety ở mức candidate
+        if ($finishReason === 'SAFETY' || $finishReason === 'OTHER') {
+            error_log('[Gemini] finishReason=' . $finishReason . ' | candidate='
+                . substr(json_encode($candidate), 0, 1000));
+
+            return "Xin lỗi, nội dung câu hỏi của bạn liên quan đến chủ đề mà tôi không thể tư vấn chi tiết "
+                 . "qua chatbot.\nBạn vui lòng liên hệ trực tiếp bệnh viện để được hỗ trợ an toàn hơn.";
+        }
+
+        // Ghép nội dung text trong các parts
         $answer = '';
 
-        if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
-            $answer = $responseData['candidates'][0]['content']['parts'][0]['text'];
-        } elseif (isset($responseData['candidates'][0]['content']['parts'])) {
-            foreach ($responseData['candidates'][0]['content']['parts'] as $part) {
+        if (isset($candidate['content']['parts']) && is_array($candidate['content']['parts'])) {
+            foreach ($candidate['content']['parts'] as $part) {
                 if (isset($part['text'])) {
                     $answer .= $part['text'];
                 }
             }
         }
 
+        // [DEBUG] Nếu vẫn rỗng, ghi log để anh soi
         if ($answer === '') {
+            error_log('[Gemini] Empty text in candidate. Full candidate: '
+                . substr(json_encode($candidate), 0, 1000));
+
             $answer = "Xin lỗi, hiện tại tôi chưa thể trả lời câu hỏi này. "
                 . "Bạn vui lòng thử lại sau hoặc liên hệ trực tiếp bệnh viện để được hỗ trợ.";
         }
 
         return $answer;
     }
+
 }
