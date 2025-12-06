@@ -1,6 +1,12 @@
-<?php 
+<?php  
 class ThanhToan extends Controller
 {
+    // Cấu hình SePay VA cho thanh toán lịch khám (demo KLTN)
+    // Sau này nếu bạn đổi VA / ngân hàng / số tiền,
+    // chỉ cần sửa 3 hằng số này.
+    const SEPAY_VA_ACC   = 'VQRQAFSGX7208'; // Mã tài khoản ảo VA của SePay
+    const SEPAY_VA_BANK  = 'MBBank';        // Tên ngân hàng
+    const SEPAY_FEE_LK   = 10000;           // 10.000 VND / 1 lịch khám (demo)
 
     function SayHi()
     {
@@ -19,6 +25,7 @@ class ThanhToan extends Controller
             $MaLKHuy = (int)$_POST["MaLK_Huy"]; // Ép kiểu int cho an toàn
 
             // Gọi model xóa lịch khám
+            // (Hàm deleteLK hiện đang nằm trong mThanhToan)
             $rsHuy = $khachhang->deleteLK($MaLKHuy);
 
             if ($rsHuy) {
@@ -56,13 +63,22 @@ class ThanhToan extends Controller
         // getCTLK trả về JSON, truyền thẳng cho view
         $chiTietLichKham = ($MaLK != "") ? $khachhang->getCTLK($MaLK) : [];
 
+        // ================= CẤU HÌNH SEPAY TRUYỀN RA VIEW =================
+        // Để view chỉ cần đọc $data['SePay'] là dùng được.
+        $sepayConfig = [
+            "va_acc" => self::SEPAY_VA_ACC,
+            "bank"   => self::SEPAY_VA_BANK,
+            "amount" => self::SEPAY_FEE_LK,
+        ];
+
         // ================= LOAD VIEW MẶC ĐỊNH =================
         $this->view("layoutBN", [
             "Page"        => "ThanhToan",
             "LK"          => $lichKhamJson,
             "CTLK"        => $chiTietLichKham,
             "Message"     => $Message,
-            "MessageType" => $MessageType
+            "MessageType" => $MessageType,
+            "SePay"       => $sepayConfig // truyền cấu hình SePay sang view
         ]);
     }
 

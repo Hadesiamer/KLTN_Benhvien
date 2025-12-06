@@ -87,6 +87,14 @@
                                     <button class="tab_btn <?php echo (strpos($currentPage, 'banle') === 0) ? 'active' : ''; ?>">
                                         Bán lẻ thuốc
                                     </button>
+                                    <a href="/KLTN_Benhvien/NVNT/BanLe">
+                                    <button class="tab_btn <?php echo (strpos($currentPage, 'banle') === 0) ? 'active' : ''; ?>">
+                                        Thông tin cá nhân
+                                    </button>
+                                    <a href="/KLTN_Benhvien/NVNT/BanLe">
+                                    <button class="tab_btn <?php echo (strpos($currentPage, 'banle') === 0) ? 'active' : ''; ?>">
+                                        Đổi mật khẩu
+                                    </button>
                                 </a>
                             </div>
                         </div>

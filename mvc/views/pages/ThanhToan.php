@@ -63,6 +63,9 @@ $lichKhamData = json_decode($data["LK"], true);
             $data["CTLK"] = json_encode($data["CTLK"]);
         }
         $chiTietData = json_decode($data["CTLK"], true);
+
+        // Lấy cấu hình SePay (VA, ngân hàng, số tiền) từ controller truyền sang
+        $sepayConfig = isset($data["SePay"]) && is_array($data["SePay"]) ? $data["SePay"] : null;
         ?>
 
         <?php if (isset($chiTietData) && !empty($chiTietData)): ?>
@@ -97,6 +100,24 @@ $lichKhamData = json_decode($data["LK"], true);
                             $trangThaiDisplay = $ct['TrangThaiThanhToan'];
                             break;
                     }
+                }
+
+                // ================== TẠO LINK QR ĐỘNG SEPAY VA ==================
+                $qrUrl = '';
+                if ($sepayConfig && !empty($ct['MaLK'])) {
+                    $acc    = $sepayConfig['va_acc'];       // VQRQAFSGX7208
+                    $bank   = $sepayConfig['bank'];         // MBBank
+                    $amount = (int)$sepayConfig['amount'];  // 10000
+                    $maLK   = $ct['MaLK'];
+
+                    // des = LK{MaLK}, ví dụ LK123
+                    $des    = 'LK' . $maLK;
+
+                    $qrUrl  = 'https://qr.sepay.vn/img'
+                            . '?acc='   . urlencode($acc)
+                            . '&bank='  . urlencode($bank)
+                            . '&amount='. $amount
+                            . '&des='   . urlencode($des);
                 }
             ?>
 
@@ -146,27 +167,50 @@ $lichKhamData = json_decode($data["LK"], true);
 
                     <hr class="my-2">
 
-                    <!-- HƯỚNG DẪN THANH TOÁN SEPAY -->
+                    <!-- HƯỚNG DẪN THANH TOÁN SEPAY + QR ĐỘNG -->
                     <div class="mb-2">
-                        <h5 class="mb-2">Thông tin thanh toán qua SePay</h5>
+                        <h5 class="mb-2">Thông tin thanh toán qua SePay (QR động VA)</h5>
+
+                        <!-- Thông tin tài khoản gốc (cho bệnh nhân muốn chuyển tay) -->
                         <p class="mb-1"><strong>Số tài khoản:</strong> 010401304888</p>
                         <p class="mb-1"><strong>Chủ tài khoản:</strong> TRAN NHAT CUONG</p>
                         <p class="mb-1"><strong>Ngân hàng:</strong> MBBank</p>
-                        <p class="mb-1"><strong>Số tiền:</strong> 10.000 VND / 1 lịch khám</p>
+
+                        <!-- Thông tin VA / số tiền / nội dung -->
+                        <?php if ($sepayConfig): ?>
+                            <p class="mb-1"><strong>Tài khoản ảo (VA) SePay:</strong> <?= htmlspecialchars($sepayConfig['va_acc']); ?></p>
+                            <p class="mb-1"><strong>Số tiền:</strong> <?= number_format((int)$sepayConfig['amount'], 0, ',', '.'); ?> VND / 1 lịch khám</p>
+                        <?php else: ?>
+                            <p class="mb-1 text-danger"><strong>Lỗi cấu hình SePay: chưa có thông tin VA.</strong></p>
+                        <?php endif; ?>
+
                         <p class="mb-1">
                             <strong>Nội dung chuyển khoản (Code thanh toán):</strong> 
                             <span style="color:#d63384; font-weight:bold;">
                                 LK<?= htmlspecialchars($ct['MaLK']); ?>
                             </span>
                         </p>
+
+                        <!-- QR ĐỘNG -->
+                        <?php if ($qrUrl !== ''): ?>
+                            <div class="text-center mt-3">
+                                <img src="<?= htmlspecialchars($qrUrl); ?>" 
+                                     alt="QR thanh toán SePay" 
+                                     style="max-width:260px; width:100%; height:auto; border:1px solid #eee; padding:6px; border-radius:8px;">
+                                <p style="font-size: 0.9em; color:#555; margin-top:8px;">
+                                    Quét mã QR bằng ứng dụng ngân hàng để thanh toán nhanh.<br>
+                                    Số tiền và nội dung <strong>LK<?= htmlspecialchars($ct['MaLK']); ?></strong> 
+                                    sẽ được điền sẵn.
+                                </p>
+                            </div>
+                        <?php endif; ?>
+
                         <p class="mt-2" style="font-size: 0.9em; color:#555;">
-                            * Hệ thống sẽ tự động ghi nhận thanh toán khi SePay gửi Webhook có chứa mã 
-                            <strong> LK<?= htmlspecialchars($ct['MaLK']); ?> </strong> trong nội dung giao dịch.
                         </p>
                         <!-- ===== GHI CHÚ BẮT BUỘC: NỘI DUNG PHẢI CÓ LK{MaLK} ===== -->
                         <p style="font-size: 0.9em; color:#d63384; font-weight:bold;">
                             ➤ Lưu ý: <u>Nội dung chuyển khoản BẮT BUỘC phải chứa chính xác chuỗi 
-                            "LK<?= htmlspecialchars($ct['MaLK']); ?>"</u>. 
+                            "LK<?= htmlspecialchars($ct['MaLK']); ?>"</u>.<br>
                             Nếu thiếu hoặc gõ sai mã (ví dụ gõ nhầm số), hệ thống sẽ không thể tự động
                             xác nhận thanh toán cho lịch khám này.
                         </p>
