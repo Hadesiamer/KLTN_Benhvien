@@ -7,45 +7,82 @@ if (is_array($data["CTLK"])) {
     $data["CTLK"] = json_encode($data["CTLK"]);
 }
 $chiTietData = json_decode($data["CTLK"], true);
+
+// Lấy mã lịch khám đang được xem (nếu có)
+$currentMaLK = null;
+if (!empty($chiTietData) && isset($chiTietData[0]['MaLK'])) {
+    $currentMaLK = $chiTietData[0]['MaLK'];
+}
 ?>
 
+<!-- CSS riêng cho trang này: thanh cuộn cho danh sách lịch khám bên trái -->
+<style>
+    /* Khung cuộn riêng cho danh sách lịch khám bên trái */
+    .lichkham-scroll-container {
+        max-height: 472px;       /* khoảng vừa đủ ~4 khối, nhiều hơn thì cuộn */
+        overflow-y: auto;        /* chỉ cuộn dọc cho cột bên trái */
+        padding-right: 4px;      /* chừa chỗ cho scrollbar đỡ đè nội dung */
+    }
 
-<h2 class="mt-3">Lịch khám đã đặt nè</h2>
+    /* Tùy chọn: tạo khoảng cách giữa các item cho dễ nhìn */
+    .lichkham-scroll-container .list-group-item {
+        margin-bottom: 6px;
+    }
+
+    /* Highlight nhẹ cho lịch khám đang được chọn */
+    .lichkham-active {
+        background-color: #e7f1ff !important; /* xanh nhạt dịu */
+        border-left: 4px solid #0d6efd;
+    }
+</style>
+
+<h2 class="mt-3">Lịch khám đã đặt</h2>
 
 <div class="row mt-3">
     <!-- DANH SÁCH LỊCH KHÁM BÊN TRÁI -->
     <div class="col-4">
-        <div class="list-group">
-        <?php if (!empty($lichKhamData)): ?>
-            <?php foreach ($lichKhamData as $lichKham): ?>
-                <?php 
-                    // Định dạng ngày khám dd-mm-yyyy
-                    $ngayKhamFormatted = '';
-                    if (!empty($lichKham['NgayKham'])) {
-                        $ngayKhamFormatted = date('d-m-Y', strtotime($lichKham['NgayKham']));
-                    }
-                ?>
-                <form method="POST" action="/KLTN_Benhvien/BN/LichKham">
-                    <input type="hidden" name="MaLK" value="<?= htmlspecialchars($lichKham['MaLK']); ?>">
-                    <div class="patient-item list-group-item" style="cursor:pointer;" onclick="this.closest('form').submit()">
-                        <p class="mb-1" style="font-size: 16px; font-weight: 600;">
-                            BS. <?= htmlspecialchars($lichKham['HovaTenNV'] ?? ''); ?>
-                        </p>
-                        <p class="mb-1" style="font-size: 13px; text-align: left;">
-                            <?= htmlspecialchars($ngayKhamFormatted); ?> - <?= htmlspecialchars($lichKham['GioKham'] ?? ''); ?>
-                        </p>
-                        <p class="mb-1" style="font-size: 13px; text-align: left;">
-                            <?= htmlspecialchars($lichKham['HovaTen'] ?? ''); ?>
-                        </p>
-                        <p class="mb-0" style="font-size: 13px; text-align: left; color:#555;">
-                            Mã LK: <?= htmlspecialchars($lichKham['MaLK'] ?? ''); ?>
-                        </p>
-                    </div>
-                </form>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <p>Hiện tại bạn chưa có lịch khám nào đã thanh toán.</p>
-        <?php endif; ?>
+        <!-- Khung có thanh cuộn riêng -->
+        <div class="lichkham-scroll-container">
+            <div class="list-group">
+            <?php if (!empty($lichKhamData)): ?>
+                <?php foreach ($lichKhamData as $lichKham): ?>
+                    <?php 
+                        // Định dạng ngày khám dd-mm-yyyy
+                        $ngayKhamFormatted = '';
+                        if (!empty($lichKham['NgayKham'])) {
+                            $ngayKhamFormatted = date('d-m-Y', strtotime($lichKham['NgayKham']));
+                        }
+
+                        // Kiểm tra đây có phải lịch khám đang xem không
+                        $isActiveClass = '';
+                        if ($currentMaLK !== null && isset($lichKham['MaLK']) && $currentMaLK == $lichKham['MaLK']) {
+                            $isActiveClass = 'lichkham-active';
+                        }
+                    ?>
+                    <form method="POST" action="/KLTN_Benhvien/BN/LichKham">
+                        <input type="hidden" name="MaLK" value="<?= htmlspecialchars($lichKham['MaLK']); ?>">
+                        <div class="patient-item list-group-item <?= $isActiveClass ?>"
+                             style="cursor:pointer;"
+                             onclick="this.closest('form').submit()">
+                            <p class="mb-1" style="font-size: 16px; font-weight: 600;">
+                                BS. <?= htmlspecialchars($lichKham['HovaTenNV'] ?? ''); ?>
+                            </p>
+                            <p class="mb-1" style="font-size: 13px; text-align: left;">
+                                <?= htmlspecialchars($ngayKhamFormatted); ?> - <?= htmlspecialchars($lichKham['GioKham'] ?? ''); ?>
+                            </p>
+                            <p class="mb-1" style="font-size: 13px; text-align: left;">
+                                <?= htmlspecialchars($lichKham['HovaTen'] ?? ''); ?>
+                            </p>
+                            <p class="mb-0" style="font-size: 13px; text-align: left; color:#555;">
+                                Mã LK: <?= htmlspecialchars($lichKham['MaLK'] ?? ''); ?>
+                            </p>
+                        </div>
+                    </form>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>Hiện tại bạn chưa có lịch khám nào đã thanh toán.</p>
+            <?php endif; ?>
+            </div>
         </div>
     </div>
 
@@ -82,14 +119,13 @@ $chiTietData = json_decode($data["CTLK"], true);
                     <div class="d-flex gap-2">
                         <!-- Nút In lịch khám: mở tab mới để in / lưu PDF -->
                         <form method="GET" 
-                            action="/KLTN_Benhvien/BN/InLichKham/<?= htmlspecialchars($ct['MaLK'] ?? ''); ?>" 
-                            target="_blank" 
-                            class="d-inline">
+                              action="/KLTN_Benhvien/BN/InLichKham/<?= htmlspecialchars($ct['MaLK'] ?? ''); ?>" 
+                              target="_blank" 
+                              class="d-inline">
                             <button type="submit" class="btn btn-outline-secondary btn-sm">
                                 In lịch khám
                             </button>
                         </form>
-
                     </div>
                 </div>
                 <div class="card-body p-3" style="font-size:14px;">
@@ -126,7 +162,7 @@ $chiTietData = json_decode($data["CTLK"], true);
                     <hr class="my-2">
 
                     <!-- THÔNG BÁO CUỐI TRANG -->
-                    <p style="font-size: 0.9em; color:#cc0000; margin-top: 10px;">
+                    <p style="font-size: 0.9em; color:#0d6efd; margin-top: 10px;">
                         Vui lòng đến đúng thời gian và vị trí khám bệnh, chúng tôi sẽ không hoàn tiền nếu bạn vắng mặt.
                     </p>
                 </div>
