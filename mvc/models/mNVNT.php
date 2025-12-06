@@ -574,5 +574,104 @@ class mNVNT extends DB {
         }
         return $mang; // controller sẽ json_encode
     }
+
+    // ===========================
+    // HÀM MỚI: ĐỔI MẬT KHẨU (MD5)
+    // ===========================
+    public function doiMatKhau($idTaiKhoan, $oldPasswordPlain, $newPasswordPlain) {
+        // --- MỚI THÊM: Đổi mật khẩu trong bảng taikhoan, dùng MD5 ---
+        $idTaiKhoan = (int)$idTaiKhoan;
+        if ($idTaiKhoan <= 0) {
+            return false;
+        }
+
+        $oldHash = md5($oldPasswordPlain);
+        $newHash = md5($newPasswordPlain);
+
+        // Kiểm tra mật khẩu cũ đúng hay không bằng prepared statement
+        $sqlCheck = "SELECT ID FROM taikhoan WHERE ID = ? AND password = ? LIMIT 1";
+        $stmt = mysqli_prepare($this->con, $sqlCheck);
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, "is", $idTaiKhoan, $oldHash);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_store_result($stmt);
+
+        if (mysqli_stmt_num_rows($stmt) === 0) {
+            // Không có bản ghi nào khớp: mật khẩu cũ sai
+            mysqli_stmt_close($stmt);
+            return false;
+        }
+        mysqli_stmt_close($stmt);
+
+        // Cập nhật mật khẩu mới
+        $sqlUpdate = "UPDATE taikhoan SET password = ? WHERE ID = ? LIMIT 1";
+        $stmt2 = mysqli_prepare($this->con, $sqlUpdate);
+        if (!$stmt2) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt2, "si", $newHash, $idTaiKhoan);
+        $ok = mysqli_stmt_execute($stmt2);
+        mysqli_stmt_close($stmt2);
+
+        return $ok ? true : false;
+    }
+
+    // THÔNG TIN CÁ NHÂN NHÂN VIÊN
+    // Lấy thông tin cá nhân dựa trên ID tài khoản (bảng taikhoan.ID)
+    public function getThongTinCaNhan($idTaiKhoan) {
+        $idTaiKhoan = (int)$idTaiKhoan;
+        if ($idTaiKhoan <= 0) {
+            return null;
+        }
+
+        $sql = "SELECT MaNV, HovaTen, NgaySinh, SoDT, ChucVu, GioiTinh, TrangThaiLamViec, EmailNV, ID, HinhAnh
+                FROM nhanvien
+                WHERE ID = ?
+                LIMIT 1";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return null;
+        }
+
+        mysqli_stmt_bind_param($stmt, "i", $idTaiKhoan);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+
+        return $row ?: null; // trả về mảng hoặc null
+    }
+
+    // Cập nhật Ngày sinh, Giới tính, EmailNV
+    public function capNhatThongTinCaNhan($idTaiKhoan, $ngaySinh, $gioiTinh, $emailNV) {
+        $idTaiKhoan = (int)$idTaiKhoan;
+        if ($idTaiKhoan <= 0) {
+            return false;
+        }
+
+        // Chuẩn hóa dữ liệu
+        $ngaySinh = trim($ngaySinh);
+        $gioiTinh = trim($gioiTinh);
+        $emailNV  = trim($emailNV);
+
+        $sql = "UPDATE nhanvien
+                SET NgaySinh = ?, GioiTinh = ?, EmailNV = ?
+                WHERE ID = ?
+                LIMIT 1";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmt, "sssi", $ngaySinh, $gioiTinh, $emailNV, $idTaiKhoan);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $ok ? true : false;
+    }
+
 }
 ?>

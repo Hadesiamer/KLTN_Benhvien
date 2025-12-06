@@ -84,15 +84,21 @@
 
                                 <!-- Bán lẻ thuốc BAN_LE -->
                                 <a href="/KLTN_Benhvien/NVNT/BanLe">
-                                    <button class="tab_btn <?php echo (strpos($currentPage, 'banle') === 0) ? 'active' : ''; ?>">
+                                    <button class="tab_btn <?php echo (strpos($currentPage, 'banle') !== false) ? 'active' : ''; ?>">
                                         Bán lẻ thuốc
                                     </button>
-                                    <a href="/KLTN_Benhvien/NVNT/BanLe">
-                                    <button class="tab_btn <?php echo (strpos($currentPage, 'banle') === 0) ? 'active' : ''; ?>">
+                                </a>
+
+                                <!-- Thông tin cá nhân -->
+                                <a href="/KLTN_Benhvien/NVNT/ThongTinCaNhan">
+                                    <button class="tab_btn <?php echo (strpos($currentPage, 'thongtincanhan') !== false) ? 'active' : ''; ?>">
                                         Thông tin cá nhân
                                     </button>
-                                    <a href="/KLTN_Benhvien/NVNT/BanLe">
-                                    <button class="tab_btn <?php echo (strpos($currentPage, 'banle') === 0) ? 'active' : ''; ?>">
+                                </a>
+
+                                <!-- Đổi mật khẩu -->
+                                <a href="/KLTN_Benhvien/NVNT/DoiMatKhau">
+                                    <button class="tab_btn <?php echo (strpos($currentPage, 'doimatkhau') !== false) ? 'active' : ''; ?>">
                                         Đổi mật khẩu
                                     </button>
                                 </a>

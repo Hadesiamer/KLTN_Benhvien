@@ -105,13 +105,13 @@ class NVNT extends Controller {
         $nvnt = $this->model("mNVNT");
 
         // Thiết lập timezone cho đúng ngày giờ VN (tránh lệch ngày khi lọc)
-        date_default_timezone_set('Asia/Ho_Chi_Minh'); // <<--- THÊM
+        date_default_timezone_set('Asia/Ho_Chi_Minh');
 
         // Lấy id tài khoản đăng nhập từ session
-        $idTaiKhoan = isset($_SESSION['id']) ? (int)$_SESSION['id'] : 0; // <<--- DÙNG ID TÀI KHOẢN
+        $idTaiKhoan = isset($_SESSION['id']) ? (int)$_SESSION['id'] : 0;
 
         // Lấy MaNV tương ứng trong bảng nhanvien
-        $maNhanVien = $nvnt->getMaNhanVienByTaiKhoan($idTaiKhoan);      // <<--- ĐỔI SANG MaNV
+        $maNhanVien = $nvnt->getMaNhanVienByTaiKhoan($idTaiKhoan);
 
         // Lọc theo khoảng ngày (YYYY-MM-DD)
         $today = date('Y-m-d');
@@ -130,7 +130,7 @@ class NVNT extends Controller {
             $dsBanLe = json_encode([]);
         } else {
             // Gọi model với MaNV (không phải ID tài khoản)
-            $dsBanLe = $nvnt->getBanLeList($maNhanVien, $fromDate, $toDate); // <<--- TRUYỀN MaNV
+            $dsBanLe = $nvnt->getBanLeList($maNhanVien, $fromDate, $toDate);
         }
 
         $this->view("layoutNVNT", [
@@ -146,10 +146,10 @@ class NVNT extends Controller {
         $nvnt = $this->model("mNVNT");
 
         // Lấy id tài khoản đăng nhập
-        $idTaiKhoan = isset($_SESSION['id']) ? (int)$_SESSION['id'] : 0; // <<--- DÙNG ID TÀI KHOẢN
+        $idTaiKhoan = isset($_SESSION['id']) ? (int)$_SESSION['id'] : 0;
 
         // Lấy MaNV tương ứng trong bảng nhanvien
-        $maNhanVien = $nvnt->getMaNhanVienByTaiKhoan($idTaiKhoan);      // <<--- ĐỔI SANG MaNV
+        $maNhanVien = $nvnt->getMaNhanVienByTaiKhoan($idTaiKhoan);
 
         $error = "";
         $success = "";
@@ -180,16 +180,13 @@ class NVNT extends Controller {
             }
 
             if ($maNhanVien <= 0) {
-                // Không tìm được MaNV tương ứng với tài khoản
                 $error = "Không xác định được nhân viên nhà thuốc. Vui lòng kiểm tra lại cấu hình tài khoản - nhân viên.";
             } elseif (empty($dsThuoc)) {
                 $error = "Vui lòng chọn ít nhất 1 loại thuốc với số lượng hợp lệ.";
             } else {
-                // Lưu đơn bán lẻ với MaNV (không phải ID tài khoản)
-                $maDonMoi = $nvnt->taoDonBanLe($maNhanVien, $ghiChuChung, $dsThuoc); // <<--- TRUYỀN MaNV
+                $maDonMoi = $nvnt->taoDonBanLe($maNhanVien, $ghiChuChung, $dsThuoc);
 
                 if ($maDonMoi > 0) {
-                    // Tạo đơn thành công: chuyển sang trang chi tiết
                     header("Location: /KLTN_Benhvien/NVNT/BanLeChiTiet/" . $maDonMoi);
                     exit;
                 } else {
@@ -222,7 +219,6 @@ class NVNT extends Controller {
         }
 
         if ($MaDon <= 0) {
-            // Nếu không có mã đơn, quay lại danh sách
             header("Location: /KLTN_Benhvien/NVNT/BanLe");
             exit;
         }
@@ -289,7 +285,143 @@ class NVNT extends Controller {
         ]);
     }
 
-    // Autosuggest tìm thuốc (JSON) - vẫn giữ, phòng khi dùng chỗ khác
+    // ===========================
+    // ĐỔI MẬT KHẨU NHÂN VIÊN NHÀ THUỐC
+    // ===========================
+    public function DoiMatKhau() {
+        $nvnt   = $this->model("mNVNT");
+        $error  = "";
+        $success = "";
+
+        $idTaiKhoan = isset($_SESSION['id']) ? (int)$_SESSION['id'] : 0;
+
+        if ($idTaiKhoan <= 0) {
+            $error = "Phiên làm việc không hợp lệ, vui lòng đăng nhập lại.";
+            $this->view("layoutNVNT", [
+                "Page"   => "NT_Doimatkhau",
+                "error"  => $error,
+                "success"=> $success
+            ]);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btnDoiMK'])) {
+            $oldPassword = isset($_POST['old_password']) ? trim($_POST['old_password']) : "";
+            $newPassword = isset($_POST['new_password']) ? trim($_POST['new_password']) : "";
+            $cfPassword  = isset($_POST['confirm_password']) ? trim($_POST['confirm_password']) : "";
+
+            if ($newPassword === "" || $cfPassword === "") {
+                $error = "Vui lòng nhập đầy đủ mật khẩu mới và xác nhận.";
+            } elseif (strlen($newPassword) <= 8) {
+                $error = "Mật khẩu mới phải dài hơn 8 ký tự.";
+            } elseif ($newPassword !== $cfPassword) {
+                $error = "Mật khẩu xác nhận không khớp.";
+            } else {
+                $ok = $nvnt->doiMatKhau($idTaiKhoan, $oldPassword, $newPassword);
+                if ($ok) {
+                    $success = "Đổi mật khẩu thành công.";
+                } else {
+                    $error = "Mật khẩu hiện tại không đúng hoặc có lỗi xảy ra.";
+                }
+            }
+        }
+
+        $this->view("layoutNVNT", [
+            "Page"   => "NT_Doimatkhau",
+            "error"  => $error,
+            "success"=> $success
+        ]);
+    }
+
+    // ===========================
+    // THÔNG TIN CÁ NHÂN - TRANG XEM
+    // ===========================
+    public function ThongTinCaNhan() {
+        $nvnt  = $this->model("mNVNT");
+        $error = "";
+        $toast = "";
+        $thongTin = null;
+
+        $idTaiKhoan = isset($_SESSION['id']) ? (int)$_SESSION['id'] : 0;
+        if ($idTaiKhoan <= 0) {
+            $error = "Phiên làm việc không hợp lệ, vui lòng đăng nhập lại.";
+        } else {
+            $thongTin = $nvnt->getThongTinCaNhan($idTaiKhoan);
+            if (!$thongTin) {
+                $error = "Không tìm thấy thông tin nhân viên.";
+            }
+        }
+
+        // Lấy toast sau khi cập nhật xong
+        if (isset($_SESSION['toast_nvnt_profile'])) {
+            $toast = $_SESSION['toast_nvnt_profile'];
+            unset($_SESSION['toast_nvnt_profile']);
+        }
+
+        $this->view("layoutNVNT", [
+            "Page"     => "NT_thongtincanhan_xem",
+            "ThongTin" => $thongTin,
+            "error"    => $error,
+            "toast"    => $toast
+        ]);
+    }
+
+    // ===========================
+    // THÔNG TIN CÁ NHÂN - TRANG SỬA
+    // ===========================
+    public function ThongTinCaNhanSua() {
+        $nvnt    = $this->model("mNVNT");
+        $error   = "";
+        $success = "";
+        $thongTin = null;
+
+        $idTaiKhoan = isset($_SESSION['id']) ? (int)$_SESSION['id'] : 0;
+        if ($idTaiKhoan <= 0) {
+            $error = "Phiên làm việc không hợp lệ, vui lòng đăng nhập lại.";
+        } else {
+            $thongTin = $nvnt->getThongTinCaNhan($idTaiKhoan);
+            if (!$thongTin) {
+                $error = "Không tìm thấy thông tin nhân viên.";
+            }
+        }
+
+        if ($idTaiKhoan > 0 && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btnLuuThongTin'])) {
+            $ngaySinh = isset($_POST['NgaySinh']) ? trim($_POST['NgaySinh']) : "";
+            $gioiTinh = isset($_POST['GioiTinh']) ? trim($_POST['GioiTinh']) : "";
+            $emailNV  = isset($_POST['EmailNV'])  ? trim($_POST['EmailNV'])  : "";
+
+            if ($emailNV !== "" && !filter_var($emailNV, FILTER_VALIDATE_EMAIL)) {
+                $error = "Địa chỉ email không hợp lệ.";
+            }
+
+            if ($error === "") {
+                $ok = $nvnt->capNhatThongTinCaNhan($idTaiKhoan, $ngaySinh, $gioiTinh, $emailNV);
+                if ($ok) {
+                    $_SESSION['toast_nvnt_profile'] = "Cập nhật thông tin cá nhân thành công.";
+                    header("Location: /KLTN_Benhvien/NVNT/ThongTinCaNhan");
+                    exit;
+                } else {
+                    $error = "Không thể cập nhật thông tin, vui lòng thử lại.";
+                }
+            }
+
+            // cập nhật lại thông tin hiển thị theo dữ liệu vừa nhập (nếu lỗi)
+            if ($thongTin) {
+                $thongTin['NgaySinh'] = $ngaySinh;
+                $thongTin['GioiTinh'] = $gioiTinh;
+                $thongTin['EmailNV']  = $emailNV;
+            }
+        }
+
+        $this->view("layoutNVNT", [
+            "Page"     => "NT_thongtincanhan_sua",
+            "ThongTin" => $thongTin,
+            "error"    => $error,
+            "success"  => $success
+        ]);
+    }
+
+    // Autosuggest tìm thuốc (JSON)
     public function TimThuoc() {
         header('Content-Type: application/json; charset=utf-8');
 
