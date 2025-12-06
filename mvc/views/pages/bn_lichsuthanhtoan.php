@@ -222,7 +222,8 @@ function bn_format_datetime($str, $format = 'd/m/Y H:i') {
                         <?php endif; ?>
 
                         <div class="mt-3">
-                            <a href="/KLTN_Benhvien/BN/LichKham?MaLK=<?php echo $maLK; ?>" class="btn btn-outline-primary btn-sm">
+                            <!-- [FIX] Dùng path param: /BN/LichKham/{MaLK} -->
+                            <a href="/KLTN_Benhvien/BN/LichKham/<?php echo $maLK; ?>" class="btn btn-outline-primary btn-sm">
                                 Xem lịch khám này
                             </a>
                         </div>

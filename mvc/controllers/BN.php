@@ -144,37 +144,52 @@ class BN extends Controller{
     // ================== LỊCH KHÁM ĐÃ ĐẶT (ĐÃ THANH TOÁN) ==================
 
     // Trang xem danh sách + chi tiết lịch khám đã ĐÃ THANH TOÁN
-    public function LichKham() {
-        $mabn = $_SESSION['idbn'];
+    // [FIX] Nhận thêm tham số MaLKParam từ URL: /BN/LichKham/160
+    public function LichKham($MaLKParam = null) {
+        if (!isset($_SESSION['idbn'])) {
+            header("Location: /KLTN_Benhvien");
+            exit;
+        }
+
+        $mabn = (int)$_SESSION['idbn'];
         $bn   = $this->model("mBN");
 
         // Lấy danh sách lịch khám đã thanh toán (JSON để đẩy ra view)
         $lichKhamJson  = $bn->getLichKhamDaThanhToan($mabn);
         $lichKhamArray = json_decode($lichKhamJson, true) ?: [];
 
-        // Lấy MaLK từ POST khi người dùng click list bên trái
-        $MaLK = isset($_POST["MaLK"]) ? $_POST["MaLK"] : "";
+        // [FIX] Ưu tiên lấy MaLK theo thứ tự:
+        // 1. Tham số URL (MaLKParam)
+        // 2. POST từ form bên trái (MaLK)
+        // 3. GET query /BN/LichKham?MaLK=...
+        $MaLK = "";
 
-        // [NEW] Nếu không chọn từ form, ưu tiên MaLK từ query (redirect sau khi thanh toán)
-        if ($MaLK === "" && isset($_GET['MaLK']) && $_GET['MaLK'] !== "") {
-            $MaLK = $_GET['MaLK'];
+        if ($MaLKParam !== null && $MaLKParam !== "") {
+            $MaLK = (int)$MaLKParam;
+        } elseif (isset($_POST["MaLK"]) && $_POST["MaLK"] !== "") {
+            $MaLK = (int)$_POST["MaLK"];
+        } elseif (isset($_GET['MaLK']) && $_GET['MaLK'] !== "") {
+            $MaLK = (int)$_GET['MaLK'];
         }
 
         // Nếu chưa chọn MaLK, tự động chọn lịch mới nhất (MaLK lớn nhất)
-        if ($MaLK === "" && !empty($lichKhamArray)) {
-            $latestMaLK = $lichKhamArray[0]['MaLK'];
+        if (($MaLK === "" || (int)$MaLK <= 0) && !empty($lichKhamArray)) {
+            $latestMaLK = (int)$lichKhamArray[0]['MaLK'];
             foreach ($lichKhamArray as $lk) {
-                if ($lk['MaLK'] > $latestMaLK) {
-                    $latestMaLK = $lk['MaLK'];
+                if ((int)$lk['MaLK'] > $latestMaLK) {
+                    $latestMaLK = (int)$lk['MaLK'];
                 }
             }
             $MaLK = $latestMaLK;
         }
 
         // Lấy chi tiết lịch khám tương ứng MaLK (JSON cho view)
-        $chiTietJson = ($MaLK != "") 
-            ? $bn->getChiTietLichKhamDaThanhToan($MaLK) 
-            : json_encode([]);
+        if ($MaLK !== "" && (int)$MaLK > 0) {
+            // [FIX] truyền luôn MaBN vào để đảm bảo đúng BN
+            $chiTietJson = $bn->getChiTietLichKhamDaThanhToan($MaLK, $mabn);
+        } else {
+            $chiTietJson = json_encode([]);
+        }
 
         // Load layout bệnh nhân với page lichkham.php
         $this->view("layoutBN", [
