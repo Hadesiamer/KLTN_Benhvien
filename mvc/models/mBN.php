@@ -171,6 +171,131 @@ class mBN extends DB
         return json_encode($result);
     }
 
+    // ================== [NEW] LỊCH SỬ THANH TOÁN (SEPAY + LICHKHAM) ==================
+
+    // [NEW] Danh sách lịch sử thanh toán (giao dịch SePay) của 1 BN
+    public function getLichSuThanhToanBN($mabn) {
+        $mabn = (int)$mabn;
+
+        $sql = "
+            SELECT 
+                st.Id            AS TransactionId,
+                st.MaLK          AS MaLK,
+                st.Amount        AS Amount,
+                st.Bank          AS Bank,
+                st.AccountNumber AS AccountNumber,
+                st.TransactionCode AS TransactionCode,
+                st.Description   AS Description,
+                st.CreatedAt     AS CreatedAt,
+
+                lk.NgayKham      AS NgayKham,
+                lk.GioKham       AS GioKham,
+                lk.LoaiDichVu    AS LoaiDichVu,
+                lk.TrangThaiThanhToan AS TrangThaiThanhToan,
+
+                nv.HovaTen       AS TenBacSi,
+                ck.TenKhoa       AS TenKhoa
+            FROM sepay_transactions st
+            INNER JOIN lichkham lk 
+                ON st.MaLK = lk.MaLK
+            INNER JOIN benhnhan bn 
+                ON lk.MaBN = bn.MaBN
+            INNER JOIN bacsi bs 
+                ON lk.MaBS = bs.MaNV
+            INNER JOIN nhanvien nv 
+                ON bs.MaNV = nv.MaNV
+            INNER JOIN chuyenkhoa ck 
+                ON bs.MaKhoa = ck.MaKhoa
+            WHERE 
+                lk.MaBN = ?
+                AND lk.TrangThaiThanhToan = 'Da thanh toan'
+                AND st.MaLK IS NOT NULL
+            ORDER BY st.CreatedAt DESC, st.Id DESC
+        ";
+
+        $result = [];
+        if ($stmt = $this->con->prepare($sql)) {
+            $stmt->bind_param("i", $mabn);
+            if ($stmt->execute()) {
+                $res = $stmt->get_result();
+                while ($row = $res->fetch_assoc()) {
+                    $result[] = $row;
+                }
+            }
+            $stmt->close();
+        }
+
+        return json_encode($result);
+    }
+
+    // [NEW] Chi tiết 1 thanh toán theo MaLK + MaBN (lấy giao dịch mới nhất)
+    public function getChiTietThanhToanBN($mabn, $MaLK) {
+        $mabn = (int)$mabn;
+        $MaLK = (int)$MaLK;
+
+        $sql = "
+            SELECT 
+                lk.MaLK,
+                lk.NgayKham,
+                lk.GioKham,
+                lk.LoaiDichVu,
+                lk.TrangThaiThanhToan,
+                lk.TrieuChung,
+
+                bn.MaBN,
+                bn.HovaTen   AS TenBenhNhan,
+                bn.NgaySinh,
+                bn.GioiTinh,
+                bn.DiaChi,
+                bn.SoDT      AS SoDTBenhNhan,
+                bn.BHYT,
+
+                nv.HovaTen   AS TenBacSi,
+                ck.TenKhoa   AS TenKhoa,
+                ck.MoTa      AS MoTaKhoa,
+
+                st.Id            AS TransactionId,
+                st.Amount        AS Amount,
+                st.Bank          AS Bank,
+                st.AccountNumber AS AccountNumber,
+                st.TransactionCode AS TransactionCode,
+                st.Description   AS Description,
+                st.RawContent    AS RawContent,
+                st.CreatedAt     AS CreatedAt
+            FROM lichkham lk
+            INNER JOIN benhnhan bn 
+                ON lk.MaBN = bn.MaBN
+            INNER JOIN bacsi bs 
+                ON lk.MaBS = bs.MaNV
+            INNER JOIN nhanvien nv 
+                ON bs.MaNV = nv.MaNV
+            INNER JOIN chuyenkhoa ck 
+                ON bs.MaKhoa = ck.MaKhoa
+            LEFT JOIN sepay_transactions st 
+                ON lk.MaLK = st.MaLK
+            WHERE 
+                lk.MaBN = ?
+                AND lk.MaLK = ?
+                AND lk.TrangThaiThanhToan = 'Da thanh toan'
+            ORDER BY st.CreatedAt DESC, st.Id DESC
+            LIMIT 1
+        ";
+
+        $result = [];
+        if ($stmt = $this->con->prepare($sql)) {
+            $stmt->bind_param("ii", $mabn, $MaLK);
+            if ($stmt->execute()) {
+                $res = $stmt->get_result();
+                while ($row = $res->fetch_assoc()) {
+                    $result[] = $row;
+                }
+            }
+            $stmt->close();
+        }
+
+        return json_encode($result);
+    }
+
     // ================== HỒ SƠ PHIẾU KHÁM BỆNH NHÂN ==================
 
     // Lấy danh sách phiếu khám + thông tin liên quan của 1 bệnh nhân

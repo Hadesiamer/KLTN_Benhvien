@@ -184,6 +184,53 @@ class BN extends Controller{
         ]);
     }
 
+    // ================== [NEW] LỊCH SỬ THANH TOÁN (GIAO DỊCH SEPAY) ==================
+    public function LichSuThanhToan() {
+        // Bảo vệ: bắt buộc đăng nhập bệnh nhân
+        if (!isset($_SESSION['idbn'])) {
+            header("Location: /KLTN_Benhvien");
+            exit;
+        }
+
+        $mabn = (int)$_SESSION['idbn'];
+        $bn   = $this->model("mBN");
+
+        // Lấy danh sách lịch sử thanh toán (JOIN lichkham + sepay_transactions)
+        $lichSuJson  = $bn->getLichSuThanhToanBN($mabn);
+        $lichSuArray = json_decode($lichSuJson, true);
+        if (!is_array($lichSuArray)) {
+            $lichSuArray = [];
+        }
+
+        // Xác định MaLK đang được chọn từ POST (click list) hoặc GET
+        $MaLK = 0;
+        if (isset($_POST['MaLK']) && $_POST['MaLK'] !== "") {
+            $MaLK = (int)$_POST['MaLK'];
+        } elseif (isset($_GET['MaLK']) && $_GET['MaLK'] !== "") {
+            $MaLK = (int)$_GET['MaLK'];
+        }
+
+        // Nếu chưa có MaLK nào được chọn, lấy MaLK mới nhất trong danh sách
+        if ($MaLK <= 0 && !empty($lichSuArray)) {
+            $MaLK = (int)$lichSuArray[0]['MaLK'];
+        }
+
+        // Lấy chi tiết 1 giao dịch + lịch khám tương ứng
+        if ($MaLK > 0) {
+            $chiTietJson = $bn->getChiTietThanhToanBN($mabn, $MaLK);
+        } else {
+            $chiTietJson = json_encode([]);
+        }
+
+        // Render layout bệnh nhân với view bn_lichsuthanhtoan.php
+        $this->view("layoutBN", [
+            "Page"        => "bn_lichsuthanhtoan",
+            "LSTT_List"   => $lichSuJson,
+            "LSTT_Detail" => $chiTietJson,
+            "CurrentMaLK" => $MaLK
+        ]);
+    }
+
     // Nút "In lịch khám"
     // /BN/InLichKham/160
     public function InLichKham($MaLK = null) {

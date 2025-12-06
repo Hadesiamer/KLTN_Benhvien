@@ -116,7 +116,13 @@
 
                     <li>
                         <a href="/KLTN_Benhvien/ThanhToan"
-                           class="<?php echo (strpos($currentUrl, 'ThanhToan') !== false) ? 'active' : ''; ?>">
+                           class="<?php 
+                               // [NEW FIX] Chỉ active khi route đúng là ThanhToan, 
+                               // tránh trùng với BN/LichSuThanhToan
+                               echo ($currentUrl === 'ThanhToan' || strpos($currentUrl, 'ThanhToan/') === 0) 
+                                   ? 'active' 
+                                   : ''; 
+                           ?>">
                            Thanh toán
                         </a>
                     </li>
@@ -143,7 +149,13 @@
                     </li>
                     <li>
                         <a href="/KLTN_Benhvien/BN/LichSuThanhToan"
-                           class="<?php echo (strpos($currentUrl, 'BN/LichSuThanhToan') !== false) ? 'active' : ''; ?>">
+                           class="<?php 
+                               // [NEW FIX] Điều kiện rõ ràng cho Lịch sử thanh toán
+                               echo ($currentUrl === 'BN/LichSuThanhToan' 
+                                     || strpos($currentUrl, 'BN/LichSuThanhToan') === 0) 
+                                   ? 'active' 
+                                   : ''; 
+                           ?>">
                            Lịch sử thanh toán
                         </a>
                     </li>
