@@ -293,23 +293,55 @@ if (!empty($chiTietData)) {
         const pollingMaLK = <?= (int)$ct['MaLK']; ?>;
         console.log("Bắt đầu polling thanh toán cho MaLK =", pollingMaLK);
 
-        setInterval(function () {
-        fetch("/KLTN_Benhvien/ThanhToan/CheckPaymentAPI/" + pollingMaLK)
-            .then(function (res) {
-                return res.json();
-            })
-            .then(function (data) {
-                console.log("CheckPaymentAPI resp:", data);
-                if (data && data.status === "paid") {
-                    console.log("Đã thanh toán – redirect về trang lịch khám...");
-                    window.location.href =
-                        "/KLTN_Benhvien/BN/LichKham?payment_success=1&MaLK=" + pollingMaLK;
-                }
-            })
-            .catch(function (err) {
-                console.error("Polling lỗi:", err);
-            });
-    }, 3000);
+        // LƯU ID CỦA setInterval ĐỂ CÓ THỂ clearInterval KHI THANH TOÁN XONG
+        let paymentIntervalId = setInterval(function () {
+            fetch("/KLTN_Benhvien/ThanhToan/CheckPaymentAPI/" + pollingMaLK)
+                .then(function (res) {
+                    return res.json();
+                })
+                .then(function (data) {
+                    console.log("CheckPaymentAPI resp:", data);
+                    if (data && data.status === "paid") {
+                        console.log("Đã thanh toán – chuẩn bị chuyển về trang lịch khám...");
+
+                        // Dừng polling để không gọi API nữa
+                        if (paymentIntervalId) {
+                            clearInterval(paymentIntervalId);
+                            paymentIntervalId = null;
+                        }
+
+                        // ================= HIỆN THÔNG BÁO THÀNH CÔNG NGAY TRÊN TRANG THANHTOAN =================
+                        let oldToast = document.getElementById("tt-sepay-success");
+                        if (!oldToast) {
+                            const toast = document.createElement("div");
+                            toast.id = "tt-sepay-success";
+                            toast.className = "alert alert-success shadow position-fixed top-0 start-50 translate-middle-x mt-3";
+                            toast.style.zIndex = "3000";
+                            toast.style.minWidth = "280px";
+                            toast.innerHTML =
+                                "<strong>Thanh toán thành công!</strong><br>" +
+                                "Lịch khám mã <strong>LK" + pollingMaLK + "</strong> đã được xác nhận.<br>" +
+                                "<small>Đang chuyển sang trang lịch khám...</small>";
+                            document.body.appendChild(toast);
+
+                            // Tự động mờ dần sau 2s
+                            setTimeout(function () {
+                                toast.style.transition = "opacity 0.5s ease";
+                                toast.style.opacity = "0";
+                            }, 2000);
+                        }
+
+                        // Sau 2.5s thì chuyển sang trang lịch khám (có query để bên kia vẫn đọc được nếu cần)
+                        setTimeout(function () {
+                            window.location.href =
+                                "/KLTN_Benhvien/BN/LichKham?payment_success=1&MaLK=" + pollingMaLK;
+                        }, 2500);
+                    }
+                })
+                .catch(function (err) {
+                    console.error("Polling lỗi:", err);
+                });
+        }, 3000);
 
         <?php endif; ?>
     });

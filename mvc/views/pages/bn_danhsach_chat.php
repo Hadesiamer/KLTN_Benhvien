@@ -6,8 +6,6 @@ $dsBacSi = isset($data["DanhSachBacSi"]) ? $data["DanhSachBacSi"] : [];
 ?>
 <div class="container mt-3">
     <h3>Nhắn tin với bác sĩ</h3>
-    <p>Chỉ áp dụng cho các bác sĩ mà bạn đã đăng ký khám <strong>online</strong> và <strong>đã thanh toán</strong>.</p>
-
     <?php if (empty($dsBacSi)): ?>
         <div class="alert alert-info mt-3">
             Hiện tại bạn chưa có lịch khám online nào đã thanh toán với bác sĩ, nên chưa thể sử dụng chức năng chat.

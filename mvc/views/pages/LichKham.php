@@ -17,6 +17,7 @@ if (!empty($chiTietData) && isset($chiTietData[0]['MaLK'])) {
 }
 
 // ================== THÔNG TIN TOAST SAU KHI THANH TOÁN ==================
+// Nếu URL có dạng: /KLTN_Benhvien/BN/LichKham?payment_success=1&MaLK=193
 $paymentToast = false;
 $paymentMaLK  = null;
 
@@ -24,6 +25,9 @@ if (isset($_GET['payment_success']) && $_GET['payment_success'] === '1') {
     $paymentToast = true;
     $paymentMaLK  = isset($_GET['MaLK']) ? $_GET['MaLK'] : null;
 }
+
+// [NEW] Cờ kiểm tra có lịch khám đã thanh toán hay không
+$hasLichKham = !empty($lichKhamData);
 ?>
 
 <style>
@@ -62,10 +66,11 @@ if (isset($_GET['payment_success']) && $_GET['payment_success'] === '1') {
     </div>
 
     <script>
-        // Log nhẹ để anh thấy có chạy
+        // Log nhẹ để anh kiểm tra
         console.log("BN/LichKham: paymentToast = true, MaLK = <?= json_encode($paymentMaLK); ?>");
 
         document.addEventListener("DOMContentLoaded", function () {
+            // Sau 3 giây thì fade out rồi remove
             setTimeout(function () {
                 var toast = document.getElementById("bn-payment-toast");
                 if (toast) {
@@ -75,7 +80,7 @@ if (isset($_GET['payment_success']) && $_GET['payment_success'] === '1') {
                         toast.remove();
                     }, 500);
                 }
-            }, 3000); // Toast hiển thị 3s
+            }, 3000);
         });
     </script>
 <?php else: ?>
@@ -84,51 +89,68 @@ if (isset($_GET['payment_success']) && $_GET['payment_success'] === '1') {
     </script>
 <?php endif; ?>
 
+<?php if (!$hasLichKham): ?>
+    <!-- =========================
+         UI KHI CHƯA CÓ LỊCH KHÁM
+    ========================== -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm text-center p-4 mt-2"
+                 style="max-width: 640px; margin: 40px auto;">
+                <div class="mb-2" style="font-size: 48px;">🩺</div>
+                <h5 class="mb-2">Hiện tại bạn chưa có lịch khám nào đã thanh toán</h5>
+                <p class="text-muted mb-0" style="font-size: 14px;">
+                    Khi bạn hoàn tất thanh toán lịch khám, thông tin chi tiết sẽ hiển thị tại đây.
+                </p>
+                    <a href="/KLTN_Benhvien" class="btn btn-primary mt-3 px-4">
+                     Quay lại trang chủ để đặt lịch khám</a>
+
+            </div>
+        </div>
+    </div>
+<?php else: ?>
+
 <div class="row mt-3">
     <!-- DANH SÁCH LỊCH KHÁM BÊN TRÁI -->
     <div class="col-4">
         <div class="lichkham-scroll-container">
             <div class="list-group">
-                <?php if (!empty($lichKhamData)): ?>
-                    <?php foreach ($lichKhamData as $lichKham): ?>
-                        <?php
-                        // Định dạng ngày khám dd-mm-yyyy
-                        $ngayKhamFormatted = '';
-                        if (!empty($lichKham['NgayKham'])) {
-                            $ngayKhamFormatted = date('d-m-Y', strtotime($lichKham['NgayKham']));
-                        }
+                <?php foreach ($lichKhamData as $lichKham): ?>
+                    <?php
+                    // Định dạng ngày khám dd-mm-yyyy
+                    $ngayKhamFormatted = '';
+                    if (!empty($lichKham['NgayKham'])) {
+                        $ngayKhamFormatted = date('d-m-Y', strtotime($lichKham['NgayKham']));
+                    }
 
-                        // Kiểm tra có phải lịch đang xem không
-                        $isActiveClass = '';
-                        if ($currentMaLK !== null && isset($lichKham['MaLK']) && $currentMaLK == $lichKham['MaLK']) {
-                            $isActiveClass = 'lichkham-active';
-                        }
-                        ?>
-                        <form method="POST" action="/KLTN_Benhvien/BN/LichKham">
-                            <input type="hidden" name="MaLK" value="<?= htmlspecialchars($lichKham['MaLK']); ?>">
-                            <div class="patient-item list-group-item <?= $isActiveClass ?>"
-                                 style="cursor:pointer;"
-                                 onclick="this.closest('form').submit()">
-                                <p class="mb-1" style="font-size: 16px; font-weight: 600;">
-                                    BS. <?= htmlspecialchars($lichKham['HovaTenNV'] ?? ''); ?>
-                                </p>
-                                <p class="mb-1" style="font-size: 13px; text-align: left;">
-                                    <?= htmlspecialchars($ngayKhamFormatted); ?>
-                                    -
-                                    <?= htmlspecialchars($lichKham['GioKham'] ?? ''); ?>
-                                </p>
-                                <p class="mb-1" style="font-size: 13px; text-align: left;">
-                                    <?= htmlspecialchars($lichKham['HovaTen'] ?? ''); ?>
-                                </p>
-                                <p class="mb-0" style="font-size: 13px; text-align: left; color:#555;">
-                                    Mã LK: <?= htmlspecialchars($lichKham['MaLK'] ?? ''); ?>
-                                </p>
-                            </div>
-                        </form>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p>Hiện tại bạn chưa có lịch khám nào đã thanh toán.</p>
-                <?php endif; ?>
+                    // Kiểm tra có phải lịch đang xem không
+                    $isActiveClass = '';
+                    if ($currentMaLK !== null && isset($lichKham['MaLK']) && $currentMaLK == $lichKham['MaLK']) {
+                        $isActiveClass = 'lichkham-active';
+                    }
+                    ?>
+                    <form method="POST" action="/KLTN_Benhvien/BN/LichKham">
+                        <input type="hidden" name="MaLK" value="<?= htmlspecialchars($lichKham['MaLK']); ?>">
+                        <div class="patient-item list-group-item <?= $isActiveClass ?>"
+                             style="cursor:pointer;"
+                             onclick="this.closest('form').submit()">
+                            <p class="mb-1" style="font-size: 16px; font-weight: 600;">
+                                BS. <?= htmlspecialchars($lichKham['HovaTenNV'] ?? ''); ?>
+                            </p>
+                            <p class="mb-1" style="font-size: 13px; text-align: left;">
+                                <?= htmlspecialchars($ngayKhamFormatted); ?>
+                                -
+                                <?= htmlspecialchars($lichKham['GioKham'] ?? ''); ?>
+                            </p>
+                            <p class="mb-1" style="font-size: 13px; text-align: left;">
+                                <?= htmlspecialchars($lichKham['HovaTen'] ?? ''); ?>
+                            </p>
+                            <p class="mb-0" style="font-size: 13px; text-align: left; color:#555;">
+                                Mã LK: <?= htmlspecialchars($lichKham['MaLK'] ?? ''); ?>
+                            </p>
+                        </div>
+                    </form>
+                <?php endforeach; ?>
             </div>
         </div>
     </div>
@@ -152,9 +174,9 @@ if (isset($_GET['payment_success']) && $_GET['payment_success'] === '1') {
                 $namSinhFormatted = date('d-m-Y', strtotime($ct['NgaySinh']));
             }
 
-            $moTaKhoa   = $ct['MoTa']      ?? '';
-            $bacSi      = $ct['HovaTenNV'] ?? '';
-            $trangThaiText = "Đã thanh toán"; // luôn là đã thanh toán
+            $moTaKhoa       = $ct['MoTa']      ?? '';
+            $bacSi          = $ct['HovaTenNV'] ?? '';
+            $trangThaiText  = "Đã thanh toán"; // luôn là đã thanh toán
             ?>
             <div class="card mb-3 shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -226,3 +248,5 @@ if (isset($_GET['payment_success']) && $_GET['payment_success'] === '1') {
         <?php endif; ?>
     </div>
 </div>
+
+<?php endif; // end if !$hasLichKham ?>
