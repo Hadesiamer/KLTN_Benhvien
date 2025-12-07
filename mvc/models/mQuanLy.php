@@ -170,6 +170,28 @@ class mQuanLy extends DB {
         return json_encode($mang);
     }
 
+    // ===== ĐẾM NHÂN VIÊN NHÀ THUỐC =====
+    public function GetPharmacyStaffCount() {
+        $sql = "SELECT COUNT(*) AS total FROM nhanvien WHERE ChucVu = 'Nhân viên nhà thuốc'";
+        $result = mysqli_query($this->con, $sql);
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            return (int)$row['total'];
+        }
+        return 0;
+    }
+
+    // ===== ĐẾM NHÂN VIÊN XÉT NGHIỆM =====
+    public function GetLabStaffCount() {
+        $sql = "SELECT COUNT(*) AS total FROM nhanvien WHERE ChucVu = 'Nhân viên xét nghiệm'";
+        $result = mysqli_query($this->con, $sql);
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            return (int)$row['total'];
+        }
+        return 0;
+    }
+
     //xoa ca lam viec
     public function DelLLV($maNV, $NgayLamViec, $CaLamViec) {
         $str = "UPDATE lichlamviec

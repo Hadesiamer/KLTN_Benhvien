@@ -123,15 +123,6 @@ $hasFace = !empty($template);
                                 <i class="bi bi-save2"></i> Lưu mẫu khuôn mặt
                             </button>
                         </div>
-
-                        <div class="alert alert-warning small mb-0">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <span>
-                                Anh cần tải model của <code>face-api.js</code> về thư mục
-                                <code>/KLTN_Benhvien/public/face-models</code>. 
-                                Em đã ghi chú trong code JS ở dưới.
-                            </span>
-                        </div>
                     </div>
                 </div>
             </div>

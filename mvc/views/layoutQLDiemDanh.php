@@ -248,7 +248,13 @@ if ($toastType && $toastMessage) {
 
         <!-- MAIN -->
         <div class="dd-main">
-            <!-- Có thể reuse header chung nếu anh muốn -->
+            <?php
+                // Lấy tên người đăng nhập để hiển thị góc phải
+                // Hệ thống của anh đang dùng $_SESSION['ten'] cho Quản lý
+                $ddUserName = isset($_SESSION['ten']) && $_SESSION['ten'] != '' ? $_SESSION['ten'] : 'Quản lý';
+            ?>
+
+            <!-- Header -->
             <header class="dd-header">
                 <div class="dd-header-title">
                     <i class="bi bi-clock-history text-primary"></i>
@@ -257,9 +263,23 @@ if ($toastType && $toastMessage) {
                         Khuôn mặt · Ca làm việc
                     </span>
                 </div>
-                <div class="dd-header-user">
-                    <i class="bi bi-person-circle"></i>
-                    <span>Quản lý</span>
+
+                <!-- User dropdown giống header cũ -->
+                <div class="dd-header-user dropdown">
+                    <a href="#" class="d-flex align-items-center text-decoration-none text-dark dropdown-toggle"
+                       id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle fs-5 me-1"></i>
+                        <span><?php echo htmlspecialchars($ddUserName); ?></span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userMenu">
+                        <li>
+                            <a class="dropdown-item"
+                               href="/KLTN_Benhvien/Logout"
+                               onclick="return confirm('Bạn có muốn đăng xuất?')">
+                                <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </header>
 

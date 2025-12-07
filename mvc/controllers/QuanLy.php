@@ -331,17 +331,26 @@ class QuanLy extends Controller {
 
     // phần của Quản Lý Bác sĩ/ NVYT
     public function GetDashboardCounts() {
-        $qlBS = $this->model("mQLBS");
+        $qlBS   = $this->model("mQLBS");
         $qlNVYT = $this->model("mQLNVYT");
-        
+        $ql     = $this->model("mQuanLy");
+
+        // Đếm bác sĩ và NVYT (dữ liệu cũ)
         $doctorCount = $qlBS->GetDoctorCount();
-        $staffCount = $qlNVYT->GetStaffCount();
-        
+        $staffCount  = $qlNVYT->GetStaffCount();
+
+        // Đếm nhân viên nhà thuốc & xét nghiệm từ model mQuanLy
+        $pharmacyCount = $ql->GetPharmacyStaffCount();   // Nhân viên nhà thuốc
+        $labCount      = $ql->GetLabStaffCount();        // Nhân viên xét nghiệm
+
         return [
-            'doctorCount' => $doctorCount,
-            'staffCount' => $staffCount
+            'doctorCount'    => $doctorCount,
+            'staffCount'     => $staffCount,
+            'pharmacyCount'  => $pharmacyCount,
+            'labCount'       => $labCount
         ];
     }
+
     function CTBS() {
         if (isset($_POST["btnCTBS"])) {
             $MaNV = $_POST["ctbs"];
