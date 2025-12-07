@@ -5,32 +5,43 @@ $lichNghiPhep = $data['LichNghiPhep'] ?? [];
 $maNV         = $_SESSION['MaNV'] ?? $_SESSION['idnv'] ?? '';
 ?>
 
-<!-- ====== HIỂN THỊ GIAO DIỆN ====== -->
-<div class="container">
-    <h2 class="mb-4">Lịch làm việc của bạn</h2>
-    <div class="d-flex justify-content-between align-items-center mb-4 week-nav">
-        <div class="btn-group week-nav-group" role="group" aria-label="Điều hướng tuần">
-            <button id="prevWeek" class="btn btn-light week-nav-btn">
-                <i class="bi bi-chevron-left"></i>
-                <span class="d-none d-sm-inline">Tuần trước</span>
-            </button>
-            <button id="currentWeek" class="btn btn-primary week-nav-btn-current">
-                <i class="bi bi-calendar-event"></i>
-                <span class="d-none d-sm-inline">Hiện tại</span>
-            </button>
-            <button id="nextWeek" class="btn btn-light week-nav-btn">
-                <span class="d-none d-sm-inline">Tuần sau</span>
-                <i class="bi bi-chevron-right"></i>
-            </button>
+<div class="bs-schedule-wrapper">
+    <div class="bs-schedule-header">
+        <div class="bs-schedule-header-left">
+            <div class="bs-schedule-icon">
+                🗓️
+            </div>
+            <div>
+                <h2 class="bs-schedule-title">Lịch làm việc của bạn</h2>
+                <p class="bs-schedule-subtitle">
+                    Xem ca trực theo tuần, đăng ký nghỉ phép cho từng ca khi cần.
+                </p>
+            </div>
         </div>
-        
+
+        <div class="bs-schedule-header-right">
+            <div class="btn-group week-nav-group" role="group" aria-label="Điều hướng tuần">
+                <button id="prevWeek" class="btn btn-light week-nav-btn">
+                    <i class="bi bi-chevron-left"></i>
+                    <span class="d-none d-sm-inline">Tuần trước</span>
+                </button>
+                <button id="currentWeek" class="btn btn-primary week-nav-btn-current">
+                    <i class="bi bi-calendar-event"></i>
+                    <span class="d-none d-sm-inline">Hiện tại</span>
+                </button>
+                <button id="nextWeek" class="btn btn-light week-nav-btn">
+                    <span class="d-none d-sm-inline">Tuần sau</span>
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div id="weekRange" class="text-center fw-bold mb-4"></div>
+    <div id="weekRange" class="bs-week-range"></div>
 
-    <div id="schedule-container">
-        <table class="table table-bordered text-center">
-            <thead>
+    <div class="table-responsive bs-schedule-table">
+        <table class="table table-bordered text-center align-middle">
+            <thead class="bs-schedule-thead">
                 <tr>
                     <th>Thứ 2<br><span id="date-mon" class="text-muted small"></span></th>
                     <th>Thứ 3<br><span id="date-tue" class="text-muted small"></span></th>
@@ -52,13 +63,19 @@ $maNV         = $_SESSION['MaNV'] ?? $_SESSION['idnv'] ?? '';
         </table>
     </div>
 
+    <div class="bs-schedule-note">
+        <i class="bi bi-info-circle"></i>
+        <span>Bác sĩ chỉ có thể xin nghỉ cho các ca ở tương lai (trước ít nhất 1 ngày).</span>
+    </div>
 </div>
 
 <!-- Modal xin nghỉ -->
 <div id="leave-modal" aria-hidden="true">
     <div class="modal-content">
         <span id="close-modal" class="close">&times;</span>
-        <h3>Đăng ký nghỉ phép</h3>
+        <h3 class="modal-title">
+            Đăng ký nghỉ phép
+        </h3>
 
         <form id="leave-form" method="post" action="">
             <input type="hidden" name="action" value="request_leave">
@@ -76,11 +93,14 @@ $maNV         = $_SESSION['MaNV'] ?? $_SESSION['idnv'] ?? '';
 
             <div class="mb-3">
                 <label class="form-label">Lý do nghỉ</label>
-                <textarea name="LyDo" class="form-control" required></textarea>
+                <textarea name="LyDo" class="form-control" required rows="3"
+                          placeholder="Nhập lý do nghỉ (vd: khám hội chẩn, việc cá nhân...)"></textarea>
             </div>
 
             <div class="text-end">
-                <button type="submit" class="btn btn-primary">Gửi yêu cầu</button>
+                <button type="submit" class="btn btn-primary">
+                    Gửi yêu cầu
+                </button>
             </div>
         </form>
     </div>
@@ -169,17 +189,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 if (foundLeave) {
                     leaveBtn.innerHTML = `<i class="bi bi-person-dash"></i>`;
-                    leaveBtn.className = 'btn btn-secondary btn-sm';
+                    leaveBtn.className = 'btn btn-secondary btn-xs';
                     leaveBtn.disabled = true;
                     leaveBtn.title = 'Bạn đã gửi yêu cầu nghỉ cho ca này.';
                 } else if (!isFutureAllowed) {
                     leaveBtn.innerHTML = '<i class="bi bi-person-dash"></i>';
-                    leaveBtn.className = 'btn btn-secondary btn-sm';
+                    leaveBtn.className = 'btn btn-secondary btn-xs';
                     leaveBtn.disabled = true;
                     leaveBtn.title = 'Chỉ được xin nghỉ cho các ca ở tương lai (trước ít nhất 1 ngày).';
                 } else {
                     leaveBtn.innerHTML = '<i class="bi bi-person-dash"></i>';
-                    leaveBtn.className = 'btn btn-outline-danger btn-sm';
+                    leaveBtn.className = 'btn btn-outline-danger btn-xs';
                     leaveBtn.title = 'Xin nghỉ ca làm việc này';
                     leaveBtn.addEventListener('click', (ev) => {
                         ev.stopPropagation();
@@ -271,7 +291,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 // Nếu đang có nút xin nghỉ được gắn (click từ một ca cụ thể)
                 if (currentLeaveButton) {
                     // Đổi nút sang trạng thái "đã gửi yêu cầu": xám + disable
-                    currentLeaveButton.className = 'btn btn-secondary btn-sm';
+                    currentLeaveButton.className = 'btn btn-secondary btn-xs';
                     currentLeaveButton.disabled  = true;
                     currentLeaveButton.title     = 'Bạn đã gửi yêu cầu nghỉ cho ca này.';
 
@@ -299,11 +319,65 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <style>
-/* Thanh điều hướng tuần đẹp hơn */
-.week-nav {
+/* Vùng bọc tổng thể */
+.bs-schedule-wrapper {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 16px 16px 18px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* Header */
+.bs-schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.bs-schedule-header-left {
+    display: flex;
+    align-items: center;
     gap: 12px;
 }
 
+.bs-schedule-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 24px;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
+}
+
+.bs-schedule-title {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.bs-schedule-subtitle {
+    margin: 3px 0 0;
+    font-size: 13px;
+    color: #4b5563;
+}
+
+.bs-week-range {
+    text-align: center;
+    font-weight: 600;
+    margin: 8px 0 14px;
+    color: #1f2937;
+}
+
+/* Thanh điều hướng tuần */
 .week-nav-group {
     border-radius: 999px;
     overflow: hidden;
@@ -314,7 +388,7 @@ window.addEventListener('DOMContentLoaded', () => {
 .week-nav-btn-current {
     border-radius: 0;
     border: none;
-    padding: 8px 14px;
+    padding: 7px 13px;
     font-size: 14px;
     display: flex;
     align-items: center;
@@ -333,55 +407,36 @@ window.addEventListener('DOMContentLoaded', () => {
     font-weight: 600;
 }
 
-/* modal styles */
-#leave-modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
+/* Bảng lịch làm việc */
+.bs-schedule-table {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
 }
-#leave-modal[aria-hidden="false"] {
-    display: flex;
+
+.bs-schedule-thead th {
+    background: #eff6ff;
+    border-bottom: 1px solid #d1d5db;
+    font-size: 13px;
+    vertical-align: middle;
 }
-#leave-modal .modal-content {
-    background: #fff;
-    padding: 22px;
-    border-radius: 10px;
-    width: 100%;
-    max-width: 480px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    position: relative;
-}
-#leave-modal .close {
-    position: absolute;
-    right: 12px;
-    top: 8px;
-    font-size: 26px;
-    cursor: pointer;
-    color: #666;
-}
-#leave-modal .close:hover { color: #000; }
 
 /* Ô ca làm việc */
-#schedule-container td {
+#schedule-container td,
+.bs-schedule-table td {
     vertical-align: top;
     height: 120px;
-    width: 14.28%;
     position: relative;
 }
 
-/* Khung chứa mỗi ca + nút xin nghỉ */
 .shift-box {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    padding: 6px 10px;
-    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 6px 8px;
+    border-radius: 8px;
     margin-bottom: 6px;
 }
 
@@ -395,25 +450,110 @@ window.addEventListener('DOMContentLoaded', () => {
 /* Nút xin nghỉ nhỏ, gọn */
 .shift-box button {
     font-size: 11px;
-    padding: 2px 4px;
-    border-radius: 4px;
+    padding: 3px 6px;
+    border-radius: 6px;
     line-height: 1.2;
     min-width: auto;
-    width: auto;
 }
 
 /* Ca sáng */
 .badge.bg-primary {
-    background-color: #0d6efd !important;
+    background-color: #2563eb !important;
 }
 
 /* Ca chiều */
 .badge.bg-warning {
-    background-color: #ffc107 !important;
+    background-color: #facc15 !important;
 }
 
 /* Hover nhẹ cho nút */
 .shift-box button:hover {
-    opacity: 0.85;
+    opacity: 0.9;
+}
+
+/* Note dưới bảng */
+.bs-schedule-note {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Modal styles */
+#leave-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+#leave-modal[aria-hidden="false"] {
+    display: flex;
+}
+#leave-modal .modal-content {
+    background: #fff;
+    padding: 22px;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.4);
+    position: relative;
+    border: 1px solid #e5e7eb;
+}
+#leave-modal .modal-title {
+    margin: 0 0 10px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}
+#leave-modal .close {
+    position: absolute;
+    right: 12px;
+    top: 8px;
+    font-size: 26px;
+    cursor: pointer;
+    color: #6b7280;
+}
+#leave-modal .close:hover { color: #111827; }
+
+/* Kích thước nhỏ hơn cho btn xin nghỉ */
+.btn-xs {
+    padding: 2px 6px !important;
+    font-size: 11px !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .bs-schedule-wrapper {
+        padding: 14px 10px 16px;
+        border-radius: 14px;
+    }
+
+    .bs-schedule-title {
+        font-size: 17px;
+    }
+
+    .bs-schedule-header-left {
+        align-items: flex-start;
+    }
+
+    .bs-schedule-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+    }
+
+    .bs-schedule-table {
+        font-size: 12px;
+    }
+
+    #schedule-container td,
+    .bs-schedule-table td {
+        height: auto;
+    }
 }
 </style>

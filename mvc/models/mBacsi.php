@@ -887,4 +887,19 @@ class MBacsi extends DB
             'so_phieu_kham' => $soPhieuKham
         ];
     }
+
+    // Cập nhật thông tin cơ bản cho bác sĩ
+public function updateThongTinBacSi($maNV, $ngaySinh, $gioiTinh, $email)
+{
+    $sql = "UPDATE nhanvien
+            SET NgaySinh = ?, GioiTinh = ?, EmailNV = ?
+            WHERE MaNV = ?";
+
+    $stmt = $this->con->prepare($sql);
+    if (!$stmt) return false;
+
+    $stmt->bind_param("sssi", $ngaySinh, $gioiTinh, $email, $maNV);
+    return $stmt->execute();
+}
+
 }

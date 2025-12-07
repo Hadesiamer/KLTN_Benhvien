@@ -828,5 +828,62 @@ class Bacsi extends Controller
         ]);
     }
 
+    // ==========================
+// Trang SỬA THÔNG TIN BÁC SĨ
+// ==========================
+function SuaThongTinBacSi()
+{
+    if (!isset($_SESSION["idnv"])) {
+        echo "<script>alert('Vui lòng đăng nhập lại!');</script>";
+        header("refresh:0; url='/KLTN_Benhvien/Login'");
+        return;
+    }
+
+    $maNV = $_SESSION["idnv"];
+    $model = $this->model("MBacsi");
+
+    // Lấy dữ liệu đổ vào form
+    $info = $model->get1BS($maNV);
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+        $ngaySinh  = $_POST["NgaySinh"] ?? "";
+        $gioiTinh  = $_POST["GioiTinh"] ?? "";
+        $email     = trim($_POST["EmailNV"] ?? "");
+
+        if ($email === "") {
+            $this->view("layoutBacsi", [
+                "Page" => "thongtinbacsi_sua",
+                "ThongTin" => $info,
+                "error" => "Email không được để trống!"
+            ]);
+            return;
+        }
+
+        // Update
+        $updated = $model->updateThongTinBacSi($maNV, $ngaySinh, $gioiTinh, $email);
+
+        if ($updated) {
+            $_SESSION["toast"] = "Cập nhật thông tin thành công!";
+            header("Location: /KLTN_Benhvien/Bacsi/ThongTinBacSi");
+            exit;
+        }
+
+        $this->view("layoutBacsi", [
+            "Page" => "thongtinbacsi_sua",
+            "ThongTin" => $info,
+            "error" => "Không thể cập nhật, vui lòng thử lại!"
+        ]);
+        return;
+    }
+
+    // GET
+    $this->view("layoutBacsi", [
+        "Page" => "thongtinbacsi_sua",
+        "ThongTin" => $info
+    ]);
+}
+
+
 }
 ?>

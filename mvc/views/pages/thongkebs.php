@@ -21,14 +21,19 @@ function tkbs_format_date_vn($d) {
 
 <div class="tkbs-wrapper">
     <div class="tkbs-header">
-        <div>
-            <h2 class="tkbs-title">Thống kê bác sĩ</h2>
-            <p class="tkbs-subtitle">
-                Tóm tắt khối lượng công việc theo thời gian bạn chọn.
-            </p>
+        <div class="tkbs-header-left">
+            <div class="tkbs-header-icon">
+                🩺
+            </div>
+            <div>
+                <h2 class="tkbs-title">Thống kê hoạt động khám</h2>
+                <p class="tkbs-subtitle">
+                    Tổng quan số ca làm việc, lịch khám và phiếu khám trong khoảng thời gian bạn chọn.
+                </p>
+            </div>
         </div>
+
         <div class="tkbs-filter">
-            <!-- NhatCuong: đổi sang POST, không dùng query trên URL -->
             <form method="post" action="/KLTN_Benhvien/Bacsi/thongkebs">
                 <div class="tkbs-filter-group">
                     <button type="submit" name="filter" value="today"
@@ -78,7 +83,7 @@ function tkbs_format_date_vn($d) {
 
     <div class="tkbs-cards row g-3">
         <!-- Số ca làm việc -->
-        <div class="col-md-4">
+        <div class="col-md-4 col-sm-6">
             <div class="tkbs-card tkbs-card-shift">
                 <div class="tkbs-card-header">
                     <div class="tkbs-card-icon">
@@ -89,14 +94,14 @@ function tkbs_format_date_vn($d) {
                 <div class="tkbs-card-body">
                     <div class="tkbs-card-value"><?php echo (int)$soCaLamViec; ?></div>
                     <div class="tkbs-card-desc">
-                        Tổng số ca bạn đã đăng ký trong khoảng thời gian chọn.
+                        Tổng số ca trực mà bạn đã đăng ký trong khoảng thời gian đã chọn.
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Số lịch khám -->
-        <div class="col-md-4">
+        <div class="col-md-4 col-sm-6">
             <div class="tkbs-card tkbs-card-appointment">
                 <div class="tkbs-card-header">
                     <div class="tkbs-card-icon">
@@ -107,14 +112,14 @@ function tkbs_format_date_vn($d) {
                 <div class="tkbs-card-body">
                     <div class="tkbs-card-value"><?php echo (int)$soLichKham; ?></div>
                     <div class="tkbs-card-desc">
-                        Số lịch hẹn bệnh nhân được phân cho bạn.
+                        Số lịch hẹn bệnh nhân được phân công cho bạn.
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Số phiếu khám -->
-        <div class="col-md-4">
+        <div class="col-md-4 col-sm-6">
             <div class="tkbs-card tkbs-card-pk">
                 <div class="tkbs-card-header">
                     <div class="tkbs-card-icon">
@@ -125,7 +130,7 @@ function tkbs_format_date_vn($d) {
                 <div class="tkbs-card-body">
                     <div class="tkbs-card-value"><?php echo (int)$soPhieuKham; ?></div>
                     <div class="tkbs-card-desc">
-                        Số phiếu khám bạn đã lập cho bệnh nhân.
+                        Số phiếu khám bệnh mà bạn đã lập cho bệnh nhân.
                     </div>
                 </div>
             </div>
@@ -136,7 +141,7 @@ function tkbs_format_date_vn($d) {
     <div class="tkbs-footer-note">
         <i class="bi bi-info-circle"></i>
         <span>
-            Bạn có thể đổi bộ lọc thời gian ở phía trên để xem xu hướng làm việc.
+            Bạn có thể thay đổi bộ lọc thời gian ở phía trên để theo dõi xu hướng khối lượng công việc.
         </span>
     </div>
 </div>
@@ -144,11 +149,13 @@ function tkbs_format_date_vn($d) {
 <style>
 /* Prefix tkbs_ để tránh trùng CSS với chỗ khác */
 .tkbs-wrapper {
-    background: linear-gradient(135deg, #f5f8ff 0%, #fdfdff 100%);
-    border-radius: 16px;
-    padding: 20px 22px;
+    background: linear-gradient(135deg, #e0f2fe 0%, #eff6ff 45%, #ffffff 100%);
+    border-radius: 18px;
+    padding: 18px 18px 18px;
+    border: 1px solid #e5e7eb;
 }
 
+/* HEADER */
 .tkbs-header {
     display: flex;
     justify-content: space-between;
@@ -158,24 +165,44 @@ function tkbs_format_date_vn($d) {
     flex-wrap: wrap;
 }
 
+.tkbs-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tkbs-header-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 24px;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
+}
+
 .tkbs-title {
     margin: 0;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
-    color: #1f2937;
+    color: #0f172a;
 }
 
 .tkbs-subtitle {
-    margin: 4px 0 0;
+    margin: 3px 0 0;
     font-size: 13px;
-    color: #6b7280;
+    color: #4b5563;
 }
 
+/* FILTER */
 .tkbs-filter-group {
     display: inline-flex;
     padding: 3px;
     border-radius: 999px;
-    background-color: #e5e7eb;
+    background-color: rgba(15, 23, 42, 0.06);
     gap: 3px;
 }
 
@@ -186,20 +213,21 @@ function tkbs_format_date_vn($d) {
     border-radius: 999px;
     background: transparent;
     cursor: pointer;
-    color: #374151;
+    color: #1f2937;
     transition: all 0.15s ease;
 }
 
 .tkbs-filter-btn:hover {
-    background-color: rgba(255,255,255,0.8);
+    background-color: rgba(255, 255, 255, 0.9);
 }
 
 .tkbs-filter-btn.active {
-    background-color: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     color: #ffffff;
-    box-shadow: 0 0 0 1px rgba(37,99,235,0.2);
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
 }
 
+/* RANGE TEXT */
 .tkbs-range {
     display: flex;
     align-items: center;
@@ -227,23 +255,24 @@ function tkbs_format_date_vn($d) {
     font-weight: 600;
 }
 
-/* Card chung */
+/* CARD CHUNG */
 .tkbs-card {
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 14px 16px;
     background-color: #ffffff;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .tkbs-card-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .tkbs-card-icon {
@@ -271,7 +300,7 @@ function tkbs_format_date_vn($d) {
 }
 
 .tkbs-card-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: #374151;
     text-transform: uppercase;
@@ -307,7 +336,8 @@ function tkbs_format_date_vn($d) {
 /* Responsive nhỏ */
 @media (max-width: 768px) {
     .tkbs-wrapper {
-        padding: 16px;
+        padding: 14px 12px;
+        border-radius: 14px;
     }
     .tkbs-title {
         font-size: 18px;
