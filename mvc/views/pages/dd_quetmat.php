@@ -12,8 +12,9 @@ $totalTemplates = count($faceTemplates);
             Điểm danh bằng khuôn mặt
         </h4>
         <small class="text-muted">
-            Hệ thống sẽ dùng <strong>mẫu khuôn mặt đã đăng ký</strong> để nhận diện nhân viên 
-            và ghi nhận điểm danh gắn với <strong>lịch làm việc hôm nay</strong>.
+            Hệ thống dùng <strong>mẫu khuôn mặt đã đăng ký</strong> để nhận diện nhân viên, 
+            gắn với <strong>lịch làm việc hôm nay</strong>. Khi bật camera, hệ thống sẽ 
+            <strong>tự động quét mỗi 5 giây</strong>
         </small>
     </div>
     <div class="text-end">
@@ -36,7 +37,7 @@ $totalTemplates = count($faceTemplates);
                 </div>
                 <small class="text-muted d-block mt-1">
                     Hướng dẫn: bật camera, đứng trong khung hình, nhìn thẳng, ánh sáng đủ. 
-                    Sau đó bấm <strong>Quét &amp; điểm danh</strong>.
+                    Hệ thống sẽ tự động quét và điểm danh nếu nhận diện được.
                 </small>
             </div>
         </div>
@@ -54,7 +55,7 @@ $totalTemplates = count($faceTemplates);
                     <div class="fw-semibold mb-1">Trạng thái</div>
                     <div id="ddStatusBox" class="small border rounded p-2 bg-light">
                         <?php if ($totalTemplates > 0): ?>
-                            Sẵn sàng. Bấm <strong>Bật camera</strong> để bắt đầu.
+                            Sẵn sàng. Bấm <strong>Bật camera</strong> để bắt đầu quét tự động.
                         <?php else: ?>
                             Chưa có mẫu khuôn mặt nào trong hệ thống. 
                             Vui lòng đăng ký mẫu cho nhân viên trước.
@@ -63,7 +64,7 @@ $totalTemplates = count($faceTemplates);
                 </div>
 
                 <div class="mb-2">
-                    <div class="fw-semibold mb-1">Kết quả nhận diện</div>
+                    <div class="fw-semibold mb-1">Kết quả nhận diện gần nhất</div>
                     <div id="ddRecognizedInfo" class="small border rounded p-2 bg-white">
                         Chưa có.
                     </div>
@@ -92,11 +93,12 @@ $totalTemplates = count($faceTemplates);
                     <button type="button" id="btnDDStartCamera"
                         class="btn btn-sm btn-outline-primary"
                         <?php echo $totalTemplates <= 0 ? 'disabled' : ''; ?>>
-                        <i class="bi bi-camera-video"></i> Bật camera
+                        <i class="bi bi-camera-video"></i> Bật camera (quét tự động)
                     </button>
-                    <button type="button" id="btnDDScan"
-                        class="btn btn-sm btn-success" disabled>
-                        <i class="bi bi-check2-circle"></i> Quét &amp; điểm danh
+                    <!-- [MỚI] Nút tắt camera -->
+                    <button type="button" id="btnDDStopCamera"
+                        class="btn btn-sm btn-outline-danger" disabled>
+                        <i class="bi bi-stop-circle"></i> Tắt camera
                     </button>
                 </div>
             </div>
@@ -117,13 +119,21 @@ document.addEventListener("DOMContentLoaded", function () {
     const statusEl = document.getElementById("ddStatusBox");
     const infoEl   = document.getElementById("ddRecognizedInfo");
     const btnStart = document.getElementById("btnDDStartCamera");
-    const btnScan  = document.getElementById("btnDDScan");
+    const btnStop  = document.getElementById("btnDDStopCamera"); // [MỚI] nút tắt cam
 
-    let stream          = null;
-    let modelsLoaded    = false;
-    let modelLoadError  = false;
-    let faceMatcher     = null;
+    let stream           = null;
+    let modelsLoaded     = false;
+    let modelLoadError   = false;
+    let faceMatcher      = null;
     let preparedTemplates = [];
+
+    // Quét tự động
+    const SCAN_INTERVAL_MS   = 5000;            // 5 giây quét 1 lần
+    const CHECKIN_COOLDOWN   = 5 * 60 * 1000;   // 5 phút không điểm danh lại
+    let scanTimer            = null;
+    let isScanning           = false;
+    let isProcessingFrame    = false;           // tránh chồng request
+    const lastCheckIn        = {};              // lưu tạm (MaNV -> timestamp ms)
 
     const MODEL_URL = "/KLTN_Benhvien/public/face-models";
 
@@ -139,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function () {
         infoEl.innerHTML = html;
     }
 
-    // Chuẩn hóa template: parse Descriptor JSON -> Float32Array
+    // Chuẩn hoá template: parse Descriptor JSON -> Float32Array
     function prepareTemplates(rawList) {
         const result = [];
         rawList.forEach(item => {
@@ -186,6 +196,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!preparedTemplates.length) {
             setStatus("Chưa có mẫu khuôn mặt hợp lệ. Vui lòng đăng ký mẫu trước.", "error");
             if (btnStart) btnStart.disabled = true;
+            if (btnStop)  btnStop.disabled  = true;
             return;
         }
 
@@ -197,6 +208,43 @@ document.addEventListener("DOMContentLoaded", function () {
         );
         faceMatcher = new faceapi.FaceMatcher(labeled, 0.6);
         console.log("FaceMatcher ready. Templates:", preparedTemplates.length);
+    }
+
+    function startAutoScan() {
+        if (scanTimer) clearInterval(scanTimer);
+        isScanning = true;
+
+        scanTimer = setInterval(() => {
+            if (!isScanning) return;
+            scanFrame();
+        }, SCAN_INTERVAL_MS);
+
+        setStatus("Camera đã bật. Hệ thống đang tự động quét mỗi 5 giây.", "success");
+    }
+
+    function stopCamera() {
+        isScanning = false;
+        if (scanTimer) {
+            clearInterval(scanTimer);
+            scanTimer = null;
+        }
+        if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+        }
+        if (video) {
+            video.srcObject = null;
+        }
+
+        // [MỚI] Cập nhật trạng thái nút khi tắt camera
+        if (btnStart) {
+            btnStart.disabled = false;
+        }
+        if (btnStop) {
+            btnStop.disabled = true;
+        }
+
+        setStatus("Camera đã tắt. Bấm 'Bật camera' để bắt đầu quét lại.", "info");
     }
 
     async function startCamera() {
@@ -228,8 +276,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 canvas.height = video.videoHeight;
             };
 
-            if (btnScan) btnScan.disabled = false;
-            setStatus("Camera đã bật. Bấm 'Quét & điểm danh' khi sẵn sàng.", "success");
+            // [MỚI] Khi bật camera: disable nút bật, enable nút tắt
+            if (btnStart) {
+                btnStart.disabled = true;
+            }
+            if (btnStop) {
+                btnStop.disabled = false;
+            }
+
+            startAutoScan();
         } catch (err) {
             console.error("startCamera error:", err);
             if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
@@ -242,7 +297,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    async function scanAndCheckIn() {
+    async function scanFrame() {
         if (!modelsLoaded || !faceMatcher) {
             setStatus("Model hoặc FaceMatcher chưa sẵn sàng.", "error");
             return;
@@ -251,8 +306,13 @@ document.addEventListener("DOMContentLoaded", function () {
             setStatus("Chưa bật camera.", "error");
             return;
         }
+        if (isProcessingFrame) {
+            // khung trước đang xử lý, bỏ qua lần này cho đỡ chồng
+            return;
+        }
 
-        setStatus("Đang quét và nhận diện khuôn mặt...", "info");
+        isProcessingFrame = true;
+        setStatus("Đang quét khuôn mặt...", "info");
 
         const options = new faceapi.TinyFaceDetectorOptions({
             inputSize: 320,
@@ -269,7 +329,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (!detection) {
-                setStatus("Không tìm thấy khuôn mặt. Thử lại, đứng gần và đủ sáng.", "error");
+                setStatus("Không thấy khuôn mặt trong khung. Vui lòng đứng gần và nhìn thẳng.", "error");
                 setInfo("Chưa nhận diện được khuôn mặt hợp lệ.");
                 return;
             }
@@ -285,8 +345,8 @@ document.addEventListener("DOMContentLoaded", function () {
             console.log("Best match:", bestMatch.toString());
 
             if (!bestMatch || bestMatch.label === "unknown") {
-                setStatus("Không nhận diện được nhân viên phù hợp trong hệ thống.", "error");
-                setInfo("Khuôn mặt không khớp với bất kỳ mẫu nào đã đăng ký.");
+                setStatus("Khuôn mặt không khớp với bất kỳ mẫu nào đã đăng ký.", "error");
+                setInfo("Khuôn mặt không thuộc nhân viên nào trong hệ thống.");
                 return;
             }
 
@@ -295,19 +355,38 @@ document.addEventListener("DOMContentLoaded", function () {
             const nv = preparedTemplates.find(t => t.maNV === maNV);
 
             if (!nv) {
-                setStatus("Nhận diện được mã nhân viên nhưng không tìm thấy thông tin NV.", "error");
+                setStatus("Nhận diện được mã nhân viên nhưng thiếu thông tin NV.", "error");
                 setInfo("Mã NV: " + maNV + " (thiếu thông tin).");
                 return;
             }
 
+            const now = Date.now();
+
+            // Debounce trên trình duyệt: nếu NV đã điểm danh trong 5 phút gần nhất
+            if (lastCheckIn[maNV] && (now - lastCheckIn[maNV] <= CHECKIN_COOLDOWN)) {
+                const minutes = Math.round((now - lastCheckIn[maNV]) / 60000);
+                setStatus(
+                    "Nhân viên " + nv.hoTen + " (Mã " + maNV + ") đã điểm danh trong " + minutes + " phút gần nhất.",
+                    "info"
+                );
+                setInfo(
+                    "<strong>" + nv.hoTen + "</strong><br>" +
+                    "Mã NV: " + maNV + "<br>" +
+                    "Chức vụ: " + (nv.chucVu || "") + "<br>" +
+                    "Khoảng cách (distance): " + distance.toFixed(3) + "<br>" +
+                    "<em>Đã điểm danh gần đây, không ghi nhận lại.</em>"
+                );
+                return; // không gọi API nữa
+            }
+
+            // Gọi API điểm danh
+            setStatus("Đã nhận diện. Đang gửi dữ liệu điểm danh...", "info");
             setInfo(
                 "<strong>" + nv.hoTen + "</strong><br>" +
                 "Mã NV: " + maNV + "<br>" +
                 "Chức vụ: " + (nv.chucVu || "") + "<br>" +
                 "Khoảng cách (distance): " + distance.toFixed(3)
             );
-
-            setStatus("Đã nhận diện. Đang gửi dữ liệu điểm danh...", "info");
 
             const res = await fetch("DD_CheckIn", {
                 method: "POST",
@@ -334,42 +413,59 @@ document.addEventListener("DOMContentLoaded", function () {
             if (data.KetQua) {
                 msg += " (" + data.KetQua + ")";
             }
-            setStatus(msg, "success");
 
-            // Dùng toast chung nếu có
+            // Lưu lại thời điểm điểm danh trên client
+            lastCheckIn[maNV] = now;
+
+            setStatus(msg, "success");
             if (window.showToastFromJS) {
                 window.showToastFromJS("success", msg);
             }
 
-            // Sau khi điểm danh thành công: tắt camera + disable nút quét
-            if (stream) {
-                stream.getTracks().forEach(t => t.stop());
-                stream = null;
+            // Cập nhật info thêm thời gian hệ thống trả về (nếu có)
+            if (data.ThoiGian) {
+                setInfo(
+                    "<strong>" + nv.hoTen + "</strong><br>" +
+                    "Mã NV: " + maNV + "<br>" +
+                    "Chức vụ: " + (nv.chucVu || "") + "<br>" +
+                    "Khoảng cách (distance): " + distance.toFixed(3) + "<br>" +
+                    "<strong>Thời gian điểm danh:</strong> " + data.ThoiGian + "<br>" +
+                    "<strong>Kết quả:</strong> " + (data.KetQua || "")
+                );
             }
-            video.srcObject = null;
-            if (btnScan) btnScan.disabled = true;
 
         } catch (err) {
-            console.error("scanAndCheckIn error:", err);
+            console.error("scanFrame error:", err);
             setStatus("Lỗi trong quá trình nhận diện / điểm danh.", "error");
             if (window.showToastFromJS) {
                 window.showToastFromJS("error", "Lỗi nhận diện hoặc ghi nhận điểm danh.");
             }
+        } finally {
+            isProcessingFrame = false;
         }
     }
 
     if (btnStart) {
-        btnStart.addEventListener("click", startCamera);
+        btnStart.addEventListener("click", function () {
+            if (!stream) {
+                startCamera();
+            } else {
+                // Nếu đã có stream, coi như camera đang chạy
+                setStatus("Camera đang hoạt động. Hệ thống đang tự động quét.", "success");
+            }
+        });
     }
-    if (btnScan) {
-        btnScan.addEventListener("click", scanAndCheckIn);
+
+    // [MỚI] Bắt sự kiện nút tắt camera
+    if (btnStop) {
+        btnStop.addEventListener("click", function () {
+            stopCamera();
+        });
     }
 
     // Tắt camera khi rời trang
     window.addEventListener("beforeunload", function () {
-        if (stream) {
-            stream.getTracks().forEach(t => t.stop());
-        }
+        stopCamera();
     });
 });
 </script>
