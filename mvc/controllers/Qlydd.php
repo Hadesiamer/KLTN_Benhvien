@@ -406,13 +406,90 @@ class Qlydd extends Controller
         exit;
     }
 
-    // ================== STUB CÁC CHỨC NĂNG KHÁC ==================
+    // ================== DANH SÁCH ĐIỂM DANH THEO NGÀY ==================
     public function DD_DanhSachNgay()
     {
         $this->requireManager();
 
+        /** @var mQlydd $model */
+        $model = $this->model("mQlydd");
+
+        $today = date("Y-m-d");
+
+        // [SỬA] Chuyển sang đọc filter từ POST, không truyền query trên URL
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $from   = isset($_POST["from"]) ? trim($_POST["from"]) : $today;
+            $to     = isset($_POST["to"]) ? trim($_POST["to"]) : $today;
+            $chucVu = isset($_POST["chucvu"]) ? trim($_POST["chucvu"]) : "";
+            $maKhoa = isset($_POST["makhoa"]) ? trim($_POST["makhoa"]) : "";
+            $soDT   = isset($_POST["sdt"]) ? trim($_POST["sdt"]) : "";
+            $maNV   = isset($_POST["manv"]) ? (int)$_POST["manv"] : 0;
+        } else {
+            // Lần đầu vào: mặc định xem ngày hôm nay, không filter
+            $from   = $today;
+            $to     = $today;
+            $chucVu = "";
+            $maKhoa = "";
+            $soDT   = "";
+            $maNV   = 0;
+        }
+
+        // Nếu chức vụ khác Bác sĩ thì bỏ lọc khoa
+        if ($chucVu !== 'Bác sĩ') {
+            $maKhoa = "";
+        }
+
+        // Validate ngày (format Y-m-d)
+        $fromDateTime = DateTime::createFromFormat("Y-m-d", $from);
+        $toDateTime   = DateTime::createFromFormat("Y-m-d", $to);
+
+        if (!$fromDateTime) {
+            $fromDateTime = new DateTime($today);
+        }
+        if (!$toDateTime) {
+            $toDateTime = new DateTime($today);
+        }
+
+        $invalidRange = false;
+        // [SỬA] Chặn trường hợp từ ngày > đến ngày (không hoán đổi nữa)
+        if ($fromDateTime > $toDateTime) {
+            $invalidRange = true;
+            $_SESSION["toast_type"] = "error";
+            $_SESSION["toast_message"] = "Khoảng ngày không hợp lệ: 'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.";
+        }
+
+        $fromStr = $fromDateTime->format("Y-m-d");
+        $toStr   = $toDateTime->format("Y-m-d");
+
+        // ----- Lấy dữ liệu filter dropdown -----
+        $dsKhoa      = $model->GetDanhSachKhoa();
+        $dsNhanVien  = $model->GetAllNhanVienDangLam();
+
+        // ----- Lấy danh sách điểm danh -----
+        if ($invalidRange) {
+            $dsDiemDanh = []; // chặn query khi khoảng ngày sai
+        } else {
+            $dsDiemDanh = $model->GetDiemDanhTheoNgay(
+                $fromStr,
+                $toStr,
+                $chucVu,
+                $maKhoa,
+                $soDT,
+                $maNV
+            );
+        }
+
         $this->view("layoutQLDiemDanh", [
-            "Page" => "dd_danhsach_ngay"
+            "Page"          => "dd_danhsach_ngay",
+            "DanhSach"      => $dsDiemDanh,
+            "DanhSachKhoa"  => $dsKhoa,
+            "NhanVienList"  => $dsNhanVien,
+            "FilterFrom"    => $fromStr,
+            "FilterTo"      => $toStr,
+            "FilterChucVu"  => $chucVu,
+            "FilterMaKhoa"  => $maKhoa,
+            "FilterSoDT"    => $soDT,
+            "FilterMaNV"    => $maNV
         ]);
     }
 

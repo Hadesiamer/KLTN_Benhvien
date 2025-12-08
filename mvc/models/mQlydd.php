@@ -315,8 +315,6 @@ class mQlydd extends DB
     }
 
     // Tìm ca làm việc hiện tại dựa trên giờ (H:i:s)
-    // [SỬA] select thêm GioiHanSomPhut, GioiHanTrePhut
-        // Tìm ca làm việc hiện tại dựa trên giờ (H:i:s)
     // [SỬA] Cho phép tìm ca ngay cả khi đến sớm trong giới hạn GioiHanSomPhut
     public function GetCaLamViecByTime($timeStr)
     {
@@ -354,7 +352,6 @@ class mQlydd extends DB
         mysqli_stmt_close($stmt);
         return $row;
     }
-
 
     // Lấy lịch làm việc của NV theo ngày + ca
     public function GetLichLamViecByNVDateCa($maNV, $ngayLamViec, $caLamViec)
@@ -431,6 +428,126 @@ class mQlydd extends DB
         mysqli_stmt_close($stmt);
 
         return $ok;
+    }
+
+    // ================== DANH SÁCH ĐIỂM DANH THEO NGÀY ==================
+    // [MỚI] Lấy danh sách điểm danh theo khoảng ngày + bộ lọc
+    public function GetDiemDanhTheoNgay($fromDate, $toDate, $chucVu = '', $maKhoa = '', $soDT = '', $maNV = 0)
+    {
+        $sql = "
+            SELECT
+                dd.MaDD,
+                dd.ThoiGianDiemDanh,
+                dd.KetQua,
+                dd.GhiChu,
+                llv.MaLLV,
+                llv.NgayLamViec,
+                llv.CaLamViec,
+                nv.MaNV,
+                nv.HovaTen,
+                nv.SoDT,
+                nv.ChucVu,
+                ck.TenKhoa
+            FROM diemdanh dd
+            INNER JOIN lichlamviec llv ON dd.MaLLV = llv.MaLLV
+            INNER JOIN nhanvien nv ON dd.MaNV = nv.MaNV
+            LEFT JOIN bacsi bs ON nv.MaNV = bs.MaNV
+            LEFT JOIN chuyenkhoa ck ON bs.MaKhoa = ck.MaKhoa
+            WHERE 1 = 1
+              AND llv.NgayLamViec BETWEEN ? AND ?
+        ";
+
+        $params = [];
+        $types  = "";
+
+        // Hai tham số ngày
+        $types   .= "ss";
+        $params[] = $fromDate;
+        $params[] = $toDate;
+
+        // Lọc theo chức vụ
+        if ($chucVu !== '') {
+            $sql   .= " AND nv.ChucVu = ? ";
+            $types .= "s";
+            $params[] = $chucVu;
+        }
+
+        // Nếu là bác sĩ và có chọn khoa thì lọc khoa
+        if ($chucVu === 'Bác sĩ' && $maKhoa !== '') {
+            $sql   .= " AND ck.MaKhoa = ? ";
+            $types .= "i";
+            $params[] = (int)$maKhoa;
+        }
+
+        // Lọc theo SĐT
+        if ($soDT !== '') {
+            $sql   .= " AND nv.SoDT LIKE ? ";
+            $types .= "s";
+            $params[] = '%' . $soDT . '%';
+        }
+
+        // Lọc theo một nhân viên cụ thể (nếu có)
+        if (!empty($maNV) && (int)$maNV > 0) {
+            $sql   .= " AND nv.MaNV = ? ";
+            $types .= "i";
+            $params[] = (int)$maNV;
+        }
+
+        // Sắp xếp: ngày mới nhất trước, trong ngày thì theo giờ điểm danh
+        $sql .= "
+            ORDER BY 
+                llv.NgayLamViec DESC,
+                dd.ThoiGianDiemDanh ASC
+        ";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return [];
+        }
+
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $rows = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $rows[] = $row;
+            }
+        }
+
+        mysqli_stmt_close($stmt);
+        return $rows;
+    }
+
+    // [MỚI] Lấy danh sách nhân viên đang làm việc (dùng cho filter dropdown)
+    public function GetAllNhanVienDangLam()
+    {
+        $sql = "
+            SELECT 
+                nv.MaNV,
+                nv.HovaTen,
+                nv.SoDT,
+                nv.ChucVu,
+                nv.TrangThaiLamViec,
+                ck.TenKhoa
+            FROM nhanvien nv
+            LEFT JOIN bacsi bs ON nv.MaNV = bs.MaNV
+            LEFT JOIN chuyenkhoa ck ON bs.MaKhoa = ck.MaKhoa
+            WHERE nv.TrangThaiLamViec = 'Đang làm việc'
+            ORDER BY nv.HovaTen ASC
+        ";
+
+        $result = mysqli_query($this->con, $sql);
+        $rows = [];
+
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $rows[] = $row;
+            }
+        }
+
+        return $rows;
     }
 }
 ?>
