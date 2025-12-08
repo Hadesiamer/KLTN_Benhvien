@@ -1,6 +1,9 @@
 <?php
+date_default_timezone_set('Asia/Ho_Chi_Minh');
 class Qlydd extends Controller
 {
+
+    
     // Trang mặc định khi vào /Qlydd
     public function SayHi()
     {
@@ -223,16 +226,152 @@ class Qlydd extends Controller
         exit;
     }
 
-    // ================== STUB CÁC CHỨC NĂNG KHÁC ==================
+    // ================== ĐIỂM DANH KHUÔN MẶT ==================
+
+    // Trang quét khuôn mặt
     public function DD_QuetMat()
     {
         $this->requireManager();
 
+        /** @var mQlydd $model */
+        $model = $this->model("mQlydd");
+
+        $templates  = $model->GetAllFaceTemplates();
+        $cauHinhCa  = $model->GetCauHinhCa();
+
         $this->view("layoutQLDiemDanh", [
-            "Page" => "dd_quetmat"
+            "Page"          => "dd_quetmat",
+            "FaceTemplates" => $templates,
+            "CauHinhCa"     => $cauHinhCa
         ]);
     }
 
+    // API: ghi nhận điểm danh sau khi đã nhận diện được MaNV trên client
+    public function DD_CheckIn()
+    {
+        $this->requireManager();
+        header("Content-Type: application/json; charset=utf-8");
+
+        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+            http_response_code(405);
+            echo json_encode([
+                "success" => false,
+                "message" => "Phương thức không được hỗ trợ."
+            ]);
+            exit;
+        }
+
+        $raw = file_get_contents("php://input");
+        $payload = json_decode($raw, true);
+
+        if (!is_array($payload)) {
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "message" => "Dữ liệu không hợp lệ."
+            ]);
+            exit;
+        }
+
+        $maNV     = isset($payload["MaNV"]) ? (int)$payload["MaNV"] : 0;
+        $distance = isset($payload["Distance"]) ? (float)$payload["Distance"] : null;
+
+        if ($maNV <= 0) {
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "message" => "Thiếu mã nhân viên."
+            ]);
+            exit;
+        }
+
+        // Thời gian hiện tại
+        $now = new DateTime(); // dùng timezone mặc định của PHP
+        $dateStr = $now->format("Y-m-d");
+        $timeStr = $now->format("H:i:s");
+        $dateTimeStr = $now->format("Y-m-d H:i:s");
+
+        /** @var mQlydd $model */
+        $model = $this->model("mQlydd");
+
+        // Tìm ca làm việc hiện tại theo clock
+        $caRow = $model->GetCaLamViecByTime($timeStr);
+        if (!$caRow) {
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "message" => "Hiện không nằm trong khung giờ ca làm việc nào, không thể điểm danh."
+            ]);
+            exit;
+        }
+
+        $caLamViec = $caRow["CaLamViec"]; // 'Sáng' hoặc 'Chiều'
+
+        // Tìm lịch làm việc của NV hôm nay với ca tương ứng
+        $llvRow = $model->GetLichLamViecByNVDateCa($maNV, $dateStr, $caLamViec);
+        if (!$llvRow) {
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "message" => "Hôm nay nhân viên không có lịch làm việc ca " . $caLamViec . "."
+            ]);
+            exit;
+        }
+
+        $maLLV = (int)$llvRow["MaLLV"];
+
+        // Kiểm tra đã điểm danh chưa
+        $ddRow = $model->GetDiemDanhByLLVNV($maLLV, $maNV);
+        if ($ddRow) {
+            echo json_encode([
+                "success" => true,
+                "already" => true,
+                "message" => "Nhân viên đã điểm danh lúc " . $ddRow["ThoiGianDiemDanh"] . ".",
+                "KetQua"  => $ddRow["KetQua"]
+            ]);
+            exit;
+        }
+
+        // Tính kết quả Đúng giờ / Đi trễ
+        $caStart = DateTime::createFromFormat("Y-m-d H:i:s", $dateStr . " " . $caRow["GioBatDau"]);
+        $diffSeconds = $now->getTimestamp() - $caStart->getTimestamp();
+        $diffMinutes = (int) floor($diffSeconds / 60);
+
+        if ($diffMinutes <= 5 && $diffSeconds >= -300) {
+            $ketQua = "Đúng giờ";
+        } elseif ($diffSeconds < -300) {
+            // đến quá sớm  (>5 phút)
+            $ketQua = "Đi sớm " . abs($diffMinutes) . " phút";
+        } else {
+            $ketQua = "Đi trễ " . $diffMinutes . " phút";
+        }
+
+        $ghiChu = "Điểm danh khuôn mặt";
+        if ($distance !== null) {
+            $ghiChu .= " (distance = " . number_format($distance, 3, '.', '') . ")";
+        }
+
+        $ok = $model->InsertDiemDanh($maLLV, $maNV, $dateTimeStr, $ketQua, $ghiChu);
+
+        if ($ok) {
+            echo json_encode([
+                "success"   => true,
+                "already"   => false,
+                "message"   => "Điểm danh thành công.",
+                "KetQua"    => $ketQua,
+                "ThoiGian"  => $dateTimeStr
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "message" => "Lỗi hệ thống, không thể ghi nhận điểm danh."
+            ]);
+        }
+        exit;
+    }
+
+    // ================== STUB CÁC CHỨC NĂNG KHÁC ==================
     public function DD_DanhSachNgay()
     {
         $this->requireManager();

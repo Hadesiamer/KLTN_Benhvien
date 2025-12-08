@@ -263,6 +263,144 @@ class mQlydd extends DB
             return $ok;
         }
     }
+
+    // ================== ĐIỂM DANH KHUÔN MẶT ==================
+
+    // Lấy toàn bộ template + thông tin nhân viên (chỉ nhân viên đang làm việc)
+    public function GetAllFaceTemplates()
+    {
+        $sql = "
+            SELECT 
+                ft.MaTemplate,
+                ft.MaNV,
+                ft.Descriptor,
+                ft.CreatedAt,
+                ft.UpdatedAt,
+                nv.HovaTen,
+                nv.ChucVu,
+                nv.SoDT,
+                nv.EmailNV,
+                nv.TrangThaiLamViec
+            FROM face_template ft
+            INNER JOIN nhanvien nv ON nv.MaNV = ft.MaNV
+            WHERE nv.TrangThaiLamViec = 'Đang làm việc'
+        ";
+
+        $result = mysqli_query($this->con, $sql);
+        $rows = [];
+
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $rows[] = $row;
+            }
+        }
+
+        return $rows;
+    }
+
+    // Tìm ca làm việc hiện tại dựa trên giờ (H:i:s)
+    public function GetCaLamViecByTime($timeStr)
+    {
+        $sql = "
+            SELECT MaCa, CaLamViec, GioBatDau, GioKetThuc, GhiChu
+            FROM cauhinh_ca
+            WHERE GioBatDau <= ? AND GioKetThuc >= ?
+            LIMIT 1
+        ";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return null;
+        }
+
+        mysqli_stmt_bind_param($stmt, "ss", $timeStr, $timeStr);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $row = null;
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+        }
+
+        mysqli_stmt_close($stmt);
+        return $row;
+    }
+
+    // Lấy lịch làm việc của NV theo ngày + ca
+    public function GetLichLamViecByNVDateCa($maNV, $ngayLamViec, $caLamViec)
+    {
+        $sql = "
+            SELECT MaLLV
+            FROM lichlamviec
+            WHERE MaNV = ? AND NgayLamViec = ? AND CaLamViec = ?
+            LIMIT 1
+        ";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return null;
+        }
+
+        mysqli_stmt_bind_param($stmt, "iss", $maNV, $ngayLamViec, $caLamViec);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $row = null;
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+        }
+
+        mysqli_stmt_close($stmt);
+        return $row; // có thể là null
+    }
+
+    // Kiểm tra đã có bản ghi điểm danh cho lịch đó hay chưa
+    public function GetDiemDanhByLLVNV($maLLV, $maNV)
+    {
+        $sql = "
+            SELECT MaDD, ThoiGianDiemDanh, KetQua, GhiChu
+            FROM diemdanh
+            WHERE MaLLV = ? AND MaNV = ?
+            ORDER BY ThoiGianDiemDanh ASC
+            LIMIT 1
+        ";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return null;
+        }
+
+        mysqli_stmt_bind_param($stmt, "ii", $maLLV, $maNV);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $row = null;
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+        }
+
+        mysqli_stmt_close($stmt);
+        return $row;
+    }
+
+    // Thêm bản ghi điểm danh mới
+    public function InsertDiemDanh($maLLV, $maNV, $dateTimeStr, $ketQua, $ghiChu)
+    {
+        $sql = "
+            INSERT INTO diemdanh (MaLLV, MaNV, ThoiGianDiemDanh, KetQua, GhiChu)
+            VALUES (?, ?, ?, ?, ?)
+        ";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmt, "iisss", $maLLV, $maNV, $dateTimeStr, $ketQua, $ghiChu);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $ok;
+    }
 }
 ?>
-

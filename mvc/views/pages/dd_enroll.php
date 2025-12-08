@@ -56,21 +56,30 @@ $hasFace = !empty($template);
                     <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
                         <span class="text-muted">Trạng thái mẫu:</span>
                         <?php if ($hasFace): ?>
-                            <span class="badge bg-success">
+                            <!-- [SỬA] thêm id để JS cập nhật -->
+                            <span id="faceStatusBadge" class="badge bg-success">
                                 <i class="bi bi-check2-circle"></i> Đã có mẫu
                             </span>
                         <?php else: ?>
-                            <span class="badge bg-danger">
+                            <span id="faceStatusBadge" class="badge bg-danger">
                                 <i class="bi bi-x-circle"></i> Chưa có mẫu
                             </span>
                         <?php endif; ?>
                     </li>
-                    <?php if ($hasFace && !empty($template["UpdatedAt"])): ?>
-                        <li class="list-group-item px-0 d-flex justify-content-between">
-                            <span class="text-muted">Cập nhật lần cuối:</span>
-                            <span class="small text-end"><?php echo htmlspecialchars($template["UpdatedAt"]); ?></span>
-                        </li>
-                    <?php endif; ?>
+
+                    <!-- [SỬA] luôn có dòng Cập nhật lần cuối + id để JS chỉnh -->
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">Cập nhật lần cuối:</span>
+                        <span id="faceLastUpdate" class="small text-end">
+                            <?php
+                            if ($hasFace && !empty($template["UpdatedAt"])) {
+                                echo htmlspecialchars($template["UpdatedAt"]);
+                            } else {
+                                echo "—";
+                            }
+                            ?>
+                        </span>
+                    </li>
                 </ul>
 
                 <div class="alert alert-info small mb-0">
@@ -89,7 +98,7 @@ $hasFace = !empty($template);
             <div class="card-body">
                 <h5 class="card-title mb-3">
                     <i class="bi bi-camera-video text-primary"></i>
-                    Đăng ký / cập nhật mẫu khuôn mặt
+                    Đăng ký / cập nhật mẫu khuôn mặt nè
                 </h5>
 
                 <div class="row g-3">
@@ -135,6 +144,7 @@ $hasFace = !empty($template);
 <script defer src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
 <script>
+// Phân biệt rõ lỗi model và lỗi camera, đồng thời cập nhật UI sau khi lưu
 document.addEventListener("DOMContentLoaded", function () {
     const video    = document.getElementById("videoFace");
     const canvas   = document.getElementById("overlayFace");
@@ -144,11 +154,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnSave  = document.getElementById("btnSaveTemplate");
     const maNV     = document.getElementById("MaNV").value;
 
+    // [SỬA] element trạng thái + thời gian cập nhật mẫu
+    const badgeStatusEl = document.getElementById("faceStatusBadge");
+    const lastUpdateEl  = document.getElementById("faceLastUpdate");
+
     let stream = null;
     let currentDescriptor = null;
     let modelsLoaded = false;
+    let modelLoadError = false; // cờ lỗi model
 
-    // Đường dẫn tới thư mục chứa model face-api.js (anh cần tự tải về)
+    // Đường dẫn tới thư mục chứa model face-api.js
     const MODEL_URL = "/KLTN_Benhvien/public/face-models";
 
     function setStatus(text, type = "info") {
@@ -161,7 +176,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function loadModels() {
-        if (modelsLoaded) return;
+        if (modelsLoaded || modelLoadError) return;
+
         setStatus("Đang tải model nhận diện khuôn mặt...", "info");
         try {
             await Promise.all([
@@ -170,18 +186,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
             ]);
             modelsLoaded = true;
-            setStatus("Tải model xong. Anh có thể bật camera.", "success");
+            setStatus("Tải model xong. Bạn có thể bật camera.", "success");
         } catch (err) {
-            console.error(err);
-            setStatus("Lỗi tải model. Kiểm tra lại thư mục model trong public/face-models.", "error");
-            throw err;
+            console.error("loadModels error:", err);
+            modelLoadError = true;
+            setStatus(
+                "Lỗi tải model nhận diện khuôn mặt. Kiểm tra lại thư mục public/face-models (file .json / .bin).",
+                "error"
+            );
         }
     }
 
     async function startCamera() {
-        try {
-            await loadModels();
+        await loadModels();
+        if (modelLoadError) {
+            return;
+        }
 
+        try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 setStatus("Trình duyệt không hỗ trợ camera (getUserMedia).", "error");
                 return;
@@ -192,7 +214,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             video.onloadedmetadata = () => {
                 video.play();
-                // resize canvas cho khớp video
                 canvas.width  = video.videoWidth;
                 canvas.height = video.videoHeight;
             };
@@ -200,16 +221,23 @@ document.addEventListener("DOMContentLoaded", function () {
             btnCap.disabled  = false;
             btnSave.disabled = true;
             currentDescriptor = null;
-            setStatus("Camera đã bật. Anh bấm 'Chụp khuôn mặt' khi sẵn sàng.", "success");
+            setStatus("Camera đã bật. Bạn bấm 'Chụp khuôn mặt' khi sẵn sàng.", "success");
         } catch (err) {
-            console.error(err);
-            setStatus("Không bật được camera. Kiểm tra quyền truy cập camera.", "error");
+            console.error("startCamera error:", err);
+
+            if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                setStatus("Trình duyệt đã chặn quyền camera. Bạn kiểm tra lại quyền truy cập camera.", "error");
+            } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                setStatus("Không tìm thấy thiết bị camera. Kiểm tra lại kết nối.", "error");
+            } else {
+                setStatus("Lỗi khi bật camera: " + (err.message || err.toString()), "error");
+            }
         }
     }
 
     async function captureFace() {
         if (!modelsLoaded) {
-            setStatus("Model chưa tải xong.", "error");
+            setStatus("Model chưa tải xong hoặc đang lỗi. Bạn kiểm tra lại thư mục model.", "error");
             return;
         }
         if (!video.srcObject) {
@@ -224,36 +252,40 @@ document.addEventListener("DOMContentLoaded", function () {
             scoreThreshold: 0.5
         });
 
-        const detection = await faceapi
-            .detectSingleFace(video, options)
-            .withFaceLandmarks()
-            .withFaceDescriptor();
+        try {
+            const detection = await faceapi
+                .detectSingleFace(video, options)
+                .withFaceLandmarks()
+                .withFaceDescriptor();
 
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        if (!detection) {
-            setStatus("Không tìm thấy khuôn mặt. Anh thử lại, nhìn thẳng và đủ sáng.", "error");
-            return;
+            if (!detection) {
+                setStatus("Không tìm thấy khuôn mặt. Bạn thử lại, nhìn thẳng và đủ sáng.", "error");
+                return;
+            }
+
+            const resized = faceapi.resizeResults(detection, {
+                width: canvas.width,
+                height: canvas.height
+            });
+            faceapi.draw.drawDetections(canvas, resized);
+            faceapi.draw.drawFaceLandmarks(canvas, resized);
+
+            currentDescriptor = Array.from(detection.descriptor);
+            btnSave.disabled  = false;
+
+            setStatus("Đã chụp khuôn mặt. Bạn bấm 'Lưu mẫu khuôn mặt' để lưu.", "success");
+        } catch (err) {
+            console.error("captureFace error:", err);
+            setStatus("Lỗi khi phân tích khuôn mặt (có thể do model). Xem console để biết chi tiết.", "error");
         }
-
-        // Vẽ khung lên canvas cho vui
-        const resized = faceapi.resizeResults(detection, {
-            width: canvas.width,
-            height: canvas.height
-        });
-        faceapi.draw.drawDetections(canvas, resized);
-        faceapi.draw.drawFaceLandmarks(canvas, resized);
-
-        currentDescriptor = Array.from(detection.descriptor); // chuyển Float32Array -> Array<number>
-        btnSave.disabled  = false;
-
-        setStatus("Đã chụp khuôn mặt. Anh bấm 'Lưu mẫu khuôn mặt' để lưu.", "success");
     }
 
     async function saveTemplate() {
         if (!currentDescriptor || !Array.isArray(currentDescriptor)) {
-            setStatus("Chưa có descriptor. Anh chụp lại khuôn mặt.", "error");
+            setStatus("Chưa có descriptor. Bạn chụp lại khuôn mặt.", "error");
             return;
         }
 
@@ -273,9 +305,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const data = await res.json();
             if (data.success) {
-                setStatus("Lưu mẫu khuôn mặt thành công.", "success");
+                // Tắt camera sau khi lưu thành công
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop());
+                    stream = null;
+                }
+                video.srcObject = null;
 
-                // Gọi toast chung ở layout nếu muốn
+                const ctx = canvas.getContext("2d");
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                btnCap.disabled  = true;
+                btnSave.disabled = true;
+
+                // [SỬA] Cập nhật UI trạng thái mẫu ngay lập tức
+                if (badgeStatusEl) {
+                    badgeStatusEl.className = "badge bg-success";
+                    badgeStatusEl.innerHTML = '<i class="bi bi-check2-circle"></i> Đã có mẫu';
+                }
+                if (lastUpdateEl) {
+                    const now = new Date();
+                    lastUpdateEl.textContent = now.toLocaleString("vi-VN");
+                }
+
+                setStatus("Lưu mẫu khuôn mặt thành công. Camera đã tắt.", "success");
+
                 if (window.showToastFromJS) {
                     window.showToastFromJS("success", "Lưu mẫu khuôn mặt thành công.");
                 }
@@ -286,7 +340,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         } catch (err) {
-            console.error(err);
+            console.error("saveTemplate error:", err);
             setStatus("Lỗi khi gửi dữ liệu lên server.", "error");
             if (window.showToastFromJS) {
                 window.showToastFromJS("error", "Lỗi kết nối server khi lưu mẫu.");
@@ -298,7 +352,6 @@ document.addEventListener("DOMContentLoaded", function () {
     btnCap.addEventListener("click", captureFace);
     btnSave.addEventListener("click", saveTemplate);
 
-    // Khi rời trang có thể tắt stream cho sạch
     window.addEventListener("beforeunload", function () {
         if (stream) {
             stream.getTracks().forEach(t => t.stop());
