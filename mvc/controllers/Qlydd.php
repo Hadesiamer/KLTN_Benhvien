@@ -1,9 +1,8 @@
 <?php
 date_default_timezone_set('Asia/Ho_Chi_Minh');
+
 class Qlydd extends Controller
 {
-
-    
     // Trang mặc định khi vào /Qlydd
     public function SayHi()
     {
@@ -51,6 +50,10 @@ class Qlydd extends Controller
                 $gioKetThuc = isset($row["GioKetThuc"]) ? trim($row["GioKetThuc"]) : "";
                 $ghiChu = isset($row["GhiChu"]) ? trim($row["GhiChu"]) : "";
 
+                // [MỚI] Lấy giới hạn sớm / trễ
+                $gioiHanSomPhut = isset($row["GioiHanSomPhut"]) ? (int)$row["GioiHanSomPhut"] : 0;
+                $gioiHanTrePhut = isset($row["GioiHanTrePhut"]) ? (int)$row["GioiHanTrePhut"] : 0;
+
                 if ($gioBatDau === "" || $gioKetThuc === "") {
                     $hasError = true;
                     continue;
@@ -61,7 +64,23 @@ class Qlydd extends Controller
                     continue;
                 }
 
-                $ok = $model->UpdateCauHinhCa($maCa, $gioBatDau . ":00", $gioKetThuc . ":00", $ghiChu);
+                // Không cho phép giá trị âm
+                if ($gioiHanSomPhut < 0) {
+                    $gioiHanSomPhut = 0;
+                }
+                if ($gioiHanTrePhut < 0) {
+                    $gioiHanTrePhut = 0;
+                }
+
+                $ok = $model->UpdateCauHinhCa(
+                    $maCa,
+                    $gioBatDau . ":00",
+                    $gioKetThuc . ":00",
+                    $gioiHanSomPhut,
+                    $gioiHanTrePhut,
+                    $ghiChu
+                );
+
                 if (!$ok) {
                     $hasError = true;
                 }
@@ -69,7 +88,7 @@ class Qlydd extends Controller
 
             if ($hasError) {
                 $_SESSION["toast_type"] = "error";
-                $_SESSION["toast_message"] = "Một số cấu hình ca không được lưu. Vui lòng kiểm tra lại thời gian.";
+                $_SESSION["toast_message"] = "Một số cấu hình ca không được lưu. Vui lòng kiểm tra lại dữ liệu.";
             } else {
                 $_SESSION["toast_type"] = "success";
                 $_SESSION["toast_message"] = "Cập nhật cấu hình ca làm việc thành công.";
@@ -332,17 +351,33 @@ class Qlydd extends Controller
             exit;
         }
 
-        // Tính kết quả Đúng giờ / Đi trễ
+        // ========== Tính kết quả Đúng giờ / Đi sớm / Đi trễ dựa trên cấu hình ==========
         $caStart = DateTime::createFromFormat("Y-m-d H:i:s", $dateStr . " " . $caRow["GioBatDau"]);
         $diffSeconds = $now->getTimestamp() - $caStart->getTimestamp();
         $diffMinutes = (int) floor($diffSeconds / 60);
 
-        if ($diffMinutes <= 5 && $diffSeconds >= -300) {
-            $ketQua = "Đúng giờ";
-        } elseif ($diffSeconds < -300) {
-            // đến quá sớm  (>5 phút)
+        $gioiHanSomPhut = isset($caRow["GioiHanSomPhut"]) ? (int)$caRow["GioiHanSomPhut"] : 0;
+        $gioiHanTrePhut = isset($caRow["GioiHanTrePhut"]) ? (int)$caRow["GioiHanTrePhut"] : 0;
+
+        // Nếu đến quá sớm hơn giới hạn cho phép -> không cho điểm danh
+        if ($gioiHanSomPhut > 0 && $diffSeconds < -$gioiHanSomPhut * 60) {
+            http_response_code(400);
+            echo json_encode([
+                "success" => false,
+                "message" => "Bạn đến quá sớm so với giờ bắt đầu ca. Chỉ cho phép điểm danh trước tối đa "
+                    . $gioiHanSomPhut . " phút."
+            ]);
+            exit;
+        }
+
+        if ($diffSeconds < 0) {
+            // Đến sớm nhưng trong khoảng cho phép
             $ketQua = "Đi sớm " . abs($diffMinutes) . " phút";
+        } elseif ($diffSeconds <= $gioiHanTrePhut * 60) {
+            // Trong khoảng trễ cho phép vẫn xem là đúng giờ
+            $ketQua = "Đúng giờ";
         } else {
+            // Trễ hơn giới hạn trễ
             $ketQua = "Đi trễ " . $diffMinutes . " phút";
         }
 

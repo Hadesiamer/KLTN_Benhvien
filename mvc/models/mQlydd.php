@@ -8,7 +8,14 @@ class mQlydd extends DB
     public function GetCauHinhCa()
     {
         $sql = "
-            SELECT MaCa, CaLamViec, GioBatDau, GioKetThuc, GhiChu
+            SELECT 
+                MaCa, 
+                CaLamViec, 
+                GioBatDau, 
+                GioKetThuc, 
+                GioiHanSomPhut,   -- [MỚI]
+                GioiHanTrePhut,   -- [MỚI]
+                GhiChu
             FROM cauhinh_ca
             ORDER BY MaCa
         ";
@@ -25,11 +32,17 @@ class mQlydd extends DB
     }
 
     // Cập nhật 1 dòng cấu hình ca
-    public function UpdateCauHinhCa($maCa, $gioBatDau, $gioKetThuc, $ghiChu)
+    // [SỬA] thêm tham số $gioiHanSomPhut, $gioiHanTrePhut
+    public function UpdateCauHinhCa($maCa, $gioBatDau, $gioKetThuc, $gioiHanSomPhut, $gioiHanTrePhut, $ghiChu)
     {
         $sql = "
             UPDATE cauhinh_ca
-            SET GioBatDau = ?, GioKetThuc = ?, GhiChu = ?
+            SET 
+                GioBatDau       = ?, 
+                GioKetThuc      = ?, 
+                GioiHanSomPhut  = ?, 
+                GioiHanTrePhut  = ?, 
+                GhiChu          = ?
             WHERE MaCa = ?
         ";
 
@@ -38,11 +51,14 @@ class mQlydd extends DB
             return false;
         }
 
+        // s = time, s = time, i = int, i = int, s = text, i = int
         mysqli_stmt_bind_param(
             $stmt,
-            "sssi",
+            "ssiisi",
             $gioBatDau,
             $gioKetThuc,
+            $gioiHanSomPhut,
+            $gioiHanTrePhut,
             $ghiChu,
             $maCa
         );
@@ -299,12 +315,25 @@ class mQlydd extends DB
     }
 
     // Tìm ca làm việc hiện tại dựa trên giờ (H:i:s)
+    // [SỬA] select thêm GioiHanSomPhut, GioiHanTrePhut
+        // Tìm ca làm việc hiện tại dựa trên giờ (H:i:s)
+    // [SỬA] Cho phép tìm ca ngay cả khi đến sớm trong giới hạn GioiHanSomPhut
     public function GetCaLamViecByTime($timeStr)
     {
         $sql = "
-            SELECT MaCa, CaLamViec, GioBatDau, GioKetThuc, GhiChu
+            SELECT 
+                MaCa, 
+                CaLamViec, 
+                GioBatDau, 
+                GioKetThuc, 
+                GioiHanSomPhut,
+                GioiHanTrePhut,
+                GhiChu
             FROM cauhinh_ca
-            WHERE GioBatDau <= ? AND GioKetThuc >= ?
+            WHERE 
+                -- Cho phép điểm danh từ (GioBatDau - GioiHanSomPhut phút) đến GioKetThuc
+                SUBTIME(GioBatDau, SEC_TO_TIME(GioiHanSomPhut * 60)) <= ?
+                AND GioKetThuc >= ?
             LIMIT 1
         ";
 
@@ -325,6 +354,7 @@ class mQlydd extends DB
         mysqli_stmt_close($stmt);
         return $row;
     }
+
 
     // Lấy lịch làm việc của NV theo ngày + ca
     public function GetLichLamViecByNVDateCa($maNV, $ngayLamViec, $caLamViec)

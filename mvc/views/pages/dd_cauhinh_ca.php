@@ -10,7 +10,8 @@ $cauHinhCa = isset($data["CauHinhCa"]) ? $data["CauHinhCa"] : [];
         </h4>
         <small class="text-muted">
             Gồm 2 ca cố định: <strong>Sáng</strong> và <strong>Chiều</strong>. 
-            Anh chỉ cần chỉnh khung giờ, các chức năng điểm danh / thống kê sẽ tự đọc theo cấu hình này.
+            Bạn chỉ cần chỉnh khung giờ và <strong>giới hạn đi sớm / đi trễ</strong>,
+            các chức năng điểm danh / thống kê sẽ tự đọc theo cấu hình này.
         </small>
     </div>
 </div>
@@ -28,6 +29,14 @@ $cauHinhCa = isset($data["CauHinhCa"]) ? $data["CauHinhCa"] : [];
                                 <th style="min-width:150px;">Ca làm việc</th>
                                 <th style="min-width:130px;">Giờ bắt đầu</th>
                                 <th style="min-width:130px;">Giờ kết thúc</th>
+                                <th class="text-center" style="min-width:140px;">
+                                    Giới hạn sớm<br>
+                                    <small class="text-muted">(phút, cho phép đến sớm)</small>
+                                </th>
+                                <th class="text-center" style="min-width:140px;">
+                                    Giới hạn trễ<br>
+                                    <small class="text-muted">(phút, vẫn coi là đúng giờ)</small>
+                                </th>
                                 <th>Ghi chú</th>
                             </tr>
                         </thead>
@@ -39,6 +48,10 @@ $cauHinhCa = isset($data["CauHinhCa"]) ? $data["CauHinhCa"] : [];
                                     $timeStart = substr($ca["GioBatDau"], 0, 5);
                                     $timeEnd   = substr($ca["GioKetThuc"], 0, 5);
                                     $ghiChu    = isset($ca["GhiChu"]) ? $ca["GhiChu"] : "";
+
+                                    // Giá trị giới hạn sớm/trễ, default nếu null
+                                    $gioiHanSom = isset($ca["GioiHanSomPhut"]) ? (int)$ca["GioiHanSomPhut"] : 15;
+                                    $gioiHanTre = isset($ca["GioiHanTrePhut"]) ? (int)$ca["GioiHanTrePhut"] : 5;
                                 ?>
                                 <tr>
                                     <td><?php echo $index + 1; ?></td>
@@ -61,6 +74,24 @@ $cauHinhCa = isset($data["CauHinhCa"]) ? $data["CauHinhCa"] : [];
                                                class="form-control form-control-sm"
                                                value="<?php echo htmlspecialchars($timeEnd); ?>"
                                                required>
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="number"
+                                               name="rows[<?php echo $maCa; ?>][GioiHanSomPhut]"
+                                               class="form-control form-control-sm text-end d-inline-block"
+                                               style="max-width: 90px;"
+                                               min="0"
+                                               step="1"
+                                               value="<?php echo htmlspecialchars($gioiHanSom); ?>">
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="number"
+                                               name="rows[<?php echo $maCa; ?>][GioiHanTrePhut]"
+                                               class="form-control form-control-sm text-end d-inline-block"
+                                               style="max-width: 90px;"
+                                               min="0"
+                                               step="1"
+                                               value="<?php echo htmlspecialchars($gioiHanTre); ?>">
                                     </td>
                                     <td>
                                         <input type="text"
