@@ -594,12 +594,111 @@ class Qlydd extends Controller
         ]);
     }
 
+    // ================== THỐNG KÊ ĐIỂM DANH ==================
     public function DD_ThongKe()
     {
         $this->requireManager();
 
+        /** @var mQlydd $model */
+        $model = $this->model("mQlydd");
+
+        $today = date("Y-m-d");
+
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $from   = isset($_POST["from"]) ? trim($_POST["from"]) : $today;
+            $to     = isset($_POST["to"]) ? trim($_POST["to"]) : $today;
+            $chucVu = isset($_POST["chucvu"]) ? trim($_POST["chucvu"]) : "";
+            $maKhoa = isset($_POST["makhoa"]) ? trim($_POST["makhoa"]) : "";
+            $maNV   = isset($_POST["manv"]) ? (int)$_POST["manv"] : 0;
+        } else {
+            // Lần đầu vào: mặc định xem hôm nay
+            $from   = $today;
+            $to     = $today;
+            $chucVu = "";
+            $maKhoa = "";
+            $maNV   = 0;
+        }
+
+        // Nếu chức vụ khác Bác sĩ thì bỏ lọc khoa
+        if ($chucVu !== 'Bác sĩ') {
+            $maKhoa = "";
+        }
+
+        // Validate ngày
+        $fromDateTime = DateTime::createFromFormat("Y-m-d", $from);
+        $toDateTime   = DateTime::createFromFormat("Y-m-d", $to);
+
+        if (!$fromDateTime) {
+            $fromDateTime = new DateTime($today);
+        }
+        if (!$toDateTime) {
+            $toDateTime = new DateTime($today);
+        }
+
+        $invalidRange = false;
+        if ($fromDateTime > $toDateTime) {
+            $invalidRange = true;
+            $_SESSION["toast_type"] = "error";
+            $_SESSION["toast_message"] = "Khoảng ngày không hợp lệ: 'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.";
+        }
+
+        $fromStr = $fromDateTime->format("Y-m-d");
+        $toStr   = $toDateTime->format("Y-m-d");
+
+        // Dropdown filter
+        $dsKhoa     = $model->GetDanhSachKhoa();
+        $dsNhanVien = $model->GetAllNhanVienDangLam();
+
+        if ($invalidRange) {
+            $thongKeNV = [];
+        } else {
+            $thongKeNV = $model->GetThongKeDiemDanhTheoNhanVien(
+                $fromStr,
+                $toStr,
+                $chucVu,
+                $maKhoa,
+                $maNV
+            );
+        }
+
+        // Tính tổng quan từ danh sách thống kê theo nhân viên
+        $tongCa       = 0;
+        $tongDaDD     = 0;
+        $tongVang     = 0;
+        $tongDungGio  = 0;
+        $tongDiSom    = 0;
+        $tongDiTre    = 0;
+
+        foreach ($thongKeNV as $row) {
+            $tongCa      += (int)$row["TongCa"];
+            $tongDaDD    += (int)$row["SoCaDaDiemDanh"];
+            $tongVang    += (int)$row["SoCaVang"];
+            $tongDungGio += (int)$row["SoCaDungGio"];
+            $tongDiSom   += (int)$row["SoCaDiSom"];
+            $tongDiTre   += (int)$row["SoCaDiTre"];
+        }
+
+        $tyLeDiemDanh = $tongCa > 0 ? round($tongDaDD * 100 / $tongCa, 1) : 0;
+        $tyLeDungGio  = $tongDaDD > 0 ? round($tongDungGio * 100 / $tongDaDD, 1) : 0;
+
         $this->view("layoutQLDiemDanh", [
-            "Page" => "dd_thongke"
+            "Page"             => "dd_thongke",
+            "ThongKeNhanVien"  => $thongKeNV,
+            "DanhSachKhoa"     => $dsKhoa,
+            "NhanVienList"     => $dsNhanVien,
+            "FilterFrom"       => $fromStr,
+            "FilterTo"         => $toStr,
+            "FilterChucVu"     => $chucVu,
+            "FilterMaKhoa"     => $maKhoa,
+            "FilterMaNV"       => $maNV,
+            "TK_TongCa"        => $tongCa,
+            "TK_DaDiemDanh"    => $tongDaDD,
+            "TK_Vang"          => $tongVang,
+            "TK_DungGio"       => $tongDungGio,
+            "TK_DiSom"         => $tongDiSom,
+            "TK_DiTre"         => $tongDiTre,
+            "TK_TyLeDiemDanh"  => $tyLeDiemDanh,
+            "TK_TyLeDungGio"   => $tyLeDungGio
         ]);
     }
 }

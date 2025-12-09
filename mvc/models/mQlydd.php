@@ -705,5 +705,97 @@ class mQlydd extends DB
         mysqli_stmt_close($stmt);
         return $rows;
     }
+
+    // ================== THỐNG KÊ ĐIỂM DANH ==================
+    // [MỚI] Thống kê điểm danh theo nhân viên trong khoảng ngày + bộ lọc
+    public function GetThongKeDiemDanhTheoNhanVien($fromDate, $toDate, $chucVu = '', $maKhoa = '', $maNV = 0)
+    {
+        $sql = "
+            SELECT
+                nv.MaNV,
+                nv.HovaTen,
+                nv.ChucVu,
+                ck.TenKhoa,
+                COUNT(*) AS TongCa,
+                SUM(CASE WHEN dd.MaDD IS NOT NULL THEN 1 ELSE 0 END) AS SoCaDaDiemDanh,
+                SUM(CASE WHEN dd.MaDD IS NULL THEN 1 ELSE 0 END) AS SoCaVang,
+                SUM(CASE WHEN dd.MaDD IS NOT NULL AND dd.KetQua LIKE 'Đúng giờ%' THEN 1 ELSE 0 END) AS SoCaDungGio,
+                SUM(CASE WHEN dd.MaDD IS NOT NULL AND dd.KetQua LIKE 'Đi sớm%' THEN 1 ELSE 0 END) AS SoCaDiSom,
+                SUM(CASE WHEN dd.MaDD IS NOT NULL AND dd.KetQua LIKE 'Đi trễ%' THEN 1 ELSE 0 END) AS SoCaDiTre
+            FROM lichlamviec llv
+            INNER JOIN nhanvien nv ON llv.MaNV = nv.MaNV
+            LEFT JOIN bacsi bs ON nv.MaNV = bs.MaNV
+            LEFT JOIN chuyenkhoa ck ON bs.MaKhoa = ck.MaKhoa
+            LEFT JOIN diemdanh dd ON dd.MaLLV = llv.MaLLV AND dd.MaNV = llv.MaNV
+            WHERE 1 = 1
+              AND llv.NgayLamViec BETWEEN ? AND ?
+        ";
+
+        $params = [];
+        $types  = "";
+
+        // Hai tham số ngày
+        $types   .= "ss";
+        $params[] = $fromDate;
+        $params[] = $toDate;
+
+        // Lọc theo chức vụ
+        if ($chucVu !== '') {
+            $sql   .= " AND nv.ChucVu = ? ";
+            $types .= "s";
+            $params[] = $chucVu;
+        }
+
+        // Lọc theo khoa (chỉ khi bác sĩ và có chọn khoa)
+        if ($chucVu === 'Bác sĩ' && $maKhoa !== '') {
+            $sql   .= " AND ck.MaKhoa = ? ";
+            $types .= "i";
+            $params[] = (int)$maKhoa;
+        }
+
+        // Lọc theo một nhân viên cụ thể
+        if (!empty($maNV) && (int)$maNV > 0) {
+            $sql   .= " AND nv.MaNV = ? ";
+            $types .= "i";
+            $params[] = (int)$maNV;
+        }
+
+        // Gom nhóm theo nhân viên
+        $sql .= "
+            GROUP BY 
+                nv.MaNV,
+                nv.HovaTen,
+                nv.ChucVu,
+                ck.TenKhoa
+            ORDER BY 
+                nv.HovaTen ASC
+        ";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return [];
+        }
+
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $rows = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                // Ép kiểu int cho chắc
+                $row["TongCa"]          = (int)$row["TongCa"];
+                $row["SoCaDaDiemDanh"]  = (int)$row["SoCaDaDiemDanh"];
+                $row["SoCaVang"]        = (int)$row["SoCaVang"];
+                $row["SoCaDungGio"]     = (int)$row["SoCaDungGio"];
+                $row["SoCaDiSom"]       = (int)$row["SoCaDiSom"];
+                $row["SoCaDiTre"]       = (int)$row["SoCaDiTre"];
+                $rows[] = $row;
+            }
+        }
+
+        mysqli_stmt_close($stmt);
+        return $rows;
+    }
 }
 ?>
