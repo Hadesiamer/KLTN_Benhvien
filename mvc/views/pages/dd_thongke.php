@@ -7,6 +7,7 @@ $filterFrom   = isset($data["FilterFrom"]) ? $data["FilterFrom"] : date("Y-m-d")
 $filterTo     = isset($data["FilterTo"]) ? $data["FilterTo"] : date("Y-m-d");
 $filterChucVu = isset($data["FilterChucVu"]) ? $data["FilterChucVu"] : "";
 $filterMaKhoa = isset($data["FilterMaKhoa"]) ? $data["FilterMaKhoa"] : "";
+$filterSoDT   = isset($data["FilterSoDT"]) ? $data["FilterSoDT"] : "";
 $filterMaNV   = isset($data["FilterMaNV"]) ? (int)$data["FilterMaNV"] : 0;
 
 $tkTongCa       = isset($data["TK_TongCa"]) ? (int)$data["TK_TongCa"] : 0;
@@ -33,7 +34,32 @@ $tkTyLeDungGio  = isset($data["TK_TyLeDungGio"]) ? $data["TK_TyLeDungGio"] : 0.0
         </div>
     </div>
 
-    <!-- FORM BỘ LỌC -->
+    <!-- FORM TÌM KIẾM SĐT (ĐỘC LẬP) -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-2">
+            <form method="POST" action="" class="row g-2 align-items-end">
+                <div class="col-md-4 col-lg-3">
+                    <label class="form-label form-label-sm mb-1">Tìm kiếm theo số điện thoại</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text"
+                               name="sdt"
+                               class="form-control"
+                               placeholder="Nhập SĐT cần tìm"
+                               value="<?php echo htmlspecialchars($filterSoDT); ?>">
+                        <button type="submit"
+                                name="action"
+                                value="search"
+                                class="btn btn-outline-primary">
+                            <i class="bi bi-search"></i>
+                            Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FORM BỘ LỌC CHÍNH -->
     <div class="card shadow-sm border-0 mb-3">
         <div class="card-body">
             <form method="POST" action="" class="row g-3 align-items-end">
@@ -82,7 +108,10 @@ $tkTyLeDungGio  = isset($data["TK_TyLeDungGio"]) ? $data["TK_TyLeDungGio"] : 0.0
                 <!-- Nhân viên cụ thể -->
                 <div class="col-md-4">
                     <label class="form-label form-label-sm mb-1">Nhân viên</label>
-                    <select name="manv" class="form-select form-select-sm">
+                    <select name="manv"
+                            id="filterMaNV"
+                            class="form-select form-select-sm"
+                            data-selected="<?php echo (int)$filterMaNV; ?>">
                         <option value="0">Tất cả nhân viên</option>
                         <?php foreach ($dsNhanVien as $nv): ?>
                             <option value="<?php echo (int)$nv["MaNV"]; ?>"
@@ -99,12 +128,27 @@ $tkTyLeDungGio  = isset($data["TK_TyLeDungGio"]) ? $data["TK_TyLeDungGio"] : 0.0
                     </select>
                 </div>
 
-                <!-- Nút áp dụng -->
+                <!-- mang theo SĐT hiện tại (nếu có) để export dùng đúng filter -->
+                <input type="hidden"
+                       name="sdt"
+                       value="<?php echo htmlspecialchars($filterSoDT); ?>">
+
+                <!-- Nút áp dụng + Xuất Excel -->
                 <div class="col-md-2 d-flex">
-                    <button type="submit"
-                            class="btn btn-sm btn-primary mt-3 w-100">
-                        <i class="bi bi-funnel"></i> Xem thống kê
-                    </button>
+                    <div class="d-flex flex-column flex-md-row w-100 gap-2 mt-3">
+                        <button type="submit"
+                                name="action"
+                                value="filter"
+                                class="btn btn-sm btn-primary w-100">
+                            <i class="bi bi-funnel"></i> Xem thống kê
+                        </button>
+                        <button type="submit"
+                                name="action"
+                                value="export"
+                                class="btn btn-sm btn-success w-100">
+                            <i class="bi bi-file-earmark-excel"></i> Xuất Excel
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -185,7 +229,6 @@ $tkTyLeDungGio  = isset($data["TK_TyLeDungGio"]) ? $data["TK_TyLeDungGio"] : 0.0
                                 <th style="width:80px;" class="text-center">Đúng giờ</th>
                                 <th style="width:80px;" class="text-center">Đi sớm</th>
                                 <th style="width:80px;" class="text-center">Đi trễ</th>
-                                <th style="width:90px;" class="text-center">% đúng giờ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -196,13 +239,12 @@ $tkTyLeDungGio  = isset($data["TK_TyLeDungGio"]) ? $data["TK_TyLeDungGio"] : 0.0
                                     $chucVu   = $row["ChucVu"];
                                     $tenKhoa  = isset($row["TenKhoa"]) ? $row["TenKhoa"] : "";
 
-                                    $tongCaNV     = (int)$row["TongCa"];
-                                    $daDDNV       = (int)$row["SoCaDaDiemDanh"];
-                                    $vangNV       = (int)$row["SoCaVang"];
-                                    $dungGioNV    = (int)$row["SoCaDungGio"];
-                                    $diSomNV      = (int)$row["SoCaDiSom"];
-                                    $diTreNV      = (int)$row["SoCaDiTre"];
-                                    $tyLeDungGioNV = $daDDNV > 0 ? round($dungGioNV * 100 / $daDDNV, 1) : 0;
+                                    $tongCaNV  = (int)$row["TongCa"];
+                                    $daDDNV    = (int)$row["SoCaDaDiemDanh"];
+                                    $vangNV    = (int)$row["SoCaVang"];
+                                    $dungGioNV = (int)$row["SoCaDungGio"];
+                                    $diSomNV   = (int)$row["SoCaDiSom"];
+                                    $diTreNV   = (int)$row["SoCaDiTre"];
                                 ?>
                                 <tr>
                                     <td><?php echo $index + 1; ?></td>
@@ -216,9 +258,6 @@ $tkTyLeDungGio  = isset($data["TK_TyLeDungGio"]) ? $data["TK_TyLeDungGio"] : 0.0
                                     <td class="text-center"><?php echo $dungGioNV; ?></td>
                                     <td class="text-center"><?php echo $diSomNV; ?></td>
                                     <td class="text-center"><?php echo $diTreNV; ?></td>
-                                    <td class="text-center">
-                                        <?php echo number_format($tyLeDungGioNV, 1); ?>%
-                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -239,25 +278,103 @@ $tkTyLeDungGio  = isset($data["TK_TyLeDungGio"]) ? $data["TK_TyLeDungGio"] : 0.0
 
 <script>
 // JS: nếu chức vụ khác 'Bác sĩ' thì disable dropdown khoa
+// và gọi AJAX để cập nhật lại danh sách "Nhân viên" theo bộ lọc
 document.addEventListener("DOMContentLoaded", function () {
     const chucVuSelect = document.getElementById("filterChucVuTK");
     const khoaSelect   = document.getElementById("filterMaKhoaTK");
+    const nhanVienSelect = document.getElementById("filterMaNV");
 
+    // Hàm bật/tắt dropdown khoa theo chức vụ
     function updateKhoaState() {
         if (!chucVuSelect || !khoaSelect) return;
         if (chucVuSelect.value === "Bác sĩ") {
             khoaSelect.disabled = false;
             khoaSelect.classList.remove("bg-light");
         } else {
+            // Nếu không phải bác sĩ thì clear khoa
             khoaSelect.value = "";
             khoaSelect.disabled = true;
             khoaSelect.classList.add("bg-light");
         }
     }
 
-    if (chucVuSelect) {
-        chucVuSelect.addEventListener("change", updateKhoaState);
-        updateKhoaState();
+    // Hàm gọi AJAX lên server để lấy lại danh sách nhân viên theo bộ lọc
+    function reloadNhanVienOptions() {
+        if (!nhanVienSelect || !chucVuSelect || !khoaSelect) return;
+
+        const chucVu = chucVuSelect.value;
+        // Nếu không phải bác sĩ thì không gửi khoa
+        const maKhoa = (chucVu === "Bác sĩ") ? khoaSelect.value : "";
+
+        const formData = new FormData();
+        formData.append("chucvu", chucVu);
+        formData.append("makhoa", maKhoa);
+
+        fetch("./DD_AjaxNhanVienTheoBoLoc", {
+            method: "POST",
+            body: formData
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+                return response.json();
+            })
+            .then(function (json) {
+                if (!json.success) {
+                    console.error(json.message || "Lỗi khi tải danh sách nhân viên");
+                    return;
+                }
+
+                const selectedFromServer = parseInt(
+                    nhanVienSelect.getAttribute("data-selected") || "0",
+                    10
+                );
+
+                // Xóa toàn bộ option cũ
+                while (nhanVienSelect.firstChild) {
+                    nhanVienSelect.removeChild(nhanVienSelect.firstChild);
+                }
+
+                // Thêm option "Tất cả nhân viên"
+                const optAll = document.createElement("option");
+                optAll.value = "0";
+                optAll.textContent = "Tất cả nhân viên";
+                nhanVienSelect.appendChild(optAll);
+
+                // Thêm các option mới từ server
+                json.data.forEach(function (item) {
+                    const opt = document.createElement("option");
+                    opt.value = item.MaNV;
+                    opt.textContent = item.Label;
+
+                    // Giữ lại lựa chọn cũ nếu còn tồn tại trong danh sách mới
+                    if (selectedFromServer > 0 && selectedFromServer === parseInt(item.MaNV, 10)) {
+                        opt.selected = true;
+                    }
+
+                    nhanVienSelect.appendChild(opt);
+                });
+            })
+            .catch(function (error) {
+                console.error("Fetch error:", error);
+            });
     }
+
+    if (chucVuSelect) {
+        chucVuSelect.addEventListener("change", function () {
+            updateKhoaState();       // xử lý disable/enable khoa
+            reloadNhanVienOptions(); // gọi AJAX cập nhật nhân viên
+        });
+    }
+
+    if (khoaSelect) {
+        khoaSelect.addEventListener("change", function () {
+            reloadNhanVienOptions();
+        });
+    }
+
+    // Gọi ban đầu để set trạng thái khoa đúng với filter hiện tại
+    updateKhoaState();
 });
 </script>

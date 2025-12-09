@@ -534,5 +534,194 @@ class mQuanLy extends DB {
         return $ok;
     }
 
+    
+    // Lấy tất cả nhân viên xét nghiệm đang làm việc
+    public function GetAll() {
+        $sql = "SELECT MaNV, HovaTen, NgaySinh, GioiTinh
+                FROM nhanvien
+                WHERE ChucVu = 'Nhân viên xét nghiệm'
+                  AND TrangThaiLamViec = 'Đang làm việc'";
+        $result = mysqli_query($this->con, $sql);
+
+        $mang = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $mang[] = $row;
+            }
+        }
+
+        // Trả về JSON để view dùng json_decode giống NV nhà thuốc
+        return json_encode($mang);
+    }
+    
+
+    // ================== THÊM NHÂN VIÊN XÉT NGHIỆM + TẠO TÀI KHOẢN ==================
+    // $HovaTen, $NgaySinh (Y-m-d), $SoDT, $EmailNV, $GioiTinh
+    public function AddNVXN($HovaTen, $NgaySinh, $SoDT, $EmailNV, $GioiTinh) {
+        $conn = $this->con;
+
+        // Chuẩn hóa dữ liệu
+        $HovaTen  = trim($HovaTen);
+        $NgaySinh = trim($NgaySinh);
+        $SoDT     = trim($SoDT);
+        $EmailNV  = trim($EmailNV);
+        $GioiTinh = trim($GioiTinh);
+
+        // 1. Kiểm tra trùng số điện thoại
+        $sqlCheckPhone = "SELECT MaNV FROM nhanvien WHERE SoDT = ?";
+        $stmtPhone = mysqli_prepare($conn, $sqlCheckPhone);
+        if (!$stmtPhone) {
+            return "Lỗi hệ thống (prepare check phone).";
+        }
+        mysqli_stmt_bind_param($stmtPhone, "s", $SoDT);
+        mysqli_stmt_execute($stmtPhone);
+        $resPhone = mysqli_stmt_get_result($stmtPhone);
+        if ($resPhone && mysqli_num_rows($resPhone) > 0) {
+            mysqli_stmt_close($stmtPhone);
+            return "Số điện thoại đã tồn tại trong hệ thống.";
+        }
+        mysqli_stmt_close($stmtPhone);
+
+        // 2. Kiểm tra trùng email
+        $sqlCheckEmail = "SELECT MaNV FROM nhanvien WHERE EmailNV = ?";
+        $stmtEmail = mysqli_prepare($conn, $sqlCheckEmail);
+        if (!$stmtEmail) {
+            return "Lỗi hệ thống (prepare check email).";
+        }
+        mysqli_stmt_bind_param($stmtEmail, "s", $EmailNV);
+        mysqli_stmt_execute($stmtEmail);
+        $resEmail = mysqli_stmt_get_result($stmtEmail);
+        if ($resEmail && mysqli_num_rows($resEmail) > 0) {
+            mysqli_stmt_close($stmtEmail);
+            return "Email đã tồn tại trong hệ thống.";
+        }
+        mysqli_stmt_close($stmtEmail);
+
+        // Bắt đầu transaction để đảm bảo thêm NV + tài khoản đồng bộ
+        mysqli_begin_transaction($conn);
+        try {
+            // 3. Insert vào bảng nhanvien
+            $sqlInsertNV = "INSERT INTO nhanvien (HovaTen, NgaySinh, GioiTinh, SoDT, EmailNV, ChucVu, TrangThaiLamViec)
+                            VALUES (?, ?, ?, ?, ?, 'Nhân viên xét nghiệm', 'Đang làm việc')";
+            $stmtNV = mysqli_prepare($conn, $sqlInsertNV);
+            if (!$stmtNV) {
+                throw new Exception("Lỗi prepare insert nhanvien.");
+            }
+            mysqli_stmt_bind_param($stmtNV, "sssss", $HovaTen, $NgaySinh, $GioiTinh, $SoDT, $EmailNV);
+            $okNV = mysqli_stmt_execute($stmtNV);
+            if (!$okNV) {
+                mysqli_stmt_close($stmtNV);
+                throw new Exception("Không thể thêm nhân viên xét nghiệm.");
+            }
+            // Lấy MaNV vừa insert
+            $MaNV = mysqli_insert_id($conn);
+            mysqli_stmt_close($stmtNV);
+
+            // 4. Tạo tài khoản cho nhân viên xét nghiệm
+            // Giả định: ID trong bảng taikhoan trùng với MaNV
+            // Password mặc định = md5(số điện thoại)
+            $passwordDefault = md5($SoDT);
+
+            // ✅ THAY ĐỔI: thêm username = số điện thoại vào bảng taikhoan
+            $sqlInsertTK = "INSERT INTO taikhoan (ID, username, password, MaPQ) VALUES (?, ?, ?, 6)";
+            $stmtTK = mysqli_prepare($conn, $sqlInsertTK);
+            if (!$stmtTK) {
+                throw new Exception("Lỗi prepare insert taikhoan.");
+            }
+            mysqli_stmt_bind_param($stmtTK, "iss", $MaNV, $SoDT, $passwordDefault);
+            $okTK = mysqli_stmt_execute($stmtTK);
+            mysqli_stmt_close($stmtTK);
+
+            if (!$okTK) {
+                throw new Exception("Không thể tạo tài khoản cho nhân viên xét nghiệm.");
+            }
+
+            // Nếu mọi thứ ok -> commit
+            mysqli_commit($conn);
+            return true; // controller sẽ hiểu là 'true'
+        } catch (Exception $e) {
+            // Lỗi thì rollback
+            mysqli_rollback($conn);
+            return $e->getMessage();
+        }
+    }
+
+    // Lấy thông tin chi tiết 1 nhân viên xét nghiệm theo MaNV
+    public function Get1NVXN($MaNV) {
+        $sql = "SELECT MaNV, HovaTen, NgaySinh, GioiTinh, SoDT, EmailNV
+                FROM nhanvien
+                WHERE MaNV = ?
+                  AND ChucVu = 'Nhân viên xét nghiệm'";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return json_encode([]);
+        }
+        mysqli_stmt_bind_param($stmt, "i", $MaNV);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $mang = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $mang[] = $row;
+            }
+        }
+        mysqli_stmt_close($stmt);
+
+        return json_encode($mang);
+    }
+
+    // Cập nhật thông tin NVXN (ngày sinh, giới tính, email)
+    public function UpdateNVXN($MaNV, $NgaySinh, $GioiTinh, $EmailNV) {
+        // Ràng buộc đơn giản: email hợp lệ
+        if (!filter_var($EmailNV, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        // Không cho email trùng với NV khác
+        $sqlCheck = "SELECT MaNV FROM nhanvien WHERE EmailNV = ? AND MaNV <> ?";
+        $stmtCheck = mysqli_prepare($this->con, $sqlCheck);
+        if (!$stmtCheck) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmtCheck, "si", $EmailNV, $MaNV);
+        mysqli_stmt_execute($stmtCheck);
+        $resCheck = mysqli_stmt_get_result($stmtCheck);
+        if ($resCheck && mysqli_num_rows($resCheck) > 0) {
+            mysqli_stmt_close($stmtCheck);
+            return false; // email đã tồn tại
+        }
+        mysqli_stmt_close($stmtCheck);
+
+        $sql = "UPDATE nhanvien
+                SET NgaySinh = ?, GioiTinh = ?, EmailNV = ?
+                WHERE MaNV = ?
+                  AND ChucVu = 'Nhân viên xét nghiệm'";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, "sssi", $NgaySinh, $GioiTinh, $EmailNV, $MaNV);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $ok;
+    }
+
+    // Thôi việc NVXN (không xóa cứng, chỉ đổi trạng thái)
+    public function DeleteNVXN($MaNV) {
+        $sql = "UPDATE nhanvien
+                SET TrangThaiLamViec = 'Thôi việc'
+                WHERE MaNV = ?
+                  AND ChucVu = 'Nhân viên xét nghiệm'";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return false;
+        }
+        mysqli_stmt_bind_param($stmt, "i", $MaNV);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        return $ok;
+    }
 }
 ?>

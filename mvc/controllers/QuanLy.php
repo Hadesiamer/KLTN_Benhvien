@@ -790,5 +790,152 @@ class QuanLy extends Controller {
         $this->view("LayoutQLdoimatkhau");
     }
 
+
+    //Phan cua quan ly nhan vien xet nghiem
+    function DSNVXN() {
+        // dùng model mQuanLy cho NVXN
+        $ql = $this->model("mQuanLy");
+
+        // Lấy danh sách nhân viên xét nghiệm (JSON string giống NV nhà thuốc)
+        $nhanvien = $ql->GetAll();
+
+        // Gọi layout quản lý BS/NV, nạp page qlnvxn
+        $this->view("layoutQLyBS", [
+            "Page" => "qlnvxn",
+            "NhanVien" => $nhanvien
+        ]);
+    }
+
+    // ====== NVXN: CHI TIẾT / CẬP NHẬT / THÔI VIỆC ======
+    function CTNVXN() {
+        $ql = $this->model("mQuanLy");
+
+        // 1) Xem chi tiết NVXN (từ danh sách DSNVXN)
+        if (isset($_POST["btnCTNVXN"])) {
+            $MaNV = $_POST["ctnv"];
+
+            if (!empty($MaNV)) {
+                $chitietNV = $ql->Get1NVXN($MaNV);
+                $this->view("layoutQLyBS", [
+                    "Page" => "qlchitietnvxn",
+                    "CTNV" => $chitietNV
+                ]);
+                return;
+            } else {
+                $this->view("layoutQLyBS", [
+                    "Page" => "qlchitietnvxn",
+                    "Error" => "Mã nhân viên không hợp lệ."
+                ]);
+                return;
+            }
+        }
+
+        // 2) Cập nhật thông tin NVXN
+        if (isset($_POST["btnSuaNVXN"])) {
+            $MaNV     = $_POST["MaNV"] ?? '';
+            $NgaySinh = $_POST["NgaySinh"] ?? '';
+            $GioiTinh = $_POST["GioiTinh"] ?? '';
+            $EmailNV  = $_POST["EmailNV"] ?? '';
+
+            $rs = $ql->UpdateNVXN($MaNV, $NgaySinh, $GioiTinh, $EmailNV);
+
+            $this->view("layoutQLyBS", [
+                "Page" => "qlchitietnvxn",
+                "CTNV" => $ql->Get1NVXN($MaNV),
+                "rs"   => $rs ? 'true' : 'false'
+            ]);
+            return;
+        }
+
+        // 3) Thôi việc / xóa NVXN
+        if (isset($_POST["btnXoaNVXN"])) {
+            $MaNV = $_POST["MaNV"] ?? '';
+
+            $rs = $ql->DeleteNVXN($MaNV);
+
+            // Sau khi thôi việc -> quay về danh sách NVXN
+            $this->view("layoutQLyBS", [
+                "Page"     => "qlnvxn",
+                "NhanVien" => $ql->GetAll(),
+                "rs"       => 3   // để view qlchitietnvxn/qlnvxn show alert "Thôi việc nhân viên thành công"
+            ]);
+            return;
+        }
+
+        // Nếu không có action hợp lệ
+        $this->view("layoutQLyBS", [
+            "Page"  => "qlchitietnvxn",
+            "Error" => "Yêu cầu không hợp lệ."
+        ]);
+    }
+
+    // ================== THÊM NHÂN VIÊN XÉT NGHIỆM ==================
+    function ThemNVXN() {
+        // Dùng chung model mQuanLy để xử lý NVXN
+        $ql = $this->model("mQuanLy");
+
+        // Nếu submit form thêm NVXN
+        if (isset($_POST["btnThemNVXN"])) {
+            $hovaten  = $_POST["HovaTen"] ?? '';
+            $sdt      = $_POST["SoDT"] ?? '';
+            $NgaySinh = $_POST["NgaySinh"] ?? '';
+            $GioiTinh = $_POST["GioiTinh"] ?? '';
+            $EmailNV  = $_POST["EmailNV"] ?? '';
+
+            // Ràng buộc cơ bản phía server (song song với pattern HTML)
+            if (!preg_match("/^[a-zA-ZÀ-ỹ\s]+$/u", $hovaten)) {
+                $this->view("layoutQLyBS", [
+                    "Page"   => "ThemNVXN",
+                    "Error"  => "Họ tên không được chứa ký tự đặc biệt và số."
+                ]);
+                return;
+            }
+
+            if (!preg_match("/^[0-9]+$/", $sdt)) {
+                $this->view("layoutQLyBS", [
+                    "Page"   => "ThemNVXN",
+                    "Error"  => "Số điện thoại chỉ được chứa số."
+                ]);
+                return;
+            }
+
+            if (!filter_var($EmailNV, FILTER_VALIDATE_EMAIL)) {
+                $this->view("layoutQLyBS", [
+                    "Page"   => "ThemNVXN",
+                    "Error"  => "Email không hợp lệ."
+                ]);
+                return;
+            }
+
+            // Gọi model thêm nhân viên xét nghiệm + tạo tài khoản
+            $rs = $ql->AddNVXN($hovaten, $NgaySinh, $sdt, $EmailNV, $GioiTinh);
+
+            if ($rs === true || $rs === 'true') {
+                // Lấy lại danh sách NVXN sau khi thêm
+                $this->view("layoutQLyBS", [
+                    "Page"     => "qlnvxn",
+                    "NhanVien" => $ql->GetAll(),
+                    "rs"       => 'true' // để view qlnvxn.php show alert "Thêm nhân viên xét nghiệm thành công"
+                ]);
+            } else {
+                // Trường hợp lỗi: có thể $rs là chuỗi message hoặc code
+                $errorMsg = "Thêm nhân viên xét nghiệm thất bại.";
+                if (is_string($rs)) {
+                    $errorMsg = $rs;
+                }
+
+                $this->view("layoutQLyBS", [
+                    "Page"  => "ThemNVXN",
+                    "Error" => $errorMsg
+                ]);
+            }
+        } else {
+            // Lần đầu load form thêm NVXN
+            $this->view("layoutQLyBS", [
+                "Page" => "ThemNVXN"
+            ]);
+        }
+    }
+
 }
 ?>

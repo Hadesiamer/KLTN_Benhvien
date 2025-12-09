@@ -603,20 +603,44 @@ class Qlydd extends Controller
         $model = $this->model("mQlydd");
 
         $today = date("Y-m-d");
+        $action = "";
 
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
-            $from   = isset($_POST["from"]) ? trim($_POST["from"]) : $today;
-            $to     = isset($_POST["to"]) ? trim($_POST["to"]) : $today;
-            $chucVu = isset($_POST["chucvu"]) ? trim($_POST["chucvu"]) : "";
-            $maKhoa = isset($_POST["makhoa"]) ? trim($_POST["makhoa"]) : "";
-            $maNV   = isset($_POST["manv"]) ? (int)$_POST["manv"] : 0;
+            $action = isset($_POST["action"]) ? trim($_POST["action"]) : "";
+
+            if ($action === "search") {
+                // Tìm kiếm SĐT độc lập (giống DD_DoiChieu): mặc định trong ngày hôm nay
+                $from   = $today;
+                $to     = $today;
+                $chucVu = "";
+                $maKhoa = "";
+                $maNV   = 0;
+                $soDT   = isset($_POST["sdt"]) ? trim($_POST["sdt"]) : "";
+            } elseif ($action === "export") {
+                // Xuất Excel theo bộ lọc hiện tại (bao gồm cả SĐT từ input hidden)
+                $from   = isset($_POST["from"]) ? trim($_POST["from"]) : $today;
+                $to     = isset($_POST["to"]) ? trim($_POST["to"]) : $today;
+                $chucVu = isset($_POST["chucvu"]) ? trim($_POST["chucvu"]) : "";
+                $maKhoa = isset($_POST["makhoa"]) ? trim($_POST["makhoa"]) : "";
+                $maNV   = isset($_POST["manv"]) ? (int)$_POST["manv"] : 0;
+                $soDT   = isset($_POST["sdt"]) ? trim($_POST["sdt"]) : "";
+            } else {
+                // Áp dụng bộ lọc thống kê (không dùng SĐT)
+                $from   = isset($_POST["from"]) ? trim($_POST["from"]) : $today;
+                $to     = isset($_POST["to"]) ? trim($_POST["to"]) : $today;
+                $chucVu = isset($_POST["chucvu"]) ? trim($_POST["chucvu"]) : "";
+                $maKhoa = isset($_POST["makhoa"]) ? trim($_POST["makhoa"]) : "";
+                $maNV   = isset($_POST["manv"]) ? (int)$_POST["manv"] : 0;
+                $soDT   = ""; // ô tìm kiếm SĐT nằm form riêng
+            }
         } else {
-            // Lần đầu vào: mặc định xem hôm nay
+            // Lần đầu vào: mặc định xem hôm nay, không filter
             $from   = $today;
             $to     = $today;
             $chucVu = "";
             $maKhoa = "";
             $maNV   = 0;
+            $soDT   = "";
         }
 
         // Nếu chức vụ khác Bác sĩ thì bỏ lọc khoa
@@ -647,7 +671,8 @@ class Qlydd extends Controller
 
         // Dropdown filter
         $dsKhoa     = $model->GetDanhSachKhoa();
-        $dsNhanVien = $model->GetAllNhanVienDangLam();
+        // [MỚI] Nhân viên phụ thuộc Chức vụ / Khoa
+        $dsNhanVien = $model->GetNhanVienDangLamTheoBoLoc($chucVu, $maKhoa);
 
         if ($invalidRange) {
             $thongKeNV = [];
@@ -657,6 +682,7 @@ class Qlydd extends Controller
                 $toStr,
                 $chucVu,
                 $maKhoa,
+                $soDT,
                 $maNV
             );
         }
@@ -681,6 +707,28 @@ class Qlydd extends Controller
         $tyLeDiemDanh = $tongCa > 0 ? round($tongDaDD * 100 / $tongCa, 1) : 0;
         $tyLeDungGio  = $tongDaDD > 0 ? round($tongDungGio * 100 / $tongDaDD, 1) : 0;
 
+        // Nếu là action export và khoảng ngày hợp lệ -> xuất Excel theo đúng bộ lọc & danh sách hiện có
+        if ($action === "export" && !$invalidRange) {
+            $this->exportThongKeExcel(
+                $thongKeNV,
+                $fromStr,
+                $toStr,
+                $chucVu,
+                $maKhoa,
+                $maNV,
+                $soDT,
+                $tongCa,
+                $tongDaDD,
+                $tongVang,
+                $tongDungGio,
+                $tongDiSom,
+                $tongDiTre,
+                $tyLeDiemDanh,
+                $tyLeDungGio
+            );
+            // exportThongKeExcel sẽ exit() sau khi xuất file
+        }
+
         $this->view("layoutQLDiemDanh", [
             "Page"             => "dd_thongke",
             "ThongKeNhanVien"  => $thongKeNV,
@@ -690,6 +738,7 @@ class Qlydd extends Controller
             "FilterTo"         => $toStr,
             "FilterChucVu"     => $chucVu,
             "FilterMaKhoa"     => $maKhoa,
+            "FilterSoDT"       => $soDT,
             "FilterMaNV"       => $maNV,
             "TK_TongCa"        => $tongCa,
             "TK_DaDiemDanh"    => $tongDaDD,
@@ -700,6 +749,170 @@ class Qlydd extends Controller
             "TK_TyLeDiemDanh"  => $tyLeDiemDanh,
             "TK_TyLeDungGio"   => $tyLeDungGio
         ]);
+    }
+
+    // ================== AJAX: LẤY DANH SÁCH NHÂN VIÊN THEO BỘ LỌC ==================
+    // Dùng cho ô chọn "Nhân viên" ở trang thống kê, cập nhật tự động khi đổi Chức vụ / Khoa
+    public function DD_AjaxNhanVienTheoBoLoc()
+    {
+        $this->requireManager();
+        header("Content-Type: application/json; charset=utf-8");
+
+        // Chỉ chấp nhận POST
+        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+            http_response_code(405);
+            echo json_encode([
+                "success" => false,
+                "message" => "Phương thức không được hỗ trợ."
+            ]);
+            exit;
+        }
+
+        $chucVu = isset($_POST["chucvu"]) ? trim($_POST["chucvu"]) : "";
+        $maKhoa = isset($_POST["makhoa"]) ? trim($_POST["makhoa"]) : "";
+
+        /** @var mQlydd $model */
+        $model = $this->model("mQlydd");
+        $ds    = $model->GetNhanVienDangLamTheoBoLoc($chucVu, $maKhoa);
+
+        $result = [];
+        foreach ($ds as $nv) {
+            $label = $nv["HovaTen"];
+            if (!empty($nv["SoDT"])) {
+                $label .= " - " . $nv["SoDT"];
+            }
+            $result[] = [
+                "MaNV"  => (int)$nv["MaNV"],
+                "Label" => $label
+            ];
+        }
+
+        echo json_encode([
+            "success" => true,
+            "data"    => $result
+        ]);
+        exit;
+    }
+
+    // ================== HÀM RIÊNG: XUẤT EXCEL THỐNG KÊ ĐIỂM DANH ==================
+    // Xuất file Excel đơn giản (dạng .xls) từ danh sách $thongKeNV và thông tin tổng quan
+    private function exportThongKeExcel(
+        $thongKeNV,
+        $fromStr,
+        $toStr,
+        $chucVu,
+        $maKhoa,
+        $maNV,
+        $soDT,
+        $tongCa,
+        $tongDaDD,
+        $tongVang,
+        $tongDungGio,
+        $tongDiSom,
+        $tongDiTre,
+        $tyLeDiemDanh,
+        $tyLeDungGio
+    ) {
+        // Tên file
+        $filename = "thongke_diemdanh_{$fromStr}_den_{$toStr}.xls";
+
+        // Header cho trình duyệt tải về dưới dạng Excel
+        header("Content-Type: application/vnd.ms-excel; charset=utf-8");
+        header("Content-Disposition: attachment; filename=\"" . $filename . "\"");
+        header("Cache-Control: no-store, no-cache, must-revalidate");
+        header("Pragma: no-cache");
+
+        // Đảm bảo charset UTF-8 hiển thị đúng tiếng Việt
+        echo "<meta charset=\"UTF-8\">";
+
+        // Thông tin bộ lọc phía trên
+        echo "<h3>Thống kê điểm danh nhân viên</h3>";
+        echo "<p>Khoảng ngày: <strong>" . htmlspecialchars($fromStr) . "</strong> đến <strong>" . htmlspecialchars($toStr) . "</strong></p>";
+
+        if ($chucVu !== "") {
+            echo "<p>Chức vụ: <strong>" . htmlspecialchars($chucVu) . "</strong></p>";
+        } else {
+            echo "<p>Chức vụ: Tất cả</p>";
+        }
+
+        if (!empty($soDT)) {
+            echo "<p>Lọc SĐT chứa: <strong>" . htmlspecialchars($soDT) . "</strong></p>";
+        }
+
+        // Bảng tổng quan
+        echo "<h4>Tổng quan</h4>";
+        echo "<table border='1' cellspacing='0' cellpadding='4'>";
+        echo "<tr>
+                <th>Tổng ca</th>
+                <th>Đã điểm danh</th>
+                <th>Vắng</th>
+                <th>Đúng giờ</th>
+                <th>Đi sớm</th>
+                <th>Đi trễ</th>
+                <th>% Điểm danh</th>
+                <th>% Đúng giờ (trong số đã điểm danh)</th>
+            </tr>";
+        echo "<tr>";
+        echo "<td>" . (int)$tongCa . "</td>";
+        echo "<td>" . (int)$tongDaDD . "</td>";
+        echo "<td>" . (int)$tongVang . "</td>";
+        echo "<td>" . (int)$tongDungGio . "</td>";
+        echo "<td>" . (int)$tongDiSom . "</td>";
+        echo "<td>" . (int)$tongDiTre . "</td>";
+        echo "<td>" . number_format($tyLeDiemDanh, 1) . "%</td>";
+        echo "<td>" . number_format($tyLeDungGio, 1) . "%</td>";
+        echo "</tr>";
+        echo "</table>";
+
+        // Bảng chi tiết theo nhân viên
+        echo "<h4>Chi tiết theo nhân viên</h4>";
+        echo "<table border='1' cellspacing='0' cellpadding='4'>";
+        echo "<tr>
+                <th>#</th>
+                <th>Mã NV</th>
+                <th>Họ và tên</th>
+                <th>Chức vụ</th>
+                <th>Chuyên khoa</th>
+                <th>Tổng ca</th>
+                <th>Đã điểm danh</th>
+                <th>Vắng</th>
+                <th>Đúng giờ</th>
+                <th>Đi sớm</th>
+                <th>Đi trễ</th>
+            </tr>";
+
+        $stt = 1;
+        foreach ($thongKeNV as $row) {
+            $maNV     = (int)$row["MaNV"];
+            $hoTen    = $row["HovaTen"];
+            $chucVuNV = $row["ChucVu"];
+            $tenKhoa  = isset($row["TenKhoa"]) ? $row["TenKhoa"] : "";
+
+            $tongCaNV  = (int)$row["TongCa"];
+            $daDDNV    = (int)$row["SoCaDaDiemDanh"];
+            $vangNV    = (int)$row["SoCaVang"];
+            $dungGioNV = (int)$row["SoCaDungGio"];
+            $diSomNV   = (int)$row["SoCaDiSom"];
+            $diTreNV   = (int)$row["SoCaDiTre"];
+
+            echo "<tr>";
+            echo "<td>" . $stt++ . "</td>";
+            echo "<td>" . $maNV . "</td>";
+            echo "<td>" . htmlspecialchars($hoTen) . "</td>";
+            echo "<td>" . htmlspecialchars($chucVuNV) . "</td>";
+            echo "<td>" . htmlspecialchars($tenKhoa) . "</td>";
+            echo "<td>" . $tongCaNV . "</td>";
+            echo "<td>" . $daDDNV . "</td>";
+            echo "<td>" . $vangNV . "</td>";
+            echo "<td>" . $dungGioNV . "</td>";
+            echo "<td>" . $diSomNV . "</td>";
+            echo "<td>" . $diTreNV . "</td>";
+            echo "</tr>";
+        }
+
+        echo "</table>";
+
+        exit; // Kết thúc xuất file
     }
 }
 ?>

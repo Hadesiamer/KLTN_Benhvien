@@ -25,7 +25,7 @@ class Login extends Controller{
                     case 3: header("refresh:0; url='/KLTN_Benhvien/NVYT'"); break;
                     case 4: header("refresh:0; url='/KLTN_Benhvien/NVNT'"); break;
                     case 5: header("refresh:0; url='/KLTN_Benhvien'"); break;
-                    case 6: header("refresh:0; url='/KLTN_Benhvien/Admin'"); break;
+                    case 6: header("refresh:0; url='/KLTN_Benhvien/NVXN'"); break;
                 }
                 exit;
             } else {

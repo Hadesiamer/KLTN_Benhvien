@@ -7,11 +7,30 @@ $filterChucVu = isset($data["FilterChucVu"]) ? $data["FilterChucVu"] : "";
 $filterMaKhoa = isset($data["FilterMaKhoa"]) ? $data["FilterMaKhoa"] : "";
 $filterSoDT   = isset($data["FilterSoDT"]) ? $data["FilterSoDT"] : "";
 
-// Thống kê và phân trang (đã được controller tính sẵn)
-$totalNV     = isset($data["TotalNV"]) ? (int)$data["TotalNV"] : count($nhanvien);
-$daDangKy    = isset($data["DaDangKy"]) ? (int)$data["DaDangKy"] : 0;
-$chuaDangKy  = isset($data["ChuaDangKy"]) ? (int)$data["ChuaDangKy"] : max(0, $totalNV - $daDangKy);
+// ================== THỐNG KÊ & PHÂN TRANG ==================
 
+// Tổng nhân viên: ưu tiên giá trị controller truyền, nếu không thì đếm trong mảng hiện có
+$totalNV = isset($data["TotalNV"]) ? (int)$data["TotalNV"] : count($nhanvien);
+
+// [MỚI] Tính số đã đăng ký / chưa đăng ký khuôn mặt
+// - Nếu controller đã truyền DaDangKy, ChuaDangKy thì dùng luôn
+// - Nếu không, tự đếm theo trường HasFace trong mảng $nhanvien hiện có
+if (isset($data["DaDangKy"])) {
+    $daDangKy   = (int)$data["DaDangKy"];
+    $chuaDangKy = isset($data["ChuaDangKy"])
+        ? (int)$data["ChuaDangKy"]
+        : max(0, $totalNV - $daDangKy);
+} else {
+    $daDangKy   = 0;
+    foreach ($nhanvien as $nv) {
+        if (!empty($nv["HasFace"])) {
+            $daDangKy++;
+        }
+    }
+    $chuaDangKy = max(0, $totalNV - $daDangKy);
+}
+
+// Thông tin phân trang (nếu controller có truyền thì dùng, không thì mặc định 1 trang)
 $pageCurrent = isset($data["PageCurrent"]) ? (int)$data["PageCurrent"] : 1;
 $pageTotal   = isset($data["PageTotal"]) ? (int)$data["PageTotal"] : 1;
 $perPage     = isset($data["PerPage"]) ? (int)$data["PerPage"] : 10;
@@ -158,8 +177,9 @@ $dsChucVu = [
 <div class="card shadow-sm border-0">
     <div class="card-body">
         <?php if ($totalNV > 0): ?>
-            <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle">
+            <!-- [MỚI] Giới hạn chiều cao, thêm thanh cuộn dọc (~10 dòng) -->
+            <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th style="width:60px;">Mã NV</th>

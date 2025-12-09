@@ -9,7 +9,7 @@ if ($_SESSION["role"] != 6) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Bệnh viện</title>
+    <title>NVXN Dashboard - Bệnh viện</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -25,7 +25,7 @@ if ($_SESSION["role"] != 6) {
                 <div class="flex items-center gap-4">
                     <span class="text-gray-600">
                         <i class="far fa-user-circle text-xl mr-2"></i>
-                        Admin
+                        Nhân viên xét nghiệm
                     </span>
                 </div>
             </div>
@@ -40,25 +40,25 @@ if ($_SESSION["role"] != 6) {
                 <!-- Navigation Menu -->
                 <ul class="space-y-2 flex-1">
                     <li>
-                        <a href="/KLTN_Benhvien/Admin" class="flex items-center px-4 py-3 bg-blue-50 text-blue-600 rounded-lg font-medium transition-colors hover:bg-blue-100">
+                        <a href="/KLTN_Benhvien/NVXN" class="flex items-center px-4 py-3 bg-blue-50 text-blue-600 rounded-lg font-medium transition-colors hover:bg-blue-100">
                             <i class="fas fa-chart-line w-5 mr-3"></i>
-                            Dashboard
+                            Quản lý xét nghiệm
                         </a>
                     </li>
                     <li>
-                        <a href="/KLTN_Benhvien/Admin/ThemNV" class="flex items-center px-4 py-3 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <a href="/KLTN_Benhvien/NVXN/LichLamViec" class="flex items-center px-4 py-3 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-100">
                             <i class="fas fa-user-plus w-5 mr-3"></i>
-                            Thêm nhân viên
+                            Lịch làm việc
                         </a>
                     </li>
                     <li>
-                        <a href="/KLTN_Benhvien/Admin/ChanTruyCap" class="flex items-center px-4 py-3 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <a href="/KLTN_Benhvien/NVXN/ThongTinCaNhan" class="flex items-center px-4 py-3 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-100">
                             <i class="fas fa-stethoscope w-5 mr-3"></i>
-                            Chặn truy cập
+                            Thông tin cá nhân
                         </a>
                     </li>
                     <li>
-                        <a href="/KLTN_Benhvien/Admin/DoiMK" class="flex items-center px-4 py-3 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                        <a href="/KLTN_Benhvien/NVXN/DoiMK" class="flex items-center px-4 py-3 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-100">
                             <i class="fas fa-key w-5 mr-3"></i>
                             Đổi mật khẩu
                         </a>

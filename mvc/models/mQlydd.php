@@ -708,7 +708,7 @@ class mQlydd extends DB
 
     // ================== THỐNG KÊ ĐIỂM DANH ==================
     // [MỚI] Thống kê điểm danh theo nhân viên trong khoảng ngày + bộ lọc
-    public function GetThongKeDiemDanhTheoNhanVien($fromDate, $toDate, $chucVu = '', $maKhoa = '', $maNV = 0)
+    public function GetThongKeDiemDanhTheoNhanVien($fromDate, $toDate, $chucVu = '', $maKhoa = '', $soDT = '', $maNV = 0)
     {
         $sql = "
             SELECT
@@ -751,6 +751,13 @@ class mQlydd extends DB
             $sql   .= " AND ck.MaKhoa = ? ";
             $types .= "i";
             $params[] = (int)$maKhoa;
+        }
+
+        // Lọc theo SĐT
+        if ($soDT !== '') {
+            $sql   .= " AND nv.SoDT LIKE ? ";
+            $types .= "s";
+            $params[] = '%' . $soDT . '%';
         }
 
         // Lọc theo một nhân viên cụ thể
