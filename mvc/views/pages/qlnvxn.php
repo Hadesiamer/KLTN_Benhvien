@@ -4,7 +4,7 @@
         <div>
             <h2 class="h5 mb-1">Danh sách Nhân viên xét nghiệm</h2>
             <p class="text-muted small mb-0">
-                Quản lý thông tin nhân viên phụ trách thực hiện và hỗ trợ các xét nghiệm cận lâm sàng.
+                Nếu thêm Nhân viên xét nghiệm mới, tài khoản NVXN đó là số điện thoại, mật khẩu là 123456
             </p>
         </div>
         <a href="./ThemNVXN" class="btn btn-primary btn-sm">

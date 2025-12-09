@@ -436,16 +436,21 @@ class mQuanLy extends DB {
     // ===================== NGHỈ PHÉP: HÀM DÙNG CHO MVC =====================
 
     // Lấy danh sách yêu cầu nghỉ phép đang chờ duyệt
+        // Lấy danh sách yêu cầu nghỉ phép đang chờ duyệt
     public function GetPendingLeaveRequests() {
         $sql = "SELECT lichnghiphep.*, 
                        lichlamviec.NgayLamViec, 
                        lichlamviec.CaLamViec, 
                        lichlamviec.MaNV, 
                        lichlamviec.MaLLV, 
-                       nhanvien.HovaTen
+                       nhanvien.HovaTen,
+                       bacsi.MaKhoa,
+                       chuyenkhoa.TenKhoa
                 FROM lichnghiphep 
                 INNER JOIN lichlamviec ON lichnghiphep.MaLLV = lichlamviec.MaLLV 
                 INNER JOIN nhanvien ON lichlamviec.MaNV = nhanvien.MaNV 
+                INNER JOIN bacsi ON nhanvien.MaNV = bacsi.MaNV
+                INNER JOIN chuyenkhoa ON bacsi.MaKhoa = chuyenkhoa.MaKhoa
                 WHERE lichnghiphep.TrangThai = 'Chờ duyệt' 
                   AND lichlamviec.TrangThai = 'Đang làm'
                 GROUP BY lichnghiphep.MaYC";
@@ -458,6 +463,7 @@ class mQuanLy extends DB {
         }
         return json_encode($mang);
     }
+
 
     // Đếm số yêu cầu nghỉ phép đang chờ duyệt
     public function CountPendingLeaveRequests() {
@@ -506,6 +512,80 @@ class mQuanLy extends DB {
         $ok = mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
         return $ok;
+    }
+
+    // ===== LẤY THÔNG TIN LỊCH LÀM VIỆC THEO MaLLV (dùng để kiểm tra lịch khám) =====
+    public function GetWorkScheduleByMaLLV($maLLV) {
+        // Trả về 1 dòng: MaNV, NgayLamViec, CaLamViec
+        $sql = "SELECT MaNV, NgayLamViec, CaLamViec 
+                FROM lichlamviec 
+                WHERE MaLLV = ? 
+                LIMIT 1";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return null;
+        }
+        mysqli_stmt_bind_param($stmt, "i", $maLLV);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = null;
+        if ($result && mysqli_num_rows($result) > 0) {
+            $row = mysqli_fetch_assoc($result);
+        }
+        mysqli_stmt_close($stmt);
+        return $row; // mảng assoc hoặc null
+    }
+
+    // ===== KIỂM TRA BÁC SĨ CÓ LỊCH KHÁM TRONG CA XIN NGHỈ HAY KHÔNG =====
+    // Quy ước:
+    //  - Ca sáng: kiểm trong khoảng giờ 07:00:00 đến 12:00:00
+    //  - Ca chiều: kiểm trong khoảng giờ 12:30:00 đến 17:00:00
+    //  - Nếu CaLamViec không phải Sáng/Chiều (ví dụ ca khác) thì không chặn (trả về false)
+    public function HasAppointmentInShift($maNV, $ngayLamViec, $caLamViec) {
+        // Chuẩn hóa chuỗi ca, xử lý cả trường hợp viết hoa/thường, có tiền tố "Ca "
+        $ca = trim(mb_strtolower($caLamViec, 'UTF-8'));
+
+        $startTime = null;
+        $endTime   = null;
+
+        // Xác định khoảng giờ theo ca
+        if ($ca === 'sáng' || $ca === 'ca sáng' || $ca === 'ca sang' || $ca === 'sang') {
+            $startTime = '07:00:00';
+            $endTime   = '12:00:00';
+        } elseif ($ca === 'chiều' || $ca === 'ca chiều' || $ca === 'chieu' || $ca === 'ca chieu') {
+            $startTime = '12:30:00';
+            $endTime   = '17:00:00';
+        } else {
+            // Ca không thuộc Sáng/Chiều chuẩn -> không kiểm tra
+            return false;
+        }
+
+        // Kiểm tra trong bảng lichkham:
+        //  - Cùng bác sĩ (MaBS = MaNV trong lichlamviec)
+        //  - Cùng ngày (NgayKham)
+        //  - GioKham nằm trong khoảng ca
+        $sql = "SELECT COUNT(*) AS total
+                FROM lichkham
+                WHERE MaBS = ?
+                  AND NgayKham = ?
+                  AND GioKham BETWEEN ? AND ?";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return false;
+        }
+
+        mysqli_stmt_bind_param($stmt, "isss", $maNV, $ngayLamViec, $startTime, $endTime);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $total = 0;
+        if ($result) {
+            $row = mysqli_fetch_assoc($result);
+            $total = (int)$row['total'];
+        }
+        mysqli_stmt_close($stmt);
+
+        // Nếu có ít nhất 1 lịch khám trong khoảng giờ tương ứng ca -> có xung đột
+        return $total > 0;
     }
 
     // ===================== CHỨC NĂNG ĐỔI MẬT KHẨU CHO QUẢN LÝ =====================
@@ -723,5 +803,163 @@ class mQuanLy extends DB {
         mysqli_stmt_close($stmt);
         return $ok;
     }
+
+        // ===== CHUYỂN LỊCH KHÁM TRONG 1 CA CHO BÁC SĨ KHÁC CÙNG KHOA =====
+    // - $maLLV: MaLLV của lịch làm việc bác sĩ xin nghỉ
+    // - $maBSOld: MaNV (bác sĩ xin nghỉ)
+    // - $maBSNew: MaNV (bác sĩ nhận lịch)
+    // - $ngayLamViec: Y-m-d
+    // - $caLamViec: 'Sáng' hoặc 'Chiều'
+    // Chỉ chuyển các lịch khám có TrangThaiThanhToan = 'Da thanh toan'
+    // Logic:
+    //   + Kiểm tra 2 bác sĩ cùng khoa
+    //   + Kiểm tra bác sĩ mới không có lịch làm việc trùng ngày/ca
+    //   + Tạo lịch làm việc mới cho bác sĩ mới (Đang làm)
+    //   + Cập nhật lịch làm việc cũ của bác sĩ xin nghỉ -> Nghỉ
+    //   + UPDATE lichkham: MaBS từ cũ sang mới trong khoảng giờ ca
+    public function TransferShiftAppointments($maLLV, $maBSOld, $maBSNew, $ngayLamViec, $caLamViec) {
+        $conn = $this->con;
+
+        // Chuẩn hóa ca làm việc -> xác định khung giờ
+        $ca = trim(mb_strtolower($caLamViec, 'UTF-8'));
+        $startTime = null;
+        $endTime   = null;
+
+        if ($ca === 'sáng' || $ca === 'ca sáng' || $ca === 'ca sang' || $ca === 'sang') {
+            $startTime = '07:00:00';
+            $endTime   = '12:00:00';
+        } elseif ($ca === 'chiều' || $ca === 'ca chiều' || $ca === 'chieu' || $ca === 'ca chieu') {
+            $startTime = '12:30:00';
+            $endTime   = '17:00:00';
+        } else {
+            return [
+                'success' => false,
+                'error'   => 'Ca làm việc không hợp lệ.'
+            ];
+        }
+
+        mysqli_begin_transaction($conn);
+        try {
+            // 1. Kiểm tra 2 bác sĩ cùng khoa
+            $sqlKhoa = "SELECT MaNV, MaKhoa FROM bacsi WHERE MaNV IN (?, ?)";
+            $stmtKhoa = mysqli_prepare($conn, $sqlKhoa);
+            if (!$stmtKhoa) {
+                throw new Exception('Lỗi chuẩn bị truy vấn kiểm tra khoa.');
+            }
+            mysqli_stmt_bind_param($stmtKhoa, "ii", $maBSOld, $maBSNew);
+            mysqli_stmt_execute($stmtKhoa);
+            $resKhoa = mysqli_stmt_get_result($stmtKhoa);
+
+            $maKhoaOld = null;
+            $maKhoaNew = null;
+            while ($row = mysqli_fetch_assoc($resKhoa)) {
+                if ((int)$row['MaNV'] === (int)$maBSOld) {
+                    $maKhoaOld = $row['MaKhoa'];
+                } elseif ((int)$row['MaNV'] === (int)$maBSNew) {
+                    $maKhoaNew = $row['MaKhoa'];
+                }
+            }
+            mysqli_stmt_close($stmtKhoa);
+
+            if ($maKhoaOld === null || $maKhoaNew === null) {
+                throw new Exception('Không tìm thấy thông tin khoa của bác sĩ.');
+            }
+            if ($maKhoaOld !== $maKhoaNew) {
+                throw new Exception('Hai bác sĩ không thuộc cùng khoa, không thể chuyển lịch.');
+            }
+
+            // 2. Kiểm tra bác sĩ mới đã có lịch làm việc trùng ngày/ca chưa
+            $sqlCheckLLV = "SELECT COUNT(*) AS total 
+                            FROM lichlamviec 
+                            WHERE MaNV = ? AND NgayLamViec = ? AND CaLamViec = ? AND TrangThai = 'Đang làm'";
+            $stmtCheckLLV = mysqli_prepare($conn, $sqlCheckLLV);
+            if (!$stmtCheckLLV) {
+                throw new Exception('Lỗi chuẩn bị truy vấn kiểm tra lịch làm việc trùng.');
+            }
+            mysqli_stmt_bind_param($stmtCheckLLV, "iss", $maBSNew, $ngayLamViec, $caLamViec);
+            mysqli_stmt_execute($stmtCheckLLV);
+            $resCheckLLV = mysqli_stmt_get_result($stmtCheckLLV);
+            $totalLLV = 0;
+            if ($resCheckLLV) {
+                $rowLLV = mysqli_fetch_assoc($resCheckLLV);
+                $totalLLV = (int)$rowLLV['total'];
+            }
+            mysqli_stmt_close($stmtCheckLLV);
+
+            if ($totalLLV > 0) {
+                throw new Exception('Bác sĩ mới đã có lịch làm việc trong ngày/ca này.');
+            }
+
+            // 3. Tạo lịch làm việc mới cho bác sĩ mới
+            $sqlInsertLLV = "INSERT INTO lichlamviec (MaNV, NgayLamViec, CaLamViec, TrangThai) 
+                             VALUES (?, ?, ?, 'Đang làm')";
+            $stmtInsertLLV = mysqli_prepare($conn, $sqlInsertLLV);
+            if (!$stmtInsertLLV) {
+                throw new Exception('Lỗi tạo lịch làm việc mới cho bác sĩ.');
+            }
+            mysqli_stmt_bind_param($stmtInsertLLV, "iss", $maBSNew, $ngayLamViec, $caLamViec);
+            if (!mysqli_stmt_execute($stmtInsertLLV)) {
+                mysqli_stmt_close($stmtInsertLLV);
+                throw new Exception('Không thể tạo lịch làm việc mới cho bác sĩ.');
+            }
+            mysqli_stmt_close($stmtInsertLLV);
+
+            // 4. Cập nhật lịch làm việc cũ của bác sĩ xin nghỉ -> Nghỉ
+            $sqlUpdateOldLLV = "UPDATE lichlamviec 
+                                SET TrangThai = 'Nghỉ' 
+                                WHERE MaLLV = ? AND MaNV = ? AND NgayLamViec = ? AND CaLamViec = ?";
+            $stmtUpdateOldLLV = mysqli_prepare($conn, $sqlUpdateOldLLV);
+            if (!$stmtUpdateOldLLV) {
+                throw new Exception('Lỗi cập nhật lịch làm việc của bác sĩ xin nghỉ.');
+            }
+            mysqli_stmt_bind_param($stmtUpdateOldLLV, "iiss", $maLLV, $maBSOld, $ngayLamViec, $caLamViec);
+            if (!mysqli_stmt_execute($stmtUpdateOldLLV)) {
+                mysqli_stmt_close($stmtUpdateOldLLV);
+                throw new Exception('Không thể cập nhật lịch làm việc của bác sĩ xin nghỉ.');
+            }
+            mysqli_stmt_close($stmtUpdateOldLLV);
+
+            // 5. Chuyển lịch khám: chỉ lịch đã thanh toán
+            $sqlUpdateAppointments = "UPDATE lichkham
+                                      SET MaBS = ?
+                                      WHERE MaBS = ?
+                                        AND NgayKham = ?
+                                        AND GioKham BETWEEN ? AND ?
+                                        AND TrangThaiThanhToan = 'Da thanh toan'";
+            $stmtUpdateAppointments = mysqli_prepare($conn, $sqlUpdateAppointments);
+            if (!$stmtUpdateAppointments) {
+                throw new Exception('Lỗi cập nhật lịch khám.');
+            }
+            mysqli_stmt_bind_param(
+                $stmtUpdateAppointments,
+                "iisss",
+                $maBSNew,
+                $maBSOld,
+                $ngayLamViec,
+                $startTime,
+                $endTime
+            );
+            if (!mysqli_stmt_execute($stmtUpdateAppointments)) {
+                mysqli_stmt_close($stmtUpdateAppointments);
+                throw new Exception('Không thể chuyển lịch khám sang bác sĩ mới.');
+            }
+            $moved = mysqli_affected_rows($conn);
+            mysqli_stmt_close($stmtUpdateAppointments);
+
+            mysqli_commit($conn);
+
+            return [
+                'success' => true,
+                'moved'   => $moved
+            ];
+        } catch (Exception $e) {
+            mysqli_rollback($conn);
+            return [
+                'success' => false,
+                'error'   => $e->getMessage()
+            ];
+        }
+    }
+
 }
 ?>

@@ -4,7 +4,7 @@
         <div>
             <h2 class="h5 mb-1">Danh sách Nhân viên nhà thuốc</h2>
             <p class="text-muted small mb-0">
-                Quản lý thông tin nhân viên phụ trách cấp phát thuốc và tư vấn sử dụng thuốc.
+                Nếu thêm nhân viên nhà thuốc mới, tài khoản NVNT đó là số điện thoại, mật khẩu là 123456
             </p>
         </div>
         <a href="./ThemNVNT" class="btn btn-primary btn-sm">

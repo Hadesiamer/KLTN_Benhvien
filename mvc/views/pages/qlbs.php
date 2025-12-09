@@ -4,7 +4,7 @@
         <div>
             <h2 class="h5 mb-1">Danh sách Bác sĩ</h2>
             <p class="text-muted small mb-0">
-                Lọc theo chuyên khoa để tìm nhanh bác sĩ phù hợp cho người bệnh.
+                Nếu thêm bác sĩ mới, tài khoản bác sĩ đó là số điện thoại, mật khẩu là 123456
             </p>
         </div>
         <a href="./ThemBS" class="btn btn-primary btn-sm">

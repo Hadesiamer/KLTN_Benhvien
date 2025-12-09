@@ -546,6 +546,26 @@ if (
                           <i class="bi bi-check-circle"></i> Duyệt
                         </button>
                       </form>
+
+                      <!-- NÚT CHUYỂN LỊCH (MỚI) -->
+                      <button 
+                        type="button" 
+                        class="btn btn-sm btn-primary btn-transfer-schedule"
+                        data-bs-toggle="modal"
+                        data-bs-target="#transferScheduleModal"
+                        data-mayc="<?php echo (int)$row['MaYC']; ?>"
+                        data-mallv="<?php echo (int)$row['MaLLV']; ?>"
+                        data-manv-old="<?php echo htmlspecialchars($row['MaNV']); ?>"
+                        data-ngaylamviec="<?php echo htmlspecialchars($row['NgayLamViec']); ?>"
+                        data-calv="<?php echo htmlspecialchars($row['CaLamViec']); ?>"
+                        data-hovaten="<?php echo htmlspecialchars($row['HovaTen']); ?>"
+                        data-makhoa="<?php echo isset($row['MaKhoa']) ? htmlspecialchars($row['MaKhoa']) : ''; ?>"
+                        data-tenkhoa="<?php echo isset($row['TenKhoa']) ? htmlspecialchars($row['TenKhoa']) : ''; ?>"
+                      >
+                        <i class="bi bi-arrow-left-right"></i> Chuyển lịch
+                      </button>
+                      <!-- HẾT NÚT CHUYỂN LỊCH -->
+
                       <form method="POST" action="" class="d-inline">
                         <input type="hidden" name="MaYC" value="<?php echo (int)$row['MaYC']; ?>">
                         <input type="hidden" name="MaLLV" value="<?php echo (int)$row['MaLLV']; ?>">
@@ -579,6 +599,61 @@ if (
   </div>
 </div>
 
+<!-- ================ MODAL CHUYỂN LỊCH (MỚI) ================= -->
+<div class="modal fade" id="transferScheduleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-arrow-left-right me-2"></i> Chuyển lịch khám cho bác sĩ khác
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="./TransferSchedule" id="transferScheduleForm">
+        <div class="modal-body">
+          <input type="hidden" name="MaYC" id="transferMaYC">
+          <input type="hidden" name="MaLLV" id="transferMaLLV">
+          <input type="hidden" name="MaBS_Old" id="transferMaBSOld">
+          <input type="hidden" name="NgayLamViec" id="transferNgayLamViec">
+          <input type="hidden" name="CaLamViec" id="transferCaLamViec">
+          <input type="hidden" name="MaKhoa" id="transferMaKhoa">
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Thông tin ca cần chuyển:</label>
+            <div class="border rounded p-2 bg-light">
+              <div id="transferOldInfo"></div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Chọn bác sĩ thay thế (cùng khoa, không có lịch trùng ca):</label>
+            <select class="form-select" name="MaBS_New" id="transferMaBSNew" required>
+              <option value="">-- Chọn bác sĩ --</option>
+            </select>
+            <div class="form-text" id="transferNoDoctorAlert" style="display:none; color:red;">
+              Không tìm được bác sĩ phù hợp trong khoa này (không có lịch trống trong ca). Vui lòng bố trí lại nhân sự.
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            Chức năng này sẽ:
+            <ul class="mb-0">
+              <li>Tạo lịch làm việc mới cho bác sĩ được chọn trong đúng ngày/ca.</li>
+              <li>Chuyển toàn bộ lịch khám <strong>đã thanh toán</strong> trong ca đó từ bác sĩ cũ sang bác sĩ mới.</li>
+              <li>Cập nhật ca làm việc của bác sĩ cũ thành trạng thái <strong>Nghỉ</strong>.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitTransfer">Xác nhận chuyển lịch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- ================ HẾT MODAL CHUYỂN LỊCH ================= -->
+
 <style>
   #dsNghiPhep .modal-content {
     border-radius: 15px;
@@ -600,6 +675,10 @@ if (
 </style>
 
 <script>
+// DỮ LIỆU JS TỪ PHP (dùng cho lọc bác sĩ chuyển lịch)
+const ALL_DOCTORS = <?php echo json_encode($BS, JSON_UNESCAPED_UNICODE); ?>;
+const ALL_SHIFTS  = <?php echo json_encode($dt, JSON_UNESCAPED_UNICODE); ?>;
+
 document.addEventListener("DOMContentLoaded", function () {
 
     // === Xử lý lọc nhân viên theo khoa trong modal Thêm nhiều lịch ===
@@ -769,6 +848,106 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const dsModal = new bootstrap.Modal(document.getElementById('dsNghiPhep'));
 
+    // ============ XỬ LÝ MODAL CHUYỂN LỊCH =============
+    const transferModal = document.getElementById('transferScheduleModal');
+    const transferForm  = document.getElementById('transferScheduleForm');
+    const transferOldInfo = document.getElementById('transferOldInfo');
+    const transferMaYC = document.getElementById('transferMaYC');
+    const transferMaLLV = document.getElementById('transferMaLLV');
+    const transferMaBSOld = document.getElementById('transferMaBSOld');
+    const transferNgayLamViec = document.getElementById('transferNgayLamViec');
+    const transferCaLamViec = document.getElementById('transferCaLamViec');
+    const transferMaKhoa = document.getElementById('transferMaKhoa');
+    const transferMaBSNew = document.getElementById('transferMaBSNew');
+    const transferNoDoctorAlert = document.getElementById('transferNoDoctorAlert');
+    const btnSubmitTransfer = document.getElementById('btnSubmitTransfer');
+
+    function formatDateVN(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    const transferButtons = document.querySelectorAll('.btn-transfer-schedule');
+    transferButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+            const maYC = this.getAttribute('data-mayc');
+            const maLLV = this.getAttribute('data-mallv');
+            const maNVOld = this.getAttribute('data-manv-old');
+            const ngayLV = this.getAttribute('data-ngaylamviec');
+            const caLV = this.getAttribute('data-calv');
+            const hoTen = this.getAttribute('data-hovaten') || '';
+            const maKhoa = this.getAttribute('data-makhoa') || '';
+            const tenKhoa = this.getAttribute('data-tenkhoa') || '';
+
+            if (transferMaYC) transferMaYC.value = maYC;
+            if (transferMaLLV) transferMaLLV.value = maLLV;
+            if (transferMaBSOld) transferMaBSOld.value = maNVOld;
+            if (transferNgayLamViec) transferNgayLamViec.value = ngayLV;
+            if (transferCaLamViec) transferCaLamViec.value = caLV;
+            if (transferMaKhoa) transferMaKhoa.value = maKhoa;
+
+            if (transferOldInfo) {
+                transferOldInfo.innerHTML = `
+                    <div><strong>Bác sĩ xin nghỉ:</strong> ${hoTen}</div>
+                    <div><strong>Khoa:</strong> ${tenKhoa || 'Không rõ'}</div>
+                    <div><strong>Ngày làm việc:</strong> ${formatDateVN(ngayLV)}</div>
+                    <div><strong>Ca làm việc:</strong> ${caLV}</div>
+                `;
+            }
+
+            // Lọc danh sách bác sĩ phù hợp: cùng khoa, khác bác sĩ, không có lịch làm việc trùng ca
+            const ngayCompare = ngayLV;
+            const caCompare = caLV;
+            const khoaCompare = maKhoa;
+
+            // Tìm những bác sĩ trong cùng khoa, đang làm việc và khác bác sĩ cũ
+            const candidates = (ALL_DOCTORS || []).filter(d => {
+                if (!d) return false;
+                if (!d['MaNV'] || !d['MaKhoa']) return false;
+                if (String(d['MaNV']) === String(maNVOld)) return false;
+                if (String(d['MaKhoa']) !== String(khoaCompare)) return false;
+                if (d['TrangThaiLamViec'] && d['TrangThaiLamViec'] !== 'Đang làm việc') return false;
+                return true;
+            }).filter(d => {
+                // Loại bỏ bác sĩ đã có lịch làm việc trùng ngày/ca
+                const maNV = d['MaNV'];
+                const hasShift = (ALL_SHIFTS || []).some(s => {
+                    if (!s) return false;
+                    return String(s['MaNV']) === String(maNV)
+                        && String(s['NgayLamViec']) === String(ngayCompare)
+                        && String(s['CaLamViec']) === String(caCompare)
+                        && String(s['TrangThai']) === 'Đang làm';
+                });
+                return !hasShift;
+            });
+
+            // Đổ vào select
+            if (transferMaBSNew) {
+                transferMaBSNew.innerHTML = '<option value="">-- Chọn bác sĩ --</option>';
+                candidates.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d['MaNV'];
+                    opt.textContent = d['HovaTen'] + ' (' + d['TenKhoa'] + ')';
+                    transferMaBSNew.appendChild(opt);
+                });
+
+                if (candidates.length === 0) {
+                    transferNoDoctorAlert.style.display = 'block';
+                    btnSubmitTransfer.disabled = true;
+                } else {
+                    transferNoDoctorAlert.style.display = 'none';
+                    btnSubmitTransfer.disabled = false;
+                }
+            }
+        });
+    });
+
+    // ============ HẾT XỬ LÝ MODAL CHUYỂN LỊCH =============
 });
 </script>
 
@@ -811,7 +990,7 @@ document.addEventListener("DOMContentLoaded", function () {
     padding: 8px;
     vertical-align: top;
 }
-/* -------------------------------------------------------- */
+ /* -------------------------------------------------------- */
 
 
   #dsNghiPhep .modal-content {

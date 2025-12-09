@@ -83,21 +83,42 @@ class QuanLy extends Controller {
             }
 
             if ($action === 'approve' && $maLLV > 0) {
-                // Lấy ngày làm việc (ngày xin nghỉ) từ POST hoặc DB
-                $ngayLamViec = null;
 
-                if (!empty($_POST['NgayLamViec'])) {
-                    $ngayLamViec = $_POST['NgayLamViec'];
+                // ===== LẤY ĐẦY ĐỦ THÔNG TIN LỊCH LÀM VIỆC THEO MaLLV =====
+                $workInfo = $ql->GetWorkScheduleByMaLLV($maLLV); // MaNV, NgayLamViec, CaLamViec
+
+                if ($workInfo && isset($workInfo['NgayLamViec'], $workInfo['CaLamViec'], $workInfo['MaNV'])) {
+                    $ngayLamViec = $workInfo['NgayLamViec'];
+                    $caLamViec   = $workInfo['CaLamViec'];
+                    $maNV        = (int)$workInfo['MaNV'];
                 } else {
-                    $ngayLamViec = $ql->GetNgayLamViecByMaLLV($maLLV);
+                    // Không tìm thấy lịch làm việc -> không thể duyệt
+                    $_SESSION['message'] = "Không tìm thấy thông tin lịch làm việc cho yêu cầu nghỉ phép.";
+                    $_SESSION['message_type'] = "error";
+
+                    header('Location: ' . $_SERVER['REQUEST_URI']);
+                    exit();
                 }
 
+                // Chỉ cho phép duyệt nếu ngày xin nghỉ ở tương lai
                 if ($ngayLamViec && strtotime($ngayLamViec) > strtotime($today)) {
-                    // Ngày xin nghỉ ở tương lai -> cho phép đổi lịch làm việc sang "Nghỉ"
-                    $ql->UpdateWorkScheduleStatusByMaLLV($maLLV, 'Nghỉ');
 
-                    $_SESSION['message'] = "Duyệt nghỉ phép thành công.";
-                    $_SESSION['message_type'] = "success";
+                    // ===== KIỂM TRA BÁC SĨ CÓ LỊCH KHÁM TRONG CA NÀY KHÔNG =====
+                    // Nếu có lịch khám (lichkham) trong khoảng giờ ca tương ứng -> KHÔNG duyệt nghỉ
+                    $hasAppointment = $ql->HasAppointmentInShift($maNV, $ngayLamViec, $caLamViec);
+
+                    if ($hasAppointment) {
+                        // Có lịch khám trong ca -> không cho nghỉ, giữ nguyên trạng thái lịch làm việc
+                        $_SESSION['message'] = "Không thể duyệt nghỉ phép vì bác sĩ đã có lịch khám trong ca làm việc này.";
+                        $_SESSION['message_type'] = "error";
+                    } else {
+                        // Không có lịch khám trong ca -> cho phép đổi lịch làm việc sang 'Nghỉ'
+                        $ql->UpdateWorkScheduleStatusByMaLLV($maLLV, 'Nghỉ');
+
+                        $_SESSION['message'] = "Duyệt nghỉ phép thành công.";
+                        $_SESSION['message_type'] = "success";
+                    }
+
                 } else {
                     // Ngày xin nghỉ là hôm nay hoặc quá khứ -> không đổi trạng thái lịch làm việc
                     $_SESSION['message'] = "Duyệt không thành công, ngày xin nghỉ phải ở tương lai.";
@@ -936,6 +957,63 @@ class QuanLy extends Controller {
             ]);
         }
     }
+
+        // ================== XỬ LÝ CHUYỂN LỊCH KHÁM KHI BÁC SĨ XIN NGHỈ ==================
+    public function TransferSchedule() {
+        // Chỉ chấp nhận POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: ./LLV");
+            exit();
+        }
+
+        $ql = $this->model("mQuanLy");
+
+        $maYC      = isset($_POST['MaYC']) ? (int)$_POST['MaYC'] : 0;
+        $maLLV     = isset($_POST['MaLLV']) ? (int)$_POST['MaLLV'] : 0;
+        $maBS_Old  = isset($_POST['MaBS_Old']) ? (int)$_POST['MaBS_Old'] : 0;
+        $maBS_New  = isset($_POST['MaBS_New']) ? (int)$_POST['MaBS_New'] : 0;
+        $ngayLV    = isset($_POST['NgayLamViec']) ? $_POST['NgayLamViec'] : '';
+        $caLV      = isset($_POST['CaLamViec']) ? $_POST['CaLamViec'] : '';
+
+        if ($maYC <= 0 || $maLLV <= 0 || $maBS_Old <= 0 || $maBS_New <= 0 || $ngayLV === '' || $caLV === '') {
+            $_SESSION['message'] = "Dữ liệu chuyển lịch không hợp lệ.";
+            $_SESSION['message_type'] = "error";
+            header("Location: ./LLV");
+            exit();
+        }
+
+        // Kiểm tra ngày xin nghỉ phải ở tương lai (giống logic duyệt nghỉ)
+        date_default_timezone_set('Asia/Ho_Chi_Minh');
+        $today = date('Y-m-d');
+        if (strtotime($ngayLV) <= strtotime($today)) {
+            $_SESSION['message'] = "Chỉ được chuyển lịch cho các ca làm việc trong tương lai.";
+            $_SESSION['message_type'] = "error";
+            header("Location: ./LLV");
+            exit();
+        }
+
+        // Gọi model thực hiện chuyển lịch
+        $result = $ql->TransferShiftAppointments($maLLV, $maBS_Old, $maBS_New, $ngayLV, $caLV);
+
+        if ($result['success']) {
+            // Đánh dấu yêu cầu nghỉ phép đã xử lý
+            if ($maYC > 0) {
+                $ql->MarkLeaveRequestProcessed($maYC);
+            }
+
+            $moved = isset($result['moved']) ? (int)$result['moved'] : 0;
+            $_SESSION['message'] = "Đã chuyển {$moved} lịch khám (đã thanh toán) sang bác sĩ mới và cập nhật ca làm việc thành Nghỉ.";
+            $_SESSION['message_type'] = "success";
+        } else {
+            $errorMsg = isset($result['error']) ? $result['error'] : "Chuyển lịch thất bại. Vui lòng thử lại.";
+            $_SESSION['message'] = $errorMsg;
+            $_SESSION['message_type'] = "error";
+        }
+
+        header("Location: ./LLV");
+        exit();
+    }
+
 
 }
 ?>

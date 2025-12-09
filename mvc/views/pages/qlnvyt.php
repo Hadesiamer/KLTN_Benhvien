@@ -4,7 +4,7 @@
         <div>
             <h2 class="h5 mb-1">Danh sách Nhân viên y tế</h2>
             <p class="text-muted small mb-0">
-                Quản lý thông tin điều dưỡng, kỹ thuật viên, hộ lý và các nhân viên hỗ trợ lâm sàng.
+                Nếu thêm Nhân viên y tế mới, tài khoản NVYT đó là số điện thoại, mật khẩu là 123456
             </p>
         </div>
         <a href="./ThemNVYT" class="btn btn-primary btn-sm">
