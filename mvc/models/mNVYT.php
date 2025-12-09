@@ -1,153 +1,127 @@
 <?php
-class mNVYT extends DB
-{
-    public function GetTotalInvoices() {
-        $str = 'SELECT COUNT(*) as total FROM hoadon';
-        $result = mysqli_query($this->con, $str);
-        $row = mysqli_fetch_assoc($result);
-        return $row['total'];
-    }
-    public function GetHD($offset, $limit)
-    {
-        $str = "select * 
-                from hoadon as h 
-                join chitiethoadon as hd on h.MaHD = hd.MaHD 
-                join benhnhan as b on h.MaBN=b.MaBN 
-                join phuongthucthanhtoan as t on h.MaPTTT = t.MaPTTT
-                order by h.MaHD desc
-                LIMIT $offset, $limit";
-        $rows = mysqli_query($this->con, $str);
-        $mang = array();
-        while ($row = mysqli_fetch_array($rows))
-        {
-            $mang[] = $row;
+class mNVYT extends DB {
+
+    // =============== LỊCH KHÁM ===============
+    // Lấy lịch khám theo ngày cho 1 NVYT (nếu có cơ chế riêng, bạn chỉnh lại SQL)
+    public function GetLichKhamTheoNgay($maNV, $ngay) {
+        // Ví dụ: lấy từ bảng phieukham hoặc lichlamviec + phân loại NVYT
+        // Ở đây mình để SQL rất generic, bạn chỉnh theo schema thực tế.
+        $sql = "SELECT pk.MaPK, pk.NgayTao AS NgayKham, bn.HovaTen AS TenBenhNhan, pk.KetQua
+                FROM phieukham pk
+                JOIN benhnhan bn ON pk.MaBN = bn.MaBN
+                WHERE pk.NgayTao = ?";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return [];
+
+        mysqli_stmt_bind_param($stmt, "s", $ngay);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $data = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $data[] = $row;
+            }
         }
-        return json_encode($mang);
-    }
-    public function GetHDTheoLoc($offset, $limit,$loc)
-    {
-        $str = "select * 
-                from hoadon as h 
-                join chitiethoadon as hd on h.MaHD = hd.MaHD 
-                join benhnhan as b on h.MaBN=b.MaBN 
-                join phuongthucthanhtoan as t on h.MaPTTT = t.MaPTTT
-                WHERE h.TrangThai = $loc
-                order by h.MaHD desc
-                LIMIT $offset, $limit";
-        $rows = mysqli_query($this->con, $str);
-        $mang = array();
-        while ($row = mysqli_fetch_array($rows))
-        {
-            $mang[] = $row;
-        }
-        return json_encode($mang);
-    }
-    public function getCTHD($MaHD)
-    {
-        $str = 'SELECT *
-                FROM hoadon AS h
-                JOIN chitiethoadon AS hd ON h.MaHD = hd.MaHD
-                JOIN benhnhan AS b ON h.MaBN = b.MaBN
-                WHERE h.MaHD = '.$MaHD.'
-                ORDER BY h.MaHD DESC';
-        $rows = mysqli_query($this->con, $str);
-        $mang = array();
-        while ($row = mysqli_fetch_array($rows))
-        {
-            $mang[] = $row;
-        }
-        return json_encode($mang);
+        mysqli_stmt_close($stmt);
+
+        return $data; // trả mảng thuần cho controller
     }
 
-    public function getPTTT()
-    {
-        $str = 'SELECT * 
-                FROM phuongthucthanhtoan 
-                WHERE MaPTTT > 0';
-        $rows = mysqli_query($this->con, $str);
-        $mang = array();
-        while ($row = mysqli_fetch_array($rows))
-        {
-            $mang[] = $row;
+    // =============== BỆNH NHÂN ===============
+    public function TaoBenhNhanMoi($hovaten, $ngaysinh, $gioitinh, $diachi, $sodt, $bhyt) {
+        $sql = "INSERT INTO benhnhan (HovaTen, NgaySinh, GioiTinh, DiaChi, SoDT, BHYT)
+                VALUES (?, ?, ?, ?, ?, ?)";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return ["success" => false];
         }
-        return json_encode($mang);
-    }
-    public function setPTTT($MaHD,$PT)
-    {
-        $str = 'UPDATE hoadon SET MaPTTT = '.$PT.' WHERE MaHD = '.$MaHD.'';
-        $tblPTTT = mysqli_query($this->con, $str);
-        return $tblPTTT;
-    }
-    public function setTrangThai($MaHD,$TT)
-    {
-        $str = 'UPDATE hoadon SET TrangThai = '.$TT.' WHERE MaHD = '.$MaHD.'';
-        $tblTT = mysqli_query($this->con, $str);
-        return $tblTT;
+
+        mysqli_stmt_bind_param($stmt, "ssssss", $hovaten, $ngaysinh, $gioitinh, $diachi, $sodt, $bhyt);
+        $ok = mysqli_stmt_execute($stmt);
+
+        if ($ok) {
+            $maBN = mysqli_insert_id($this->con);
+            mysqli_stmt_close($stmt);
+            return [
+                "success" => true,
+                "MaBN"    => $maBN
+            ];
+        } else {
+            mysqli_stmt_close($stmt);
+            return ["success" => false];
+        }
     }
 
-    // Lịch khám
-    public function GetTotalInvoicesLK() {
-        $str = 'SELECT COUNT(*) as total FROM lichkham';
-        $result = mysqli_query($this->con, $str);
-        $row = mysqli_fetch_assoc($result);
-        return $row['total'];
-    }
-    public function GetAllLK($offset, $limit)
-    {
-        $str = "SELECT * 
-                FROM lichkham lk
-                JOIN phieukham pk on lk.MaLK = pk.MaLK
-                JOIN benhnhan bn  on pk.MaPK = bn.MaPK
-                LIMIT $offset, $limit";
-        $rows = mysqli_query($this->con, $str);
-        $mang = array();
-        while ($row = mysqli_fetch_array($rows))
-        {
-            $mang[] = $row;
+    // =============== THÔNG TIN CÁ NHÂN NVYT ===============
+    public function GetThongTinCaNhan($maNV) {
+        $sql = "SELECT MaNV, HovaTen, NgaySinh, GioiTinh, EmailNV, SoDT
+                FROM nhanvien
+                WHERE MaNV = ?
+                LIMIT 1";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return null;
+
+        mysqli_stmt_bind_param($stmt, "s", $maNV);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $row = null;
+        if ($result && mysqli_num_rows($result) > 0) {
+            $row = mysqli_fetch_assoc($result);
         }
-        return json_encode($mang);
+
+        mysqli_stmt_close($stmt);
+        return $row;
     }
-    public function GetLKTheoLoc($offset, $limit, $loc)
-    {
-        $str = "SELECT * 
-                FROM lichkham lk
-                JOIN benhnhan bn  on lk.MaBN = bn.MaBN
-                WHERE lk.NgayKham = '$loc'
-                LIMIT $offset, $limit";
-        $rows = mysqli_query($this->con, $str);
-        $mang = array();
-        while ($row = mysqli_fetch_array($rows))
-        {
-            $mang[] = $row;
-        }
-        return json_encode($mang);
+
+    public function CapNhatThongTinCaNhan($maNV, $ngaysinh, $gioitinh, $email, $sodt) {
+        $sql = "UPDATE nhanvien
+                SET NgaySinh = ?, GioiTinh = ?, EmailNV = ?, SoDT = ?
+                WHERE MaNV = ?";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return false;
+
+        mysqli_stmt_bind_param($stmt, "sssss", $ngaysinh, $gioitinh, $email, $sodt, $maNV);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $ok;
     }
-    public function getCTLK($MaLK)
-    {
-        $str = "SELECT * 
-                FROM lichkham lk
-                JOIN benhnhan bn  on lk.MaBN = bn.MaBN
-                JOIN  bacsi bs ON lk.MaBS = bs.MaNV 
-                JOIN nhanvien nv ON bs.MaNV = nv.MaNV
-                JOIN chuyenkhoa ck ON bs.MaKhoa = ck.MaKhoa
-                WHERE lk.MaLK = '$MaLK'";
-        $rows = mysqli_query($this->con, $str);
-        $mang = array();
-        while ($row = mysqli_fetch_array($rows))
-        {
-            $mang[] = $row;
-        }
-        return json_encode($mang);
+
+    // =============== ĐỔI MẬT KHẨU NVYT ===============
+    public function KiemTraMatKhauCuNVYT($id, $matkhaucu) {
+        // Giả sử MaPQ = 3 là nhân viên y tế. Nếu khác, chỉnh lại.
+        $sql = "SELECT * FROM taikhoan WHERE ID = ? AND password = ? AND MaPQ = 3";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return false;
+
+        $matkhaucu_md5 = md5($matkhaucu);
+        mysqli_stmt_bind_param($stmt, "is", $id, $matkhaucu_md5);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $ok = ($result && mysqli_num_rows($result) > 0);
+        mysqli_stmt_close($stmt);
+
+        return $ok;
     }
-    public function ThayDoiLK($MaLK, $NgayKham, $GioKham)
-        {
-            $str = "UPDATE lichkham 
-                    SET NgayKham = '$NgayKham', GioKham = '$GioKham' WHERE MaLK = $MaLK";
-            $tblPTTT = mysqli_query($this->con, $str);
-            return $tblPTTT;
-        }
+
+    public function DoiMatKhauNVYT($id, $matkhaumoi) {
+        $sql = "UPDATE taikhoan SET password = ? WHERE ID = ? AND MaPQ = 3";
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) return false;
+
+        $matkhaumoi_md5 = md5($matkhaumoi);
+        mysqli_stmt_bind_param($stmt, "si", $matkhaumoi_md5, $id);
+        $ok = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return $ok;
+    }
 }
-
-
-
 ?>

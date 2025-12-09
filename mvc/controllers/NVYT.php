@@ -1,155 +1,244 @@
 <?php
+class NVYT extends Controller {
 
-class NVYT extends Controller{
-
-    // Must have SayHi()
-    function SayHi(){
-        $nvyt = $this->model("mNVYT");
-        if(isset($_POST['btnPage']))
-            {
-                
-                $page = $_POST['page'];
-            }
-            else
-            {
-                $page = 1;
-            }
-            $totalInvoices = $nvyt->GetTotalInvoices();
-            $itemsPerPage = 5;
-            $pagination = new Pagination($totalInvoices, $itemsPerPage, $page);
-        if(isset($_POST['btnLoc']))
-        {
-            $loc = $_POST['loc'];
-            $invoices = $nvyt->GetHDTheoLoc($pagination->getOffset(), $pagination->getLimit(), $loc);
-            
-        }
-        else if (isset($_POST['btnPage']))
-        {
-            $loc = $_POST['loc'];
-            $invoices = $nvyt->GetHDTheoLoc($pagination->getOffset(), $pagination->getLimit(), $loc);
-        }
-        else
-        {
-            $loc = "h.TrangThai";
-            $invoices = $nvyt->GetHD($pagination->getOffset(), $pagination->getLimit());
-        }    
-        // Call Views
-        $this->view("layoutNVYT",[
-            "Page"=>"hoadon",
-            "HD" => $invoices,
-            "Pagination" => $pagination,
-            "loc" => $loc
-        ]);
-
-    }
-    function CTHD(){
-        if(isset($_POST["btnCTHD"])){
-            $MaHD = $_POST["cthd"];
-            // Call models
-            $nvyt = $this->model("mNVYT");
-            // Call Views
-            $this->view("layoutNVYT",[
-                "Page"=>"chitiethoadon",
-                "CTHD" => $nvyt->getCTHD($MaHD),
-                "TT" => $nvyt->getPTTT(),
-            ]);
-        }   
-        if(isset($_POST["nutXN"]))
-        {
-            $TT = "'Completed'";
-            $id = $_POST["paymentOption"];
-            $MaHD = $_POST["MaHD"];
-            $nvyt = $this->model("mNVYT");
-            
-            $rs = $nvyt->setPTTT($MaHD,$id);
-            $rs = $nvyt->setTrangThai($MaHD,$TT);
-            $this->view("layoutNVYT",[
-                "Page"=>"chitiethoadon",
-                "CTHD" => $nvyt->getCTHD($MaHD),
-                "TT" => $nvyt->getPTTT(),
-                "Result"=> $rs
-            ]);
-        }
-        if(isset($_POST["nutHuy"]))
-        {
-            $TT = "'Cancelled'";
-            $MaHD = $_POST["MaHD"];
-            $nvyt = $this->model("mNVYT");
-            if($nvyt->setTrangThai($MaHD,$TT))
-            {
-                $rs = 3;
-            }
-            $this->view("layoutNVYT",[
-                "Page"=>"chitiethoadon",
-                "CTHD" => $nvyt->getCTHD($MaHD),
-                "TT" => $nvyt->getPTTT(),
-                "Result"=> $rs
-            ]);
-        }
-            
-        
-    }
-    function LichKham(){
-        $nvyt = $this->model("mNVYT");
-        if(isset($_POST['btnPage']))
-            {
-                
-                $page = $_POST['page'];
-            }
-            else
-            {
-                $page = 1;
-            }
-            $totalInvoices = $nvyt->GetTotalInvoicesLK();
-            $itemsPerPage = 5;
-            $pagination = new Pagination($totalInvoices, $itemsPerPage, $page);
-        if(isset($_POST['btnLoc']))
-        {
-            $loc = $_POST['loc'];
-            $invoices = $nvyt->GetLKTheoLoc($pagination->getOffset(), $pagination->getLimit(), $loc);
-            
-        }
-        else if (isset($_POST['btnPage']))
-        {
-            $loc = $_POST['loc'];
-            $invoices = $nvyt->GetLKTheoLoc($pagination->getOffset(), $pagination->getLimit(), $loc);
-        }
-        else
-        {
-            $loc = date('Y-m-d');
-            $invoices = $nvyt->GetLKTheoLoc($pagination->getOffset(), $pagination->getLimit(), $loc);
-        }    
+    // Mặc định vào /NVYT sẽ vào layoutNVYT + trang quản lý lịch khám
+    public function SayHi() {
+        // Có thể load trước dữ liệu lịch khám nếu muốn
         $this->view("layoutNVYT", [
-            "Page" => "DSKL",
-            "Pagination" => $pagination,
-            "DanhSachKham" => $invoices,
-            "loc" => $loc
+            "Page" => "YT_QuanLyLichKham"
         ]);
     }
-    public function CTLK()
-    {
-        if(isset($_POST["btnCTLK"]))
-        {
-            $MaLK = $_POST["ctlk"];
-            $nvyt = $this->model("mNVYT");
-            $this->view("layoutNVYT",[
-                "Page"=>"chitietlichkham",
-                "CTLK" => $nvyt->getCTLK($MaLK),
-            ]);
+
+    // ================== QUẢN LÝ LỊCH KHÁM ==================
+    public function QuanLyLichKham() {
+        // Giả sử đã có MaNV trong session (ID nhân viên y tế)
+        $maNV = isset($_SESSION['MaNV']) ? $_SESSION['MaNV'] : null;
+
+        $model = $this->model("mNVYT");
+
+        // Lấy ngày được chọn hoặc hôm nay
+        $selectedDate = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
+
+        $lichKham = [];
+        if ($maNV) {
+            $lichKham = $model->GetLichKhamTheoNgay($maNV, $selectedDate);
         }
-        if(isset($_POST["btnTDLK"]))
-        {
-            $MaLK = $_POST["MaLK"];
-            $NGAYKHAM = $_POST["NgayKham"];
-            $GIOKHAM = $_POST["GioKham"];
-            $nvyt = $this->model("mNVYT");
-            $rs = $nvyt->ThayDoiLK($MaLK, $NGAYKHAM, $GIOKHAM);
-            $this->view("layoutNVYT",[
-                "Page"=>"chitietlichkham",
-                "CTLK" => $nvyt->getCTLK($MaLK),
-                "Result" => $rs
+
+        $this->view("layoutNVYT", [
+            "Page"       => "YT_QuanLyLichKham",
+            "SelectedDate" => $selectedDate,
+            "LichKham"   => $lichKham
+        ]);
+    }
+
+    // ================== TẠO BỆNH NHÂN MỚI ==================
+    public function TaoBenhNhanMoi() {
+        $model = $this->model("mNVYT");
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $hovaten  = trim($_POST['HovaTen'] ?? '');
+            $ngaysinh = $_POST['NgaySinh'] ?? '';
+            $gioitinh = $_POST['GioiTinh'] ?? '';
+            $diachi   = trim($_POST['DiaChi'] ?? '');
+            $sodt     = trim($_POST['SoDT'] ?? '');
+            $bhyt     = trim($_POST['BHYT'] ?? '');
+
+            // Validate đơn giản phía server
+            $errors = [];
+
+            if ($hovaten === '') {
+                $errors[] = "Họ và tên không được để trống.";
+            }
+
+            if ($ngaysinh === '') {
+                $errors[] = "Ngày sinh không được để trống.";
+            }
+
+            if (!in_array($gioitinh, ['Nam', 'Nữ', 'Khác'])) {
+                $errors[] = "Giới tính không hợp lệ.";
+            }
+
+            if ($sodt !== '' && !preg_match("/^[0-9]{8,15}$/", $sodt)) {
+                $errors[] = "Số điện thoại chỉ được chứa số (8–15 chữ số).";
+            }
+
+            if (empty($errors)) {
+                $rs = $model->TaoBenhNhanMoi($hovaten, $ngaysinh, $gioitinh, $diachi, $sodt, $bhyt);
+                if ($rs['success']) {
+                    $this->view("layoutNVYT", [
+                        "Page"     => "YT_TaoBenhNhan",
+                        "Message"  => "Tạo bệnh nhân mới thành công. Mã bệnh nhân: " . $rs['MaBN'],
+                    ]);
+                    return;
+                } else {
+                    $errors[] = "Không thể tạo bệnh nhân. Vui lòng thử lại.";
+                }
+            }
+
+            // Có lỗi -> trả lại form + lỗi
+            $this->view("layoutNVYT", [
+                "Page"  => "YT_TaoBenhNhan",
+                "Error" => implode("<br>", $errors),
+                "Old"   => [
+                    "HovaTen"  => $hovaten,
+                    "NgaySinh" => $ngaysinh,
+                    "GioiTinh" => $gioitinh,
+                    "DiaChi"   => $diachi,
+                    "SoDT"     => $sodt,
+                    "BHYT"     => $bhyt
+                ]
+            ]);
+        } else {
+            // GET -> hiển thị form trống
+            $this->view("layoutNVYT", [
+                "Page" => "YT_TaoBenhNhan"
             ]);
         }
     }
+
+    // ================== THÔNG TIN CÁ NHÂN ==================
+    public function ThongTinCaNhan() {
+        $model = $this->model("mNVYT");
+
+        // Giả sử session có MaNV của nhân viên y tế
+        $maNV = isset($_SESSION['MaNV']) ? $_SESSION['MaNV'] : null;
+
+        $profile = null;
+        if ($maNV) {
+            $profile = $model->GetThongTinCaNhan($maNV);
+        }
+
+        $this->view("layoutNVYT", [
+            "Page"    => "YT_ThongTinCaNhan",
+            "Profile" => $profile
+        ]);
+    }
+
+    public function CapNhatThongTinCaNhan() {
+        $model = $this->model("mNVYT");
+        $maNV  = isset($_SESSION['MaNV']) ? $_SESSION['MaNV'] : null;
+
+        if (!$maNV) {
+            $this->view("layoutNVYT", [
+                "Page"  => "YT_ThongTinCaNhan",
+                "Error" => "Không xác định được nhân viên đang đăng nhập."
+            ]);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $ngaysinh = $_POST['NgaySinh'] ?? '';
+            $gioitinh = $_POST['GioiTinh'] ?? '';
+            $email    = trim($_POST['EmailNV'] ?? '');
+            $sodt     = trim($_POST['SoDT'] ?? '');
+
+            $errors = [];
+
+            if ($ngaysinh === '') {
+                $errors[] = "Ngày sinh không được để trống.";
+            }
+
+            if (!in_array($gioitinh, ['Nam', 'Nữ', 'Khác'])) {
+                $errors[] = "Giới tính không hợp lệ.";
+            }
+
+            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Email không hợp lệ.";
+            }
+
+            if ($sodt !== '' && !preg_match("/^[0-9]{8,15}$/", $sodt)) {
+                $errors[] = "Số điện thoại chỉ được chứa số (8–15 chữ số).";
+            }
+
+            if (empty($errors)) {
+                $ok = $model->CapNhatThongTinCaNhan($maNV, $ngaysinh, $gioitinh, $email, $sodt);
+                if ($ok) {
+                    $profile = $model->GetThongTinCaNhan($maNV);
+                    $this->view("layoutNVYT", [
+                        "Page"    => "YT_ThongTinCaNhan",
+                        "Profile" => $profile,
+                        "Message" => "Cập nhật thông tin cá nhân thành công."
+                    ]);
+                    return;
+                } else {
+                    $errors[] = "Lỗi hệ thống khi cập nhật thông tin.";
+                }
+            }
+
+            $profile = $model->GetThongTinCaNhan($maNV);
+            $this->view("layoutNVYT", [
+                "Page"    => "YT_ThongTinCaNhan",
+                "Profile" => $profile,
+                "Error"   => implode("<br>", $errors)
+            ]);
+        }
+    }
+
+    // ================== ĐỔI MẬT KHẨU ==================
+    public function DoiMatKhau() {
+        // Kiểm tra đăng nhập & đúng role (giả sử role = 2 là NVYT)
+        if (!isset($_SESSION["id"]) || !isset($_SESSION["role"]) || $_SESSION["role"] != 3) {
+            echo "<script>alert('Bạn không có quyền truy cập vào trang này');</script>";
+            header("refresh: 0; url='/KLTN_Benhvien'");
+            exit;
+        }
+
+        $model = $this->model("mNVYT");
+
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $idTK   = $_SESSION["id"]; // ID tài khoản trong bảng taikhoan
+            $old    = $_POST["old_password"] ?? '';
+            $new    = $_POST["new_password"] ?? '';
+            $confirm= $_POST["confirm_password"] ?? '';
+
+            if ($new === '' || $confirm === '' || $old === '') {
+                $this->view("layoutNVYT", [
+                    "Page"  => "YT_DoiMatKhau",
+                    "Error" => "Vui lòng nhập đầy đủ các trường."
+                ]);
+                return;
+            }
+
+            if ($new !== $confirm) {
+                $this->view("layoutNVYT", [
+                    "Page"  => "YT_DoiMatKhau",
+                    "Error" => "Mật khẩu xác nhận không khớp."
+                ]);
+                return;
+            }
+
+            // Kiểm tra mật khẩu cũ
+            $kq = $model->KiemTraMatKhauCuNVYT($idTK, $old);
+            if ($kq) {
+                $doi = $model->DoiMatKhauNVYT($idTK, $new);
+                if ($doi) {
+                    $this->view("layoutNVYT", [
+                        "Page"    => "YT_DoiMatKhau",
+                        "Message" => "Đổi mật khẩu thành công."
+                    ]);
+                    return;
+                } else {
+                    $this->view("layoutNVYT", [
+                        "Page"  => "YT_DoiMatKhau",
+                        "Error" => "Lỗi hệ thống, không thể đổi mật khẩu."
+                    ]);
+                    return;
+                }
+            } else {
+                $this->view("layoutNVYT", [
+                    "Page"  => "YT_DoiMatKhau",
+                    "Error" => "Mật khẩu hiện tại không chính xác."
+                ]);
+                return;
+            }
+        }
+
+        // GET -> hiển thị form đổi mật khẩu
+        $this->view("layoutNVYT", [
+            "Page" => "YT_DoiMatKhau"
+        ]);
+    }
+
+    
 }
 ?>
