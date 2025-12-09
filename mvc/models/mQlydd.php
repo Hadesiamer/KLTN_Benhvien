@@ -225,6 +225,10 @@ class mQlydd extends DB
 
         $row = null;
         if ($result) {
+            $row = mysqli_fetch_assoc($stmt ? $result : null);
+        }
+
+        if ($result) {
             $row = mysqli_fetch_assoc($result);
         }
 
@@ -520,6 +524,99 @@ class mQlydd extends DB
         return $rows;
     }
 
+    // [MỚI] Đối chiếu lịch làm việc & điểm danh (trục theo lichlamviec)
+    public function GetDoiChieuLich($fromDate, $toDate, $chucVu = '', $maKhoa = '', $soDT = '', $maNV = 0)
+    {
+        $sql = "
+            SELECT
+                llv.MaLLV,
+                llv.NgayLamViec,
+                llv.CaLamViec,
+                llv.MaNV,
+                nv.HovaTen,
+                nv.SoDT,
+                nv.ChucVu,
+                ck.TenKhoa,
+                dd.MaDD,
+                dd.ThoiGianDiemDanh,
+                dd.KetQua,
+                CASE 
+                    WHEN dd.MaDD IS NULL THEN 'Chưa điểm danh'
+                    ELSE 'Đã điểm danh'
+                END AS TrangThaiDoiChieu
+            FROM lichlamviec llv
+            INNER JOIN nhanvien nv ON llv.MaNV = nv.MaNV
+            LEFT JOIN bacsi bs ON nv.MaNV = bs.MaNV
+            LEFT JOIN chuyenkhoa ck ON bs.MaKhoa = ck.MaKhoa
+            LEFT JOIN diemdanh dd ON dd.MaLLV = llv.MaLLV AND dd.MaNV = llv.MaNV
+            WHERE 1 = 1
+              AND llv.NgayLamViec BETWEEN ? AND ?
+        ";
+
+        $params = [];
+        $types  = "";
+
+        // Hai tham số ngày
+        $types   .= "ss";
+        $params[] = $fromDate;
+        $params[] = $toDate;
+
+        // Lọc theo chức vụ
+        if ($chucVu !== '') {
+            $sql   .= " AND nv.ChucVu = ? ";
+            $types .= "s";
+            $params[] = $chucVu;
+        }
+
+        // Nếu là bác sĩ và có chọn khoa thì lọc khoa
+        if ($chucVu === 'Bác sĩ' && $maKhoa !== '') {
+            $sql   .= " AND ck.MaKhoa = ? ";
+            $types .= "i";
+            $params[] = (int)$maKhoa;
+        }
+
+        // Lọc theo SĐT
+        if ($soDT !== '') {
+            $sql   .= " AND nv.SoDT LIKE ? ";
+            $types .= "s";
+            $params[] = '%' . $soDT . '%';
+        }
+
+        // Lọc theo một nhân viên cụ thể (nếu có)
+        if (!empty($maNV) && (int)$maNV > 0) {
+            $sql   .= " AND nv.MaNV = ? ";
+            $types .= "i";
+            $params[] = (int)$maNV;
+        }
+
+        // Sắp xếp: ngày tăng dần, ca chiều/sáng theo yêu cầu anh
+        $sql .= "
+            ORDER BY 
+                llv.NgayLamViec ASC,
+                llv.CaLamViec DESC,
+                nv.MaNV ASC
+        ";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return [];
+        }
+
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $rows = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $rows[] = $row;
+            }
+        }
+
+        mysqli_stmt_close($stmt);
+        return $rows;
+    }
+
     // [MỚI] Lấy danh sách nhân viên đang làm việc (dùng cho filter dropdown)
     public function GetAllNhanVienDangLam()
     {
@@ -547,6 +644,65 @@ class mQlydd extends DB
             }
         }
 
+        return $rows;
+    }
+
+    // [MỚI] Lấy danh sách nhân viên đang làm việc theo bộ lọc Chức vụ / Khoa
+    // Dùng cho dropdown "Nhân viên" ở màn đối chiếu
+    public function GetNhanVienDangLamTheoBoLoc($chucVu = '', $maKhoa = '')
+    {
+        $sql = "
+            SELECT 
+                nv.MaNV,
+                nv.HovaTen,
+                nv.SoDT,
+                nv.ChucVu,
+                nv.TrangThaiLamViec,
+                ck.TenKhoa
+            FROM nhanvien nv
+            LEFT JOIN bacsi bs ON nv.MaNV = bs.MaNV
+            LEFT JOIN chuyenkhoa ck ON bs.MaKhoa = ck.MaKhoa
+            WHERE nv.TrangThaiLamViec = 'Đang làm việc'
+        ";
+
+        $params = [];
+        $types  = "";
+
+        if ($chucVu !== '') {
+            $sql   .= " AND nv.ChucVu = ? ";
+            $types .= "s";
+            $params[] = $chucVu;
+        }
+
+        // Nếu là bác sĩ và có chọn khoa thì lọc khoa
+        if ($chucVu === 'Bác sĩ' && $maKhoa !== '') {
+            $sql   .= " AND ck.MaKhoa = ? ";
+            $types .= "i";
+            $params[] = (int)$maKhoa;
+        }
+
+        $sql .= " ORDER BY nv.HovaTen ASC ";
+
+        $stmt = mysqli_prepare($this->con, $sql);
+        if (!$stmt) {
+            return [];
+        }
+
+        if ($types !== "") {
+            mysqli_stmt_bind_param($stmt, $types, ...$params);
+        }
+
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+
+        $rows = [];
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $rows[] = $row;
+            }
+        }
+
+        mysqli_stmt_close($stmt);
         return $rows;
     }
 }

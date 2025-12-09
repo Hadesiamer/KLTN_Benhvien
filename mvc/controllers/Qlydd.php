@@ -493,12 +493,104 @@ class Qlydd extends Controller
         ]);
     }
 
+    // ================== ĐỐI CHIẾU LỊCH LÀM VIỆC & ĐIỂM DANH ==================
     public function DD_DoiChieu()
     {
         $this->requireManager();
 
+        /** @var mQlydd $model */
+        $model = $this->model("mQlydd");
+
+        $today = date("Y-m-d");
+
+        // Đọc filter từ POST, phân biệt action search / filter
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $action = isset($_POST["action"]) ? trim($_POST["action"]) : "";
+
+            if ($action === "search") {
+                // Tìm kiếm SĐT độc lập
+                $from   = $today;
+                $to     = $today;
+                $chucVu = "";
+                $maKhoa = "";
+                $maNV   = 0;
+                $soDT   = isset($_POST["sdt"]) ? trim($_POST["sdt"]) : "";
+            } else {
+                // Áp dụng bộ lọc
+                $from   = isset($_POST["from"]) ? trim($_POST["from"]) : $today;
+                $to     = isset($_POST["to"]) ? trim($_POST["to"]) : $today;
+                $chucVu = isset($_POST["chucvu"]) ? trim($_POST["chucvu"]) : "";
+                $maKhoa = isset($_POST["makhoa"]) ? trim($_POST["makhoa"]) : "";
+                $maNV   = isset($_POST["manv"]) ? (int)$_POST["manv"] : 0;
+                $soDT   = ""; // ô tìm kiếm nằm form riêng
+            }
+        } else {
+            // Lần đầu vào: mặc định xem ngày hôm nay, không filter
+            $from   = $today;
+            $to     = $today;
+            $chucVu = "";
+            $maKhoa = "";
+            $soDT   = "";
+            $maNV   = 0;
+        }
+
+        // Nếu chức vụ khác Bác sĩ thì bỏ lọc khoa
+        if ($chucVu !== 'Bác sĩ') {
+            $maKhoa = "";
+        }
+
+        // Validate ngày (format Y-m-d)
+        $fromDateTime = DateTime::createFromFormat("Y-m-d", $from);
+        $toDateTime   = DateTime::createFromFormat("Y-m-d", $to);
+
+        if (!$fromDateTime) {
+            $fromDateTime = new DateTime($today);
+        }
+        if (!$toDateTime) {
+            $toDateTime = new DateTime($today);
+        }
+
+        $invalidRange = false;
+        // Chặn trường hợp từ ngày > đến ngày
+        if ($fromDateTime > $toDateTime) {
+            $invalidRange = true;
+            $_SESSION["toast_type"] = "error";
+            $_SESSION["toast_message"] = "Khoảng ngày không hợp lệ: 'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.";
+        }
+
+        $fromStr = $fromDateTime->format("Y-m-d");
+        $toStr   = $toDateTime->format("Y-m-d");
+
+        // ----- Lấy dữ liệu filter dropdown -----
+        $dsKhoa      = $model->GetDanhSachKhoa();
+        // [SỬA] Dropdown Nhân viên phụ thuộc Chức vụ / Khoa
+        $dsNhanVien  = $model->GetNhanVienDangLamTheoBoLoc($chucVu, $maKhoa);
+
+        // ----- Lấy danh sách đối chiếu -----
+        if ($invalidRange) {
+            $dsDoiChieu = []; // không query khi khoảng ngày sai
+        } else {
+            $dsDoiChieu = $model->GetDoiChieuLich(
+                $fromStr,
+                $toStr,
+                $chucVu,
+                $maKhoa,
+                $soDT,
+                $maNV
+            );
+        }
+
         $this->view("layoutQLDiemDanh", [
-            "Page" => "dd_doichieu_lich"
+            "Page"          => "dd_doichieu_lich",
+            "DanhSach"      => $dsDoiChieu,
+            "DanhSachKhoa"  => $dsKhoa,
+            "NhanVienList"  => $dsNhanVien,
+            "FilterFrom"    => $fromStr,
+            "FilterTo"      => $toStr,
+            "FilterChucVu"  => $chucVu,
+            "FilterMaKhoa"  => $maKhoa,
+            "FilterSoDT"    => $soDT,
+            "FilterMaNV"    => $maNV
         ]);
     }
 

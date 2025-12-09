@@ -1,4 +1,5 @@
 <?php
+// Lấy dữ liệu từ controller
 $nhanvien = isset($data["NhanVien"]) ? $data["NhanVien"] : [];
 $dsKhoa   = isset($data["DanhSachKhoa"]) ? $data["DanhSachKhoa"] : [];
 
@@ -6,15 +7,14 @@ $filterChucVu = isset($data["FilterChucVu"]) ? $data["FilterChucVu"] : "";
 $filterMaKhoa = isset($data["FilterMaKhoa"]) ? $data["FilterMaKhoa"] : "";
 $filterSoDT   = isset($data["FilterSoDT"]) ? $data["FilterSoDT"] : "";
 
-// Đếm thống kê nhanh
-$totalNV   = count($nhanvien);
-$daDangKy  = 0;
-foreach ($nhanvien as $nv) {
-    if (!empty($nv["HasFace"])) {
-        $daDangKy++;
-    }
-}
-$chuaDangKy = $totalNV - $daDangKy;
+// Thống kê và phân trang (đã được controller tính sẵn)
+$totalNV     = isset($data["TotalNV"]) ? (int)$data["TotalNV"] : count($nhanvien);
+$daDangKy    = isset($data["DaDangKy"]) ? (int)$data["DaDangKy"] : 0;
+$chuaDangKy  = isset($data["ChuaDangKy"]) ? (int)$data["ChuaDangKy"] : max(0, $totalNV - $daDangKy);
+
+$pageCurrent = isset($data["PageCurrent"]) ? (int)$data["PageCurrent"] : 1;
+$pageTotal   = isset($data["PageTotal"]) ? (int)$data["PageTotal"] : 1;
+$perPage     = isset($data["PerPage"]) ? (int)$data["PerPage"] : 10;
 
 // Danh sách chức vụ dùng cho filter
 $dsChucVu = [
@@ -72,6 +72,8 @@ $dsChucVu = [
                     </div>
 
                     <div class="col-md-2 d-grid">
+                        <!-- Reset về trang 1 khi lọc -->
+                        <input type="hidden" name="page" value="1">
                         <button type="submit" name="btnFilter" class="btn btn-sm btn-primary">
                             <i class="bi bi-funnel"></i> Lọc
                         </button>
@@ -85,6 +87,8 @@ $dsChucVu = [
                     <!-- Giữ lại filter hiện tại khi search -->
                     <input type="hidden" name="chucvu" value="<?php echo htmlspecialchars($filterChucVu); ?>">
                     <input type="hidden" name="makhoa" value="<?php echo htmlspecialchars($filterMaKhoa); ?>">
+                    <!-- Reset về trang 1 khi search -->
+                    <input type="hidden" name="page" value="1">
 
                     <div class="col-7 col-md-8">
                         <label class="form-label mb-1">Tìm theo SĐT</label>
@@ -172,7 +176,7 @@ $dsChucVu = [
                         <?php foreach ($nhanvien as $nv): ?>
                             <?php
                                 $hasFace = !empty($nv["HasFace"]);
-                                $tenKhoa = $nv["TenKhoa"] ?? "";
+                                $tenKhoa = isset($nv["TenKhoa"]) ? $nv["TenKhoa"] : "";
                             ?>
                             <tr>
                                 <td><?php echo (int)$nv["MaNV"]; ?></td>
@@ -212,6 +216,61 @@ $dsChucVu = [
                     </tbody>
                 </table>
             </div>
+
+            <!-- Phân trang -->
+            <?php if ($pageTotal > 1): ?>
+                <form method="POST" action="./DD_QuanLyMau" class="mt-2">
+                    <!-- Giữ lại bộ lọc hiện tại khi chuyển trang -->
+                    <input type="hidden" name="chucvu" value="<?php echo htmlspecialchars($filterChucVu); ?>">
+                    <input type="hidden" name="makhoa" value="<?php echo htmlspecialchars($filterMaKhoa); ?>">
+                    <input type="hidden" name="sdt" value="<?php echo htmlspecialchars($filterSoDT); ?>">
+
+                    <nav aria-label="Phân trang nhân viên" class="d-flex justify-content-between align-items-center">
+                        <div class="small text-muted">
+                            <?php if ($totalNV > 0): ?>
+                                <?php
+                                    $fromRow = ($pageCurrent - 1) * $perPage + 1;
+                                    $toRow   = min($totalNV, $pageCurrent * $perPage);
+                                ?>
+                                Hiển thị <?php echo $fromRow; ?>–<?php echo $toRow; ?> / <?php echo $totalNV; ?> nhân viên
+                            <?php endif; ?>
+                        </div>
+                        <ul class="pagination pagination-sm mb-0">
+                            <!-- Prev -->
+                            <li class="page-item <?php echo ($pageCurrent <= 1 ? 'disabled' : ''); ?>">
+                                <?php if ($pageCurrent <= 1): ?>
+                                    <span class="page-link">&laquo;</span>
+                                <?php else: ?>
+                                    <button type="submit" name="page" value="<?php echo $pageCurrent - 1; ?>" class="page-link">&laquo;</button>
+                                <?php endif; ?>
+                            </li>
+
+                            <!-- Các trang -->
+                            <?php for ($i = 1; $i <= $pageTotal; $i++): ?>
+                                <li class="page-item <?php echo ($i == $pageCurrent ? 'active' : ''); ?>">
+                                    <?php if ($i == $pageCurrent): ?>
+                                        <span class="page-link"><?php echo $i; ?></span>
+                                    <?php else: ?>
+                                        <button type="submit" name="page" value="<?php echo $i; ?>" class="page-link">
+                                            <?php echo $i; ?>
+                                        </button>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endfor; ?>
+
+                            <!-- Next -->
+                            <li class="page-item <?php echo ($pageCurrent >= $pageTotal ? 'disabled' : ''); ?>">
+                                <?php if ($pageCurrent >= $pageTotal): ?>
+                                    <span class="page-link">&raquo;</span>
+                                <?php else: ?>
+                                    <button type="submit" name="page" value="<?php echo $pageCurrent + 1; ?>" class="page-link">&raquo;</button>
+                                <?php endif; ?>
+                            </li>
+                        </ul>
+                    </nav>
+                </form>
+            <?php endif; ?>
+
         <?php else: ?>
             <div class="alert alert-info mb-0">
                 Không tìm thấy nhân viên nào phù hợp với bộ lọc / tìm kiếm hiện tại.
@@ -223,8 +282,8 @@ $dsChucVu = [
 <script>
 // JS: nếu chức vụ khác 'Bác sĩ' thì disable dropdown khoa
 document.addEventListener("DOMContentLoaded", function () {
-    const chucVuSelect = document.getElementById("filterChucVu");
-    const khoaSelect   = document.getElementById("filterMaKhoa");
+    var chucVuSelect = document.getElementById("filterChucVu");
+    var khoaSelect   = document.getElementById("filterMaKhoa");
 
     function updateKhoaState() {
         if (!chucVuSelect || !khoaSelect) return;
