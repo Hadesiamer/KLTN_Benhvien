@@ -9,7 +9,7 @@ if ($_SESSION["role"] != 6) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NVXN Dashboard - Bệnh viện</title>
+    <title>NVX Dashboard nè --- Bệnh viện</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -63,15 +63,16 @@ if ($_SESSION["role"] != 6) {
                             Đổi mật khẩu
                         </a>
                     </li>
+                    <li>
+                        <a href="/KLTN_Benhvien/Logout" class="flex items-center px-4 py-3 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-stethoscope w-5 mr-3"></i>
+                            Đăng xuất
+                        </a>
+                    </li>
                 </ul>
 
                 <!-- Logout Button -->
-                <div class="border-t border-gray-200 pt-4">
-                    <a href="/KLTN_Benhvien/Logout" class="flex items-center px-4 py-3 text-red-600 rounded-lg font-medium transition-colors hover:bg-red-50">
-                        <i class="fas fa-sign-out-alt w-5 mr-3"></i>
-                        Đăng xuất
-                    </a>
-                </div>
+                
             </nav>
         </aside>
 

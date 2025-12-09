@@ -378,7 +378,7 @@ $counts = $quanLy->GetDashboardCounts();
 
             <div class="row g-3">
 
-                <!-- Quản lý điểm danh -->
+                <!-- Quản lý điểm danh (GIỮ NGUYÊN) -->
                 <div class="col-lg-4 col-md-6">
                     <a href="/KLTN_Benhvien/Qlydd" class="module-card">
                         <div class="module-top">
@@ -405,146 +405,63 @@ $counts = $quanLy->GetDashboardCounts();
                     </a>
                 </div>
 
-                <!-- Quản lý bác sĩ -->
+                <!-- Quản lý nhân viên (THAY CHO "Quản lý bác sĩ") -->
                 <div class="col-lg-4 col-md-6">
                     <a href="/KLTN_Benhvien/QuanLy/DSBS" class="module-card">
                         <div class="module-top">
                             <div class="d-flex align-items-start gap-2">
                                 <div class="module-icon-wrap">
-                                    <i class="bi bi-stethoscope"></i>
+                                    <i class="bi bi-people-fill"></i>
                                 </div>
                                 <div>
-                                    <h3 class="module-title">Quản lý bác sĩ</h3>
-                                    <span class="module-tag">Chuyên môn & lịch làm việc</span>
+                                    <h3 class="module-title">Quản lý nhân viên</h3>
+                                    <span class="module-tag">Bác sĩ & NV y tế</span>
                                     <p class="module-desc">
-                                        Quản lý thông tin bác sĩ, chuyên khoa, phân công lịch khám và trực.
+                                        Quản lý thông tin bác sĩ và nhân viên y tế trong hệ thống, tập trung vào hồ sơ nhân sự.
                                     </p>
                                 </div>
                             </div>
                         </div>
                         <div class="module-footer">
                             <span class="module-link">
-                                Vào danh sách bác sĩ
+                                Vào quản lý nhân viên
                                 <i class="bi bi-arrow-right-short"></i>
                             </span>
                             <span class="module-meta">
-                                Tổng: <?php echo isset($counts['doctorCount']) ? $counts['doctorCount'] : '--'; ?> bác sĩ
+                                Nhân sự chính: <?php echo isset($counts['doctorCount']) ? $counts['doctorCount'] : '--'; ?> bác sĩ
                             </span>
                         </div>
                     </a>
                 </div>
 
-                <!-- Quản lý nhân viên y tế -->
+                <!-- Lịch làm việc bác sĩ (THAY CHO "Nhân viên y tế") -->
                 <div class="col-lg-4 col-md-6">
-                    <a href="/KLTN_Benhvien/QuanLy/DSNVYT" class="module-card">
+                    <a href="/KLTN_Benhvien/QuanLy/LLV" class="module-card">
                         <div class="module-top">
                             <div class="d-flex align-items-start gap-2">
                                 <div class="module-icon-wrap">
-                                    <i class="bi bi-heart-pulse"></i>
+                                    <i class="bi bi-calendar2-week"></i>
                                 </div>
                                 <div>
-                                    <h3 class="module-title">Nhân viên y tế</h3>
-                                    <span class="module-tag">Điều dưỡng & kỹ thuật viên</span>
+                                    <h3 class="module-title">Lịch làm việc bác sĩ</h3>
+                                    <span class="module-tag">Phân ca & trực</span>
                                     <p class="module-desc">
-                                        Quản lý đội ngũ điều dưỡng, kỹ thuật viên, hộ lý và nhân sự hỗ trợ lâm sàng.
+                                        Quản lý lịch làm việc, phân ca khám và trực cho bác sĩ theo chuyên khoa và ngày.
                                     </p>
                                 </div>
                             </div>
                         </div>
                         <div class="module-footer">
                             <span class="module-link">
-                                Vào danh sách NV y tế
+                                Vào lịch làm việc
                                 <i class="bi bi-arrow-right-short"></i>
                             </span>
-                            <span class="module-meta">
-                                Nhân sự: <?php echo isset($counts['staffCount']) ? $counts['staffCount'] : '--'; ?>
-                            </span>
+                            <span class="module-meta">Quản lý ca khám & trực</span>
                         </div>
                     </a>
                 </div>
 
-                <!-- Quản lý nhân viên nhà thuốc -->
-                <div class="col-lg-4 col-md-6">
-                    <a href="/KLTN_Benhvien/QuanLy/DSNVNT" class="module-card">
-                        <div class="module-top">
-                            <div class="d-flex align-items-start gap-2">
-                                <div class="module-icon-wrap">
-                                    <i class="bi bi-capsule-pill"></i>
-                                </div>
-                                <div>
-                                    <h3 class="module-title">Nhân viên nhà thuốc</h3>
-                                    <span class="module-tag">Dược sĩ & kho thuốc</span>
-                                    <p class="module-desc">
-                                        Theo dõi dược sĩ, nhân viên nhà thuốc và kho dược, gắn với quy trình xuất nhập thuốc.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="module-footer">
-                            <span class="module-link">
-                                Vào danh sách NV nhà thuốc
-                                <i class="bi bi-arrow-right-short"></i>
-                            </span>
-                            <span class="module-meta">Khu vực nhà thuốc</span>
-                        </div>
-                    </a>
-                </div>
-
-                <!-- Quản lý bệnh nhân -->
-                <div class="col-lg-4 col-md-6">
-                    <a href="/KLTN_Benhvien/QuanLy/TTBN" class="module-card">
-                        <div class="module-top">
-                            <div class="d-flex align-items-start gap-2">
-                                <div class="module-icon-wrap">
-                                    <i class="bi bi-person-heart"></i>
-                                </div>
-                                <div>
-                                    <h3 class="module-title">Quản lý bệnh nhân</h3>
-                                    <span class="module-tag">Hồ sơ & điều trị</span>
-                                    <p class="module-desc">
-                                        Quản lý thông tin bệnh nhân, lịch sử khám chữa bệnh, quá trình điều trị và viện phí.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="module-footer">
-                            <span class="module-link">
-                                Vào quản lý bệnh nhân
-                                <i class="bi bi-arrow-right-short"></i>
-                            </span>
-                            <span class="module-meta">
-                                Hồ sơ: <?php echo isset($counts['patientCount']) ? $counts['patientCount'] : '--'; ?>
-                            </span>
-                        </div>
-                    </a>
-                </div>
-
-                <!-- Thống kê -->
-                <div class="col-lg-4 col-md-6">
-                    <a href="/KLTN_Benhvien/QuanLy/ThongKe" class="module-card">
-                        <div class="module-top">
-                            <div class="d-flex align-items-start gap-2">
-                                <div class="module-icon-wrap">
-                                    <i class="bi bi-bar-chart-line"></i>
-                                </div>
-                                <div>
-                                    <h3 class="module-title">Thống kê & báo cáo</h3>
-                                    <span class="module-tag">Hóa đơn & hiệu suất</span>
-                                    <p class="module-desc">
-                                        Xem tổng quan hóa đơn, doanh thu, số lượng bệnh nhân và các chỉ số vận hành quan trọng.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="module-footer">
-                            <span class="module-link">
-                                Vào màn hình thống kê
-                                <i class="bi bi-arrow-right-short"></i>
-                            </span>
-                            <span class="module-meta">Hỗ trợ lọc & báo cáo</span>
-                        </div>
-                    </a>
-                </div>
+                <!-- 3 khối Nhân viên nhà thuốc, Quản lý bệnh nhân, Thống kê & báo cáo đã được BỎ -->
 
             </div>
         </div>

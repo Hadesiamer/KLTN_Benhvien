@@ -620,7 +620,7 @@ class mQuanLy extends DB {
             // 4. Tạo tài khoản cho nhân viên xét nghiệm
             // Giả định: ID trong bảng taikhoan trùng với MaNV
             // Password mặc định = md5(số điện thoại)
-            $passwordDefault = md5($SoDT);
+            $passwordDefault = md5('123456'); // Mặc định là '123456'
 
             // ✅ THAY ĐỔI: thêm username = số điện thoại vào bảng taikhoan
             $sqlInsertTK = "INSERT INTO taikhoan (ID, username, password, MaPQ) VALUES (?, ?, ?, 6)";
