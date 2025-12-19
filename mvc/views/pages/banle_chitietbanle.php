@@ -28,7 +28,7 @@ if (!empty($headerArr)) {
    ============================================ */
 $qrContent = "";
 if ($MaDon > 0) {
-    // Link đầy đủ theo yêu cầu: http://localhost/KLTN_Benhvien/NVNT/BanLeChiTiet/{MaDon}
+    // Link đầy đủ theo yêu cầu: http://lovcalhost/KLTN_Benhvien/NVNT/BanLeChiTiet/{MaDon}
     $qrContent = "http://localhost/KLTN_Benhvien/NVNT/BanLeChiTiet/" . $MaDon;
 }
 ?>

@@ -174,7 +174,7 @@
 <script>
     (function () {
         // Endpoint tới controller Chatbot của bạn
-        // Nếu project nằm ở http://localhost/KLTN_Benhvien/
+        // Nếu project nằm ở http://localvhost/KLTN_Benhvien/
         // thì giữ nguyên. Nếu thư mục gốc khác, bạn sửa lại cho đúng.
         const BVCHAT_ENDPOINT = "/KLTN_Benhvien/Chatbot/Ask";
 

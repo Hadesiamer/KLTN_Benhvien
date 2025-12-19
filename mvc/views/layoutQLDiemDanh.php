@@ -197,6 +197,13 @@ if ($toastType && $toastMessage) {
 
             <ul class="dd-nav">
                 <li>
+                    <a href="/KLTN_Benhvien/Quanly"
+                       class="<?php echo (isset($data['Page']) && $data['Page'] == '') ? 'active' : ''; ?>">
+                        <i class="bi bi-camera-video"></i>
+                        <span>Trang chủ</span>
+                    </a>
+                </li>
+                <li>
                     <a href="/KLTN_Benhvien/Qlydd/DD_QuetMat"
                        class="<?php echo (isset($data['Page']) && $data['Page'] == 'dd_quetmat') ? 'active' : ''; ?>">
                         <i class="bi bi-camera-video"></i>

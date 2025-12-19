@@ -1,6 +1,6 @@
 <?php
 
-// http://localhost/live/Home/Show/1/2
+// http://local'v'host/live/Home/Show/1/2
 
 class Home extends Controller{
 

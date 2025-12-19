@@ -471,7 +471,7 @@ $to_date   = $data["to_date"];
 
     // Khi quét QR thành công
     function onScanSuccess(decodedText, decodedResult) {
-        // decodedText là nội dung QR (VD: http://localhost/KLTN_Benhvien/NVNT/BanLeChiTiet/10)
+        // decodedText là nội dung QR 
         if (!decodedText) {
             return;
         }
